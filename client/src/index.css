@@ -1,0 +1,16 @@
+/* Base resets — App.css handles all app-specific styles */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100svh;
+  border: none;
+  text-align: left;
+}

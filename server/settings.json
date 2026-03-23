@@ -1,0 +1,326 @@
+{
+  "boards": [
+    {
+      "id": "video",
+      "label": "Video Projects",
+      "boardId": "5433027071",
+      "fields": [
+        {
+          "key": "taskName",
+          "label": "Task Name",
+          "type": "text",
+          "required": true,
+          "hint": "Please don't include \"/\" in the name",
+          "placeholder": "e.g. Face Cream Q2 UGC — 9x16 Versions",
+          "mondayColumnId": null,
+          "mondayValueType": "item_name"
+        },
+        {
+          "key": "department",
+          "label": "Department",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "label",
+          "options": ["Socials", "Website", "Special Project (SP)", "Retention", "Creative", "Marketing", "Social Media", "TV", "Amazon", "Ulta", "Marketing/Media", "Branding"]
+        },
+        {
+          "key": "product",
+          "label": "Product",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "label9",
+          "options": [
+            "Power Shower Set", "Ab Firming Cream", "Shampoo", "Gravité", "Face Mask",
+            "Face Wash", "Body Wash", "Multiple Products", "Not a Product Task", "Sunscreen",
+            "Gift Bundle", "Infinite Male", "Deodorant", "Anti Gray Serum", "Hair Gummies",
+            "Starter Bundle", "Skin Gummies", "Lady Killer Kit", "Golfer's Bundle", "Varros",
+            "Shaving Gel", "Face Cream", "Hand Cream", "Dark Spot Remover Set", "Smooth Skin Set",
+            "Head Turner Set", "Advanced Bundle", "Lip Balm", "Essential Bundle",
+            "Ultimate Men's Gift Bundle", "Men's Gift Bundle", "Neck Cream", "Gravite Bundle",
+            "Bold Moves Bundle", "Instant Eye Firming Cream", "Hair Revival Kit"
+          ]
+        },
+        {
+          "key": "deadline",
+          "label": "Deadline",
+          "type": "date",
+          "hint": "Only fill this if you have a hard deadline",
+          "mondayColumnId": "date_Mjj2cG7T"
+        },
+        {
+          "key": "platform",
+          "label": "Platform",
+          "type": "select",
+          "half": true,
+          "mondayColumnId": "single_selectu06tevn",
+          "options": ["Meta", "GT | Meta", "Applovin", "Youtube | Google", "GIF | Meta"]
+        },
+        {
+          "key": "type",
+          "label": "Type",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "label4",
+          "options": [
+            "Iterations/Cuts/Edits", "GIF - New Static", "Miscellaneous", "Collection",
+            "Motion Design", "Translation", "Special Project", "TV", "AI Project",
+            "UGC/Creator", "UGC Testimonial", "Iterations/Editing", "Rebranding",
+            "AI Creator", "Amazon/Ulta", "Long Form (+1 min)", "Script - Short Form (<20 seconds)",
+            "GIF - Existing Static", "Upload B-Rolls", "CTA", "Creator Video", "Script (<1 min)"
+          ]
+        },
+        {
+          "key": "videoConcept",
+          "label": "Video Concept",
+          "type": "textarea",
+          "required": true,
+          "hint": "Briefly describe overall idea or story for the video",
+          "placeholder": "e.g. Show the product in a morning routine, emphasizing freshness…",
+          "rows": 4,
+          "mondayColumnId": "long_text_mkn8c1ax"
+        },
+        {
+          "key": "hook",
+          "label": "Hook",
+          "type": "text",
+          "hint": "Provide according to versions requested",
+          "placeholder": "e.g. 'You've been washing your face wrong your entire life'",
+          "mondayColumnId": "short_text_mkn8n4bx",
+          "mondayValueType": "short_text"
+        },
+        {
+          "key": "scriptMessage",
+          "label": "Script / Message",
+          "type": "textarea",
+          "hint": "Include link to script if applicable",
+          "placeholder": "Paste full script or key message here…",
+          "rows": 5,
+          "mondayColumnId": "long_text_Mjj2uK4g",
+          "durationEstimator": true
+        },
+        {
+          "key": "versionsNeeded",
+          "label": "Versions Needed",
+          "type": "number",
+          "required": true,
+          "half": true,
+          "placeholder": "e.g. 3",
+          "min": 1,
+          "mondayColumnId": "numbers"
+        },
+        {
+          "key": "priority",
+          "label": "Priority",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "priority_mkm11w0a",
+          "options": ["Low", "Medium", "High", "Critical ⚠️️"]
+        },
+        {
+          "key": "sizesNeeded",
+          "label": "Sizes Needed",
+          "type": "multiselect",
+          "required": true,
+          "mondayColumnId": "multi_select_Mjj2VFZH",
+          "options": ["16x9", "4x5", "9x16", "1x1", "Other"]
+        },
+        {
+          "key": "dropboxLink",
+          "label": "DropBox Link",
+          "type": "url",
+          "hint": "Paste folder link for saving finished videos",
+          "placeholder": "https://www.dropbox.com/…",
+          "mondayColumnId": "link4__1",
+          "mondayValueType": "link",
+          "linkText": "DropBox",
+          "section": "Additional Details"
+        },
+        {
+          "key": "targetAudience",
+          "label": "Target Audience",
+          "type": "text",
+          "hint": "Insert audience details (age, interests, location)",
+          "placeholder": "e.g. Women 25–40, skincare enthusiasts, US",
+          "mondayColumnId": null
+        },
+        {
+          "key": "requestor",
+          "label": "Requestor",
+          "type": "people",
+          "searchable": true,
+          "mondayColumnId": "person"
+        },
+        {
+          "key": "editorDesigner",
+          "label": "Editor / Designer",
+          "type": "people",
+          "allowedPeople": ["Matan", "Yael", "Isaac", "Omri"],
+          "mondayColumnId": "people"
+        }
+      ]
+    },
+    {
+      "id": "design",
+      "label": "Design Projects - 2.0",
+      "boardId": "8036329818",
+      "fields": [
+        {
+          "key": "taskName",
+          "label": "Task Name",
+          "type": "text",
+          "required": true,
+          "hint": "Please don't include \"/\" in the name",
+          "placeholder": "e.g. Face Cream PDP Banner — Q2",
+          "mondayColumnId": null,
+          "mondayValueType": "item_name"
+        },
+        {
+          "key": "department",
+          "label": "Department",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "status_1__1",
+          "options": [
+            "Email", "Marketing", "Socials", "Projects", "GT", "Default",
+            "Adge Data", "TV", "Branding", "Products & Packaging",
+            "Email Completed", "Amazon", "Creative", "GIF Design", "Website", "Ulta"
+          ]
+        },
+        {
+          "key": "productBundle",
+          "label": "Product / Bundle",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "label9",
+          "options": [
+            "Power Shower Set", "Ab Firming Cream", "Shampoo", "Gravité", "Face Mask",
+            "Face Wash", "Body Wash", "Multiple Products", "Hair Gummies", "Anti Gray Serum",
+            "Sunscreen", "Starter Bundle", "Head Turner Set", "Shaving Gel", "Infinite Male",
+            "Deodorant", "Gravite Bundle", "Skin Gummies", "Dark Spot Remover Set",
+            "Essential Bundle", "Bold Moves Bundle", "Face Cream", "Smooth Skin Set",
+            "Men's Gift Bundle", "Advanced Bundle", "Gift Bundle", "Varros",
+            "Ultimate Men's Gift Bundle", "Instant Eye Firming Cream", "Hair Revival Kit",
+            "Not a Product Task", "Neck Cream", "Lady Killer Kit", "Golfer's Bundle",
+            "Lip Balm", "Hand Cream"
+          ]
+        },
+        {
+          "key": "platform",
+          "label": "Platform",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "single_selectrz7230p",
+          "options": ["Meta", "Google", "Applovin'", "Newsletter", "GT - Meta", "Other"]
+        },
+        {
+          "key": "websiteType",
+          "label": "Website Type",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "single_selectess8b86",
+          "options": ["PDP", "LP", "Other", "Test Products"]
+        },
+        {
+          "key": "deadline",
+          "label": "Deadline",
+          "type": "date",
+          "hint": "Only fill if you have a hard deadline",
+          "mondayColumnId": "date_Mjj20aki"
+        },
+        {
+          "key": "priority",
+          "label": "Priority",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "priority__1",
+          "options": ["Low", "Medium", "High", "Critical ⚠️️"]
+        },
+        {
+          "key": "amountOfVersions",
+          "label": "Amount of Versions",
+          "type": "number",
+          "half": true,
+          "placeholder": "e.g. 2",
+          "min": 1,
+          "mondayColumnId": "numberpuotbeaf"
+        },
+        {
+          "key": "conceptIdea",
+          "label": "Concept / Idea",
+          "type": "textarea",
+          "required": true,
+          "hint": "Describe visual subject and scene",
+          "placeholder": "e.g. Flat-lay hero shot of the face cream surrounded by botanicals…",
+          "rows": 4,
+          "mondayColumnId": "long_textpvqldjpg"
+        },
+        {
+          "key": "supportingText",
+          "label": "Supporting Text",
+          "type": "textarea",
+          "hint": "Additional text if needed",
+          "placeholder": "e.g. 'Now with 10% Vitamin C'",
+          "rows": 3,
+          "mondayColumnId": "long_text_mkngjytf"
+        },
+        {
+          "key": "sizes",
+          "label": "Sizes",
+          "type": "multiselect",
+          "mondayColumnId": "multi_select_Mjj2tEdu",
+          "options": ["16x9", "4x5", "1x1", "9x16", "Other", "916x1144", "2000x2000"]
+        },
+        {
+          "key": "otherSizes",
+          "label": "Other Sizes",
+          "type": "text",
+          "placeholder": "e.g. 300x250",
+          "mondayColumnId": "short_text_Mjj2RnHq",
+          "mondayValueType": "short_text",
+          "showWhen": { "field": "sizes", "includes": "Other" }
+        },
+        {
+          "key": "howDidYouCreate",
+          "label": "How did you create this?",
+          "type": "select",
+          "mondayColumnId": null,
+          "options": ["Adge", "Upspring", "Motion", "ChatGPT"],
+          "section": "Additional Details"
+        },
+        {
+          "key": "dropbox",
+          "label": "Dropbox",
+          "type": "url",
+          "hint": "For uploading finished project",
+          "placeholder": "https://www.dropbox.com/…",
+          "mondayColumnId": "link0__1",
+          "mondayValueType": "link",
+          "linkText": "Dropbox"
+        },
+        {
+          "key": "requestor",
+          "label": "Requestor",
+          "type": "people",
+          "searchable": true,
+          "mondayColumnId": "people_Mjj2RrZM"
+        },
+        {
+          "key": "editorDesigner",
+          "label": "Editor / Designer",
+          "type": "people",
+          "allowedPeople": ["Natalie Abesdid", "Dan"],
+          "mondayColumnId": "people"
+        }
+      ]
+    }
+  ]
+}
