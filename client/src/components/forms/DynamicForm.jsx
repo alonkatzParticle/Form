@@ -149,6 +149,7 @@ function CustomSelect({ options, value, onChange, placeholder = "Select…" }) {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
             onFocus={() => setIsOpen(true)}
+            onClick={(e) => e.stopPropagation()}
           />
         )}
         <span className="custom-select-chevron">{isOpen ? "▲" : "▼"}</span>
