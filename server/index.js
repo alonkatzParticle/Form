@@ -16,6 +16,7 @@ import elevenLabsRoutes from "./routes/elevenlabs.js";
 import settingsRoutes from "./routes/settings.js";
 import { getSettings } from "./services/settingsService.js";
 import { getBoardColumns } from "./services/mondayService.js";
+import { refreshAllBoards } from "./services/frequencyService.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,6 +35,17 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   runSyncCheck();
+  // Populate the frequency cache on startup, then refresh every 6 hours.
+  refreshAllBoards(getSettings()).catch((err) =>
+    console.warn("[frequency] Initial refresh failed:", err.message)
+  );
+  setInterval(
+    () =>
+      refreshAllBoards(getSettings()).catch((err) =>
+        console.warn("[frequency] Scheduled refresh failed:", err.message)
+      ),
+    6 * 60 * 60 * 1000
+  );
 });
 
 // On startup, compare each board's configured columns against live Monday columns.

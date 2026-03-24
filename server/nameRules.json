@@ -1,0 +1,20 @@
+{
+  "video": {
+    "segments": [
+      { "field": "product" },
+      { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" } },
+      { "field": "howDidYouMake" },
+      { "field": "type", "onlyValues": ["AI Creator"] },
+      { "field": "taskName" }
+    ]
+  },
+  "design": {
+    "segments": [
+      { "field": "productBundle" },
+      { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" } },
+      { "field": "howDidYouCreate" },
+      { "field": "websiteType" },
+      { "field": "taskName" }
+    ]
+  }
+}

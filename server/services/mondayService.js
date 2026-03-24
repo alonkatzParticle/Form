@@ -75,6 +75,110 @@ export async function getUsers() {
   return data.users || [];
 }
 
+// Post a text update (comment) on an existing Monday item.
+export async function createUpdate(itemId, body) {
+  const query = `
+    mutation CreateUpdate($itemId: ID!, $body: String!) {
+      create_update(item_id: $itemId, body: $body) {
+        id
+      }
+    }
+  `;
+  return mondayQuery(query, { itemId: String(itemId), body });
+}
+
+// Upload a file to a Monday file column on an existing item.
+// Monday's file upload uses a separate multipart endpoint instead of the standard GraphQL one.
+export async function uploadFileToColumn(itemId, columnId, fileBuffer, fileName, mimeType) {
+  const mutation = `
+    mutation ($file: File!) {
+      add_file_to_column(item_id: ${itemId}, column_id: "${columnId}", file: $file) {
+        id
+      }
+    }
+  `;
+
+  const form = new FormData();
+  form.append("query", mutation);
+  form.append("map", JSON.stringify({ file: ["variables.file"] }));
+  form.append("file", new Blob([fileBuffer], { type: mimeType }), fileName);
+
+  const res = await fetch("https://api.monday.com/v2/file", {
+    method: "POST",
+    headers: { Authorization: process.env.MONDAY_API_KEY },
+    body: form,
+  });
+  const data = await res.json();
+  if (data.errors) throw new Error(data.errors.map((e) => e.message).join("; "));
+  return data.data;
+}
+
+// Fetch a single item by ID — returns its current name, board ID, and all column values.
+export async function getItem(itemId) {
+  const query = `
+    query GetItem($itemId: ID!) {
+      items(ids: [$itemId]) {
+        id
+        name
+        board { id }
+        column_values { id text }
+      }
+    }
+  `;
+  const data = await mondayQuery(query, { itemId: String(itemId) });
+  return data.items?.[0] ?? null;
+}
+
+// Rename a Monday item by writing to its built-in "name" column.
+export async function renameItem(boardId, itemId, newName) {
+  const query = `
+    mutation RenameItem($boardId: ID!, $itemId: ID!, $value: String!) {
+      change_simple_column_value(board_id: $boardId, item_id: $itemId, column_id: "name", value: $value) {
+        id
+        name
+      }
+    }
+  `;
+  return mondayQuery(query, { boardId, itemId: String(itemId), value: newName });
+}
+
+// Fetch the first page of items from a board (for frequency analysis).
+// Returns { cursor, items: [{ created_at, column_values: [{ id, text }] }] }
+export async function getItemsPage(boardId, limit = 200) {
+  const query = `
+    query GetItemsPage($boardId: ID!, $limit: Int!) {
+      boards(ids: [$boardId]) {
+        items_page(limit: $limit) {
+          cursor
+          items {
+            created_at
+            column_values { id text }
+          }
+        }
+      }
+    }
+  `;
+  const data = await mondayQuery(query, { boardId, limit });
+  return data.boards[0]?.items_page ?? null;
+}
+
+// Fetch subsequent pages using a cursor returned by getItemsPage.
+export async function getNextItemsPage(cursor, limit = 200) {
+  const query = `
+    query NextItemsPage($limit: Int!, $cursor: String!) {
+      next_items_page(limit: $limit, cursor: $cursor) {
+        cursor
+        items {
+          created_at
+          column_values { id text }
+        }
+      }
+    }
+  `;
+  const data = await mondayQuery(query, { limit, cursor });
+  return data.next_items_page ?? null;
+}
+
 // Fetch board column details (IDs, titles, types) — useful for mapping form fields to column IDs.
 export async function getBoardColumns(boardId) {
   const query = `

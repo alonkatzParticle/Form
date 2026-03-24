@@ -5,19 +5,29 @@
 // GET  /api/monday/columns      — fetch board columns (for setup/debugging)
 
 import express from "express";
-import { createItem, getExampleItems, getUsers, getBoardColumns } from "../services/mondayService.js";
+import multer from "multer";
+import { createItem, createUpdate, getExampleItems, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
+import { getSettings } from "../services/settingsService.js";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
-// Create a new task on a Monday board.
-// Body: { boardId, itemName, columnValues }
+// Create a new task on a Monday board, then post a summary update on it.
+// Body: { boardId, itemName, columnValues, updateBody? }
 router.post("/create-item", async (req, res) => {
   try {
-    const { boardId, itemName, columnValues } = req.body;
+    const { boardId, itemName, columnValues, updateBody } = req.body;
     if (!boardId || !itemName) {
       return res.status(400).json({ error: "boardId and itemName are required" });
     }
     const result = await createItem(boardId, itemName, columnValues || {});
+    const itemId = result?.create_item?.id;
+    if (itemId && updateBody) {
+      await createUpdate(itemId, updateBody).catch((err) =>
+        console.warn("Update post failed (item still created):", err.message)
+      );
+    }
     res.json(result);
   } catch (err) {
     console.error("Monday create-item error:", err.message);
@@ -50,6 +60,44 @@ router.get("/examples", async (req, res) => {
   }
 });
 
+// Post a text/HTML update (comment) on an existing Monday item.
+// Body: { itemId, body }
+router.post("/create-update", async (req, res) => {
+  try {
+    const { itemId, body } = req.body;
+    if (!itemId || !body) {
+      return res.status(400).json({ error: "itemId and body are required" });
+    }
+    const result = await createUpdate(itemId, body);
+    res.json(result);
+  } catch (err) {
+    console.error("Create update error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload a file to a Monday file column on an existing item.
+// Body (multipart): itemId, columnId, file (the binary).
+router.post("/upload-file", upload.single("file"), async (req, res) => {
+  try {
+    const { itemId, columnId } = req.body;
+    if (!itemId || !columnId || !req.file) {
+      return res.status(400).json({ error: "itemId, columnId and file are required" });
+    }
+    const result = await uploadFileToColumn(
+      itemId,
+      columnId,
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+    );
+    res.json(result);
+  } catch (err) {
+    console.error("File upload error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Fetch board column IDs and types — useful when mapping form fields to columns.
 router.get("/columns", async (req, res) => {
   try {
@@ -59,6 +107,95 @@ router.get("/columns", async (req, res) => {
     res.json(columns);
   } catch (err) {
     console.error("Monday columns error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Name suggestion helpers (mirrors client-side buildAutoName) ───────────────
+
+function applyNameRules(board, task) {
+  if (!board.autoName) return task.taskName || "";
+  return board.autoName.segments
+    .map((seg) => {
+      let val = task[seg.field];
+      if (!val && seg.fallback) val = task[seg.fallback];
+      if (!val) return null;
+      if (seg.onlyValues && !seg.onlyValues.includes(val)) return null;
+      if (seg.valueMap && seg.valueMap[val]) val = seg.valueMap[val];
+      return val;
+    })
+    .filter(Boolean)
+    .join(" | ");
+}
+
+// Fetch a task by URL or ID, compute its suggested new name from the board's
+// naming rules, and return both the current and suggested names for review.
+// Body: { itemUrl } or { itemId }
+router.post("/suggest-rename", async (req, res) => {
+  try {
+    const { itemUrl, itemId: rawId } = req.body;
+
+    // Parse item ID from URL (…/pulses/123456…) or accept it directly
+    let itemId = rawId;
+    if (!itemId && itemUrl) {
+      const match = itemUrl.match(/\/pulses\/(\d+)/);
+      if (!match) return res.status(400).json({ error: "Could not find a task ID in that URL." });
+      itemId = match[1];
+    }
+    if (!itemId) return res.status(400).json({ error: "itemUrl or itemId is required." });
+
+    const item = await getItem(itemId);
+    if (!item) return res.status(404).json({ error: "Task not found on Monday." });
+
+    const boardId = String(item.board.id);
+    const settings = getSettings();
+    const board = settings.boards.find((b) => String(b.boardId) === boardId);
+    if (!board) return res.status(404).json({ error: "This board is not configured in Task Creator." });
+
+    // Build a task object by mapping each column value back to its field key
+    const colTextMap = {};
+    item.column_values.forEach((cv) => { colTextMap[cv.id] = cv.text || ""; });
+
+    const task = {};
+    board.fields.forEach((f) => {
+      if (f.mondayColumnId && colTextMap[f.mondayColumnId]) {
+        task[f.key] = colTextMap[f.mondayColumnId];
+      }
+    });
+
+    // taskName — extract from the current item name.
+    // The auto-name format is "Segment1 | Segment2 | ... | UserTaskName".
+    // We take everything after the last " | " as the user-written task name.
+    const parts = item.name.split(" | ");
+    task.taskName = parts[parts.length - 1].trim();
+
+    const suggestedName = applyNameRules(board, task);
+
+    res.json({
+      itemId: String(itemId),
+      boardId,
+      boardLabel: board.label,
+      currentName: item.name,
+      suggestedName,
+    });
+  } catch (err) {
+    console.error("Suggest rename error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Apply a new name to a Monday task.
+// Body: { itemId, boardId, newName }
+router.post("/rename-item", async (req, res) => {
+  try {
+    const { itemId, boardId, newName } = req.body;
+    if (!itemId || !boardId || !newName) {
+      return res.status(400).json({ error: "itemId, boardId, and newName are required." });
+    }
+    const result = await renameItem(boardId, itemId, newName);
+    res.json(result);
+  } catch (err) {
+    console.error("Rename item error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

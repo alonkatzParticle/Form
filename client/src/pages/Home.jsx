@@ -6,9 +6,10 @@ import { useMonday } from "../hooks/useMonday.js";
 import DynamicForm from "../components/forms/DynamicForm.jsx";
 import AIPanel from "../components/AIPanel.jsx";
 
-export default function Home() {
+export default function Home({ onOpenSettings }) {
   const [boards, setBoards] = useState([]);
   const [activeBoardId, setActiveBoardId] = useState(null);
+  const [frequencyOrder, setFrequencyOrder] = useState({});
   const [aiResult, setAiResult] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState(null);
@@ -20,6 +21,7 @@ export default function Home() {
       .then((res) => {
         setBoards(res.data.boards);
         setActiveBoardId(res.data.boards[0]?.id ?? null);
+        setFrequencyOrder(res.data.frequencyOrder ?? {});
       })
       .catch((err) => setSettingsError(err.response?.data?.error || err.message))
       .finally(() => setSettingsLoading(false));
@@ -62,6 +64,7 @@ export default function Home() {
       <header className="app-header">
         <h1>Task Creator</h1>
         <p>Create tasks directly on Monday.com</p>
+        <button className="settings-btn" onClick={onOpenSettings} title="Settings">⚙</button>
       </header>
 
       {/* Board selector — boards come from settings.json */}
@@ -100,6 +103,7 @@ export default function Home() {
                   users={users}
                   aiResult={aiResult}
                   onAIResultApplied={() => setAiResult(null)}
+                  frequencyOrder={frequencyOrder[activeBoard.id] ?? {}}
                 />
               </div>
             </div>

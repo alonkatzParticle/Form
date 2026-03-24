@@ -6,23 +6,24 @@
       "boardId": "5433027071",
       "fields": [
         {
-          "key": "taskName",
-          "label": "Task Name",
-          "type": "text",
-          "required": true,
-          "hint": "Please don't include \"/\" in the name",
-          "placeholder": "e.g. Face Cream Q2 UGC — 9x16 Versions",
-          "mondayColumnId": null,
-          "mondayValueType": "item_name"
-        },
-        {
           "key": "department",
           "label": "Department",
           "type": "select",
           "required": true,
           "half": true,
           "mondayColumnId": "label",
-          "options": ["Socials", "Website", "Special Project (SP)", "Retention", "Creative", "Marketing", "Social Media", "TV", "Amazon", "Ulta", "Marketing/Media", "Branding"]
+          "options": [
+            "Socials",
+            "Website",
+            "Special Project (SP)",
+            "Retention",
+            "Creative",
+            "Social Media",
+            "TV",
+            "Amazon",
+            "Ulta",
+            "Marketing/Media"
+          ]
         },
         {
           "key": "product",
@@ -32,15 +33,54 @@
           "half": true,
           "mondayColumnId": "label9",
           "options": [
-            "Power Shower Set", "Ab Firming Cream", "Shampoo", "Gravité", "Face Mask",
-            "Face Wash", "Body Wash", "Multiple Products", "Not a Product Task", "Sunscreen",
-            "Gift Bundle", "Infinite Male", "Deodorant", "Anti Gray Serum", "Hair Gummies",
-            "Starter Bundle", "Skin Gummies", "Lady Killer Kit", "Golfer's Bundle", "Varros",
-            "Shaving Gel", "Face Cream", "Hand Cream", "Dark Spot Remover Set", "Smooth Skin Set",
-            "Head Turner Set", "Advanced Bundle", "Lip Balm", "Essential Bundle",
-            "Ultimate Men's Gift Bundle", "Men's Gift Bundle", "Neck Cream", "Gravite Bundle",
-            "Bold Moves Bundle", "Instant Eye Firming Cream", "Hair Revival Kit"
+            "Power Shower Set",
+            "Ab Firming Cream",
+            "Shampoo",
+            "Gravité",
+            "Face Mask",
+            "Face Wash",
+            "Body Wash",
+            "Multiple Products",
+            "Not a Product Task",
+            "Sunscreen",
+            "Gift Bundle",
+            "Infinite Male",
+            "Deodorant",
+            "Anti Gray Serum",
+            "Hair Gummies",
+            "Starter Bundle",
+            "Skin Gummies",
+            "Lady Killer Kit",
+            "Golfer's Bundle",
+            "Varros",
+            "Shaving Gel",
+            "Test Product",
+            "Face Cream",
+            "Hand Cream",
+            "Dark Spot Remover Set",
+            "Smooth Skin Set",
+            "Head Turner Set",
+            "Advanced Bundle",
+            "Lip Balm",
+            "Essential Bundle",
+            "Ultimate Men's Gift Bundle",
+            "Men's Gift Bundle",
+            "Neck Cream",
+            "Gravite Bundle",
+            "Bold Moves Bundle",
+            "Instant Eye Firming Cream",
+            "Hair Revival Kit"
           ]
+        },
+        {
+          "key": "taskName",
+          "label": "Task Name",
+          "type": "text",
+          "required": true,
+          "hint": "Please don't include \"/\" in the name",
+          "placeholder": "e.g. Face Cream Q2 UGC — 9x16 Versions",
+          "mondayColumnId": null,
+          "mondayValueType": "item_name"
         },
         {
           "key": "deadline",
@@ -53,9 +93,56 @@
           "key": "platform",
           "label": "Platform",
           "type": "select",
+          "required": true,
           "half": true,
           "mondayColumnId": "single_selectu06tevn",
-          "options": ["Meta", "GT | Meta", "Applovin", "Youtube | Google", "GIF | Meta"]
+          "options": [
+            "Meta",
+            "Gentleman Today",
+            "Applovin",
+            "Youtube | Google",
+            "GIF | Meta"
+          ],
+          "showWhen": {
+            "field": "department",
+            "includes": "Marketing/Media"
+          }
+        },
+        {
+          "key": "howDidYouMake",
+          "label": "How did you make this?",
+          "type": "select",
+          "mondayColumnId": "color_mm1q4zbz",
+          "options": [
+            "Adge",
+            "Upspring",
+            "ChatGPT"
+          ],
+          "section": "Additional Details",
+          "showWhen": {
+            "field": "department",
+            "includes": "Marketing/Media"
+          }
+        },
+        {
+          "key": "requestor",
+          "label": "Requestor",
+          "type": "people",
+          "required": true,
+          "searchable": true,
+          "mondayColumnId": "person"
+        },
+        {
+          "key": "editorDesigner",
+          "label": "Editor / Designer",
+          "type": "people",
+          "allowedPeople": [
+            "Matan",
+            "Yael",
+            "Isaac",
+            "Omri"
+          ],
+          "mondayColumnId": "people"
         },
         {
           "key": "type",
@@ -65,11 +152,24 @@
           "half": true,
           "mondayColumnId": "label4",
           "options": [
-            "Iterations/Cuts/Edits", "GIF - New Static", "Miscellaneous", "Collection",
-            "Motion Design", "Translation", "Special Project", "TV", "AI Project",
-            "UGC/Creator", "UGC Testimonial", "Iterations/Editing", "Rebranding",
-            "AI Creator", "Amazon/Ulta", "Long Form (+1 min)", "Script - Short Form (<20 seconds)",
-            "GIF - Existing Static", "Upload B-Rolls", "CTA", "Creator Video", "Script (<1 min)"
+            "Iterations/Cuts/Edits",
+            "GIF - New Static",
+            "Miscellaneous",
+            "Collection",
+            "Motion Design",
+            "Translation",
+            "Special Project",
+            "TV",
+            "AI Project",
+            "UGC/Creator",
+            "AI Creator",
+            "Amazon/Ulta",
+            "Long Form (+1 min)",
+            "Script - Short Form (<20 seconds)",
+            "GIF - Existing Static",
+            "Upload B-Rolls",
+            "CTA",
+            "Script (<1 min)"
           ]
         },
         {
@@ -118,15 +218,33 @@
           "required": true,
           "half": true,
           "mondayColumnId": "priority_mkm11w0a",
-          "options": ["Low", "Medium", "High", "Critical ⚠️️"]
+          "options": [
+            "Low",
+            "Medium",
+            "High",
+            "Critical ⚠️️"
+          ]
         },
         {
           "key": "sizesNeeded",
           "label": "Sizes Needed",
           "type": "multiselect",
-          "required": true,
+          "required": false,
           "mondayColumnId": "multi_select_Mjj2VFZH",
-          "options": ["16x9", "4x5", "9x16", "1x1", "Other"]
+          "options": [
+            "16x9",
+            "4x5",
+            "9x16",
+            "1x1",
+            "Other"
+          ]
+        },
+        {
+          "key": "relevantFiles",
+          "label": "Relevant Files",
+          "type": "file",
+          "mondayColumnId": "files",
+          "section": "Additional Details"
         },
         {
           "key": "dropboxLink",
@@ -138,30 +256,9 @@
           "mondayValueType": "link",
           "linkText": "DropBox",
           "section": "Additional Details"
-        },
-        {
-          "key": "targetAudience",
-          "label": "Target Audience",
-          "type": "text",
-          "hint": "Insert audience details (age, interests, location)",
-          "placeholder": "e.g. Women 25–40, skincare enthusiasts, US",
-          "mondayColumnId": null
-        },
-        {
-          "key": "requestor",
-          "label": "Requestor",
-          "type": "people",
-          "searchable": true,
-          "mondayColumnId": "person"
-        },
-        {
-          "key": "editorDesigner",
-          "label": "Editor / Designer",
-          "type": "people",
-          "allowedPeople": ["Matan", "Yael", "Isaac", "Omri"],
-          "mondayColumnId": "people"
         }
-      ]
+      ],
+      "updateTemplate": "<h3><u>Task Brief</u></h3><br><p><b>Product:</b> {{product}}</p><p><b>Type:</b> {{type}}</p><p><b>Platform:</b> {{platform}}</p><p><b>Requestor:</b> {{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"> </span>{{deadline}}</p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{versionsNeeded}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizesNeeded}}</p><p><br></p><h3>Video Concept</h3><p>{{videoConcept}}</p><br><p><b>Hook:</b> {{hook}}</p><p><br></p><p><b>Script / Message:</b>&nbsp;</p><p>{{scriptMessage}}</p><p><br></p><p><b>Dropbox:</b> {{dropboxLink}}</p><p><br></p><p><br></p>"
     },
     {
       "id": "design",
@@ -186,9 +283,22 @@
           "half": true,
           "mondayColumnId": "status_1__1",
           "options": [
-            "Email", "Marketing", "Socials", "Projects", "GT", "Default",
-            "Adge Data", "TV", "Branding", "Products & Packaging",
-            "Email Completed", "Amazon", "Creative", "GIF Design", "Website", "Ulta"
+            "Email",
+            "Marketing",
+            "Socials",
+            "Projects",
+            "GT",
+            "Default",
+            "Adge Data",
+            "TV",
+            "Branding",
+            "Products & Packaging",
+            "Email Completed",
+            "Amazon",
+            "Creative",
+            "GIF Design",
+            "Website",
+            "Ulta"
           ]
         },
         {
@@ -199,15 +309,43 @@
           "half": true,
           "mondayColumnId": "label9",
           "options": [
-            "Power Shower Set", "Ab Firming Cream", "Shampoo", "Gravité", "Face Mask",
-            "Face Wash", "Body Wash", "Multiple Products", "Hair Gummies", "Anti Gray Serum",
-            "Sunscreen", "Starter Bundle", "Head Turner Set", "Shaving Gel", "Infinite Male",
-            "Deodorant", "Gravite Bundle", "Skin Gummies", "Dark Spot Remover Set",
-            "Essential Bundle", "Bold Moves Bundle", "Face Cream", "Smooth Skin Set",
-            "Men's Gift Bundle", "Advanced Bundle", "Gift Bundle", "Varros",
-            "Ultimate Men's Gift Bundle", "Instant Eye Firming Cream", "Hair Revival Kit",
-            "Not a Product Task", "Neck Cream", "Lady Killer Kit", "Golfer's Bundle",
-            "Lip Balm", "Hand Cream"
+            "Power Shower Set",
+            "Ab Firming Cream",
+            "Shampoo",
+            "Gravité",
+            "Face Mask",
+            "Face Wash",
+            "Body Wash",
+            "Multiple Products",
+            "Hair Gummies",
+            "Anti Gray Serum",
+            "Sunscreen",
+            "Test Product",
+            "Starter Bundle",
+            "Head Turner Set",
+            "Shaving Gel",
+            "Infinite Male",
+            "Deodorant",
+            "Gravite Bundle",
+            "Skin Gummies",
+            "Dark Spot Remover Set",
+            "Essential Bundle",
+            "Bold Moves Bundle",
+            "Face Cream",
+            "Smooth Skin Set",
+            "Men's Gift Bundle",
+            "Advanced Bundle",
+            "Gift Bundle",
+            "Varros",
+            "Ultimate Men's Gift Bundle",
+            "Instant Eye Firming Cream",
+            "Hair Revival Kit",
+            "Not a Product Task",
+            "Neck Cream",
+            "Lady Killer Kit",
+            "Golfer's Bundle",
+            "Lip Balm",
+            "Hand Cream"
           ]
         },
         {
@@ -217,7 +355,14 @@
           "required": true,
           "half": true,
           "mondayColumnId": "single_selectrz7230p",
-          "options": ["Meta", "Google", "Applovin'", "Newsletter", "GT - Meta", "Other"]
+          "options": [
+            "Meta",
+            "Google",
+            "Applovin'",
+            "Newsletter",
+            "Gentleman Today",
+            "Other"
+          ]
         },
         {
           "key": "websiteType",
@@ -226,7 +371,30 @@
           "required": true,
           "half": true,
           "mondayColumnId": "single_selectess8b86",
-          "options": ["PDP", "LP", "Other", "Test Products"]
+          "options": [
+            "PDP",
+            "LP",
+            "Other",
+            "Test Products"
+          ]
+        },
+        {
+          "key": "requestor",
+          "label": "Requestor",
+          "type": "people",
+          "required": true,
+          "searchable": true,
+          "mondayColumnId": "people_Mjj2RrZM"
+        },
+        {
+          "key": "editorDesigner",
+          "label": "Editor / Designer",
+          "type": "people",
+          "allowedPeople": [
+            "Natalie Abesdid",
+            "Dan"
+          ],
+          "mondayColumnId": "people"
         },
         {
           "key": "deadline",
@@ -242,7 +410,12 @@
           "required": true,
           "half": true,
           "mondayColumnId": "priority__1",
-          "options": ["Low", "Medium", "High", "Critical ⚠️️"]
+          "options": [
+            "Low",
+            "Medium",
+            "High",
+            "Critical ⚠️️"
+          ]
         },
         {
           "key": "amountOfVersions",
@@ -277,7 +450,15 @@
           "label": "Sizes",
           "type": "multiselect",
           "mondayColumnId": "multi_select_Mjj2tEdu",
-          "options": ["16x9", "4x5", "1x1", "9x16", "Other", "916x1144", "2000x2000"]
+          "options": [
+            "16x9",
+            "4x5",
+            "1x1",
+            "9x16",
+            "Other",
+            "916x1144",
+            "2000x2000"
+          ]
         },
         {
           "key": "otherSizes",
@@ -286,14 +467,29 @@
           "placeholder": "e.g. 300x250",
           "mondayColumnId": "short_text_Mjj2RnHq",
           "mondayValueType": "short_text",
-          "showWhen": { "field": "sizes", "includes": "Other" }
+          "showWhen": {
+            "field": "sizes",
+            "includes": "Other"
+          }
         },
         {
           "key": "howDidYouCreate",
           "label": "How did you create this?",
           "type": "select",
-          "mondayColumnId": null,
-          "options": ["Adge", "Upspring", "Motion", "ChatGPT"],
+          "mondayColumnId": "single_selectt2aekp5",
+          "options": [
+            "Adge",
+            "Upspring",
+            "Motion",
+            "ChatGPT"
+          ],
+          "section": "Additional Details"
+        },
+        {
+          "key": "relevantFiles",
+          "label": "Relevant Files",
+          "type": "file",
+          "mondayColumnId": "upload_file3__1",
           "section": "Additional Details"
         },
         {
@@ -305,22 +501,9 @@
           "mondayColumnId": "link0__1",
           "mondayValueType": "link",
           "linkText": "Dropbox"
-        },
-        {
-          "key": "requestor",
-          "label": "Requestor",
-          "type": "people",
-          "searchable": true,
-          "mondayColumnId": "people_Mjj2RrZM"
-        },
-        {
-          "key": "editorDesigner",
-          "label": "Editor / Designer",
-          "type": "people",
-          "allowedPeople": ["Natalie Abesdid", "Dan"],
-          "mondayColumnId": "people"
         }
-      ]
+      ],
+      "updateTemplate": "<h2><u>Task Brief</u></h2><p><br></p><p><b>Product:</b>&nbsp;{{productBundle}}</p><p><b>Platform:</b>&nbsp;{{platform}}</p><p><b>Requestor:</b>&nbsp;{{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">&nbsp;{{deadline}}</span></p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{amountOfVersions}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizes}}&nbsp;{{otherSizes}}</p><p><br></p><h3><span style=\"font-size: 1rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Concept</span></h3><p>{{conceptIdea}}</p><p></p><p><br></p><p><b>Dropbox:</b>&nbsp;{{dropbox}}</p><p><br></p><p><br></p>"
     }
   ]
 }

@@ -2,10 +2,20 @@
 // GET /api/settings            — returns full settings (boards, fields, board IDs)
 // GET /api/settings/sync-check — compares settings field columns against live Monday board
 import express from "express";
-import { getSettings, updateSettings } from "../services/settingsService.js";
+import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate } from "../services/settingsService.js";
 import { getBoardColumns } from "../services/mondayService.js";
 
 const router = express.Router();
+
+// Verify the settings password. Returns 200 on match, 401 on wrong password.
+router.post("/auth", (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.SETTINGS_PASSWORD) {
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ error: "Incorrect password" });
+  }
+});
 
 // Return the full settings object. The client uses this to build the board tabs and forms.
 router.get("/", (_req, res) => {
@@ -52,10 +62,21 @@ router.get("/sync-check", async (req, res) => {
   }
 });
 
-// Update settings — used by the future admin page.
+// Update settings — generic patch or targeted board-level update.
+// { boardId, fields }          → update that board's fields array only
+// { boardId, updateTemplate }  → update that board's HTML update template only
+// Otherwise fall back to a shallow settings merge.
 router.put("/", (req, res) => {
   try {
-    const updated = updateSettings(req.body);
+    const { boardId, fields, updateTemplate } = req.body;
+    let updated;
+    if (boardId && Array.isArray(fields)) {
+      updated = updateBoardFields(boardId, fields);
+    } else if (boardId && typeof updateTemplate === "string") {
+      updated = updateBoardTemplate(boardId, updateTemplate);
+    } else {
+      updated = updateSettings(req.body);
+    }
     res.json(updated);
   } catch (err) {
     console.error("Settings write error:", err.message);
