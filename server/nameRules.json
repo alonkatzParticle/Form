@@ -11,9 +11,10 @@
   "design": {
     "segments": [
       { "field": "productBundle" },
-      { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" } },
+      { "field": "platform", "skipValues": ["Other"], "valueMap": { "Gentleman Today": "META | GT" } },
+      { "field": "department", "onlyValues": ["Website"] },
+      { "field": "websiteType", "onlyWhenField": "department", "onlyWhenValue": "Website", "skipValues": ["Other", "Test Products"] },
       { "field": "howDidYouCreate" },
-      { "field": "websiteType" },
       { "field": "taskName" }
     ]
   }

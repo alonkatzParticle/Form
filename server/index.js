@@ -1,40 +1,26 @@
-// Main server entry point.
-// To add a new route, import it here and register it with app.use().
-import express from "express";
-import cors from "cors";
-import { config } from "dotenv";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+// server/index.js — Local dev entry point.
+// Imports the configured Express app and starts the HTTP server with background jobs.
+// On Vercel, api/index.js is used instead (no listen, no intervals).
 
-// Load .env from the project root (one level up from server/)
-const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: resolve(__dirname, "../.env") });
-
-import mondayRoutes from "./routes/monday.js";
-import aiRoutes from "./routes/ai.js";
-import elevenLabsRoutes from "./routes/elevenlabs.js";
-import settingsRoutes from "./routes/settings.js";
+import app from "./app.js";
 import { getSettings } from "./services/settingsService.js";
 import { getBoardColumns } from "./services/mondayService.js";
 import { refreshAllBoards } from "./services/frequencyService.js";
+import { getState as getAutoRenameState, runAutoRename } from "./services/autoRenameService.js";
 
-const app = express();
 const PORT = process.env.PORT || 3001;
-
-app.use(cors());
-app.use(express.json());
-
-// Routes
-app.use("/api/monday", mondayRoutes);
-app.use("/api/ai", aiRoutes);
-app.use("/api/elevenlabs", elevenLabsRoutes);
-app.use("/api/settings", settingsRoutes);
-
-app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   runSyncCheck();
+  // Auto-rename: run every 5 minutes if enabled.
+  setInterval(() => {
+    if (getAutoRenameState().enabled) {
+      runAutoRename().catch((err) =>
+        console.warn("[auto-rename] Scheduled run failed:", err.message)
+      );
+    }
+  }, 5 * 60 * 1000);
   // Populate the frequency cache on startup, then refresh every 6 hours.
   refreshAllBoards(getSettings()).catch((err) =>
     console.warn("[frequency] Initial refresh failed:", err.message)

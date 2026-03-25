@@ -5,6 +5,8 @@ import axios from "axios";
 import { useMonday } from "../hooks/useMonday.js";
 import DynamicForm from "../components/forms/DynamicForm.jsx";
 import AIPanel from "../components/AIPanel.jsx";
+import BriefPreview from "./BriefPreview.jsx";
+import WednesdayPanel from "../components/WednesdayPanel.jsx";
 
 export default function Home({ onOpenSettings }) {
   const [boards, setBoards] = useState([]);
@@ -13,6 +15,12 @@ export default function Home({ onOpenSettings }) {
   const [aiResult, setAiResult] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState(null);
+  const [pendingReview, setPendingReview] = useState(null);
+  const [formResetKey, setFormResetKey] = useState(0);
+  const [wednesdayOpen, setWednesdayOpen]       = useState(false);
+  const [wednesdayResult, setWednesdayResult]   = useState(null);
+  const [formTask, setFormTask]                 = useState({});
+  const [chatResetKey, setChatResetKey]         = useState(0);
 
   // Fetch board config from server on mount
   useEffect(() => {
@@ -33,6 +41,21 @@ export default function Home({ onOpenSettings }) {
   function handleBoardSwitch(id) {
     setActiveBoardId(id);
     setAiResult(null);
+    setPendingReview(null);
+  }
+
+  function handleReview(data) {
+    setPendingReview(data);
+  }
+
+  function handleBackFromPreview() {
+    setPendingReview(null);
+  }
+
+  function handleSuccess() {
+    setPendingReview(null);
+    setFormResetKey((k) => k + 1);
+    setChatResetKey((k) => k + 1);
   }
 
   if (settingsLoading) {
@@ -60,7 +83,7 @@ export default function Home({ onOpenSettings }) {
   }
 
   return (
-    <div className="home">
+    <div className={`home${wednesdayOpen ? " home--wednesday-open" : ""}`}>
       <header className="app-header">
         <h1>Task Creator</h1>
         <p>Create tasks directly on Monday.com</p>
@@ -85,10 +108,29 @@ export default function Home({ onOpenSettings }) {
       {loading && <p className="loading-text">Loading board data…</p>}
       {error && <p className="banner-error">Could not load board data: {error}</p>}
 
+      {activeBoard && pendingReview && (
+        <BriefPreview
+          board={activeBoard}
+          task={pendingReview.task}
+          itemName={pendingReview.itemName}
+          columnValues={pendingReview.columnValues}
+          briefHtml={pendingReview.briefHtml}
+          onBack={handleBackFromPreview}
+          onSuccess={handleSuccess}
+        />
+      )}
+
       {activeBoard && (
-        <div className="layout">
-          {/* Left: form driven by this board's field config in settings.json */}
-          <div className="form-column">
+        <div
+          className={`layout${wednesdayOpen ? " layout--wednesday" : ""}`}
+          style={{ display: pendingReview ? "none" : "flex" }}
+        >
+          <div className="layout-main">
+            <AIPanel
+              boardType={activeBoardId}
+              exampleItems={exampleItems}
+              onResult={setAiResult}
+            />
             <div className="card">
               <div className="card-header">
                 <div>
@@ -98,27 +140,34 @@ export default function Home({ onOpenSettings }) {
               </div>
               <div className="card-body">
                 <DynamicForm
-                  key={activeBoard.id}
+                  key={`${activeBoard.id}-${formResetKey}`}
                   board={activeBoard}
                   users={users}
                   aiResult={aiResult}
                   onAIResultApplied={() => setAiResult(null)}
+                  wednesdayResult={wednesdayResult}
+                  onWednesdayResultApplied={() => setWednesdayResult(null)}
+                  onTaskChange={setFormTask}
+                  onDraftDiscarded={() => setChatResetKey((k) => k + 1)}
                   frequencyOrder={frequencyOrder[activeBoard.id] ?? {}}
+                  onReview={handleReview}
                 />
               </div>
             </div>
           </div>
 
-          {/* Right: AI assistant */}
-          <div className="side-column">
-            <AIPanel
-              boardType={activeBoardId}
-              exampleItems={exampleItems}
-              onResult={setAiResult}
-            />
-          </div>
+          <WednesdayPanel
+            isOpen={wednesdayOpen}
+            onClose={() => setWednesdayOpen((o) => !o)}
+            boardType={activeBoardId}
+            boardLabel={activeBoard.label}
+            formState={formTask}
+            onApplyChanges={(changes) => setWednesdayResult(changes)}
+            chatResetKey={chatResetKey}
+          />
         </div>
       )}
+
     </div>
   );
 }

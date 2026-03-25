@@ -25,6 +25,7 @@ const NAV_PAGES = [
   { id: "edit-form",      label: "Edit Form",       icon: "⊞" },
   { id: "update-format",  label: "Brief Template",   icon: "✉" },
   { id: "task-rename",    label: "Task Rename",      icon: "✎" },
+  { id: "auto-rename",    label: "Auto Rename",      icon: "↻" },
   { id: "naming-rules",   label: "Naming Rules",     icon: "≡" },
 ];
 
@@ -169,6 +170,8 @@ export default function Settings({ onClose }) {
         {/* ── COL 2 + 3: Page content ──────────────────────────────────────── */}
         {activePage === "task-rename" ? (
           <TaskRenameEditor />
+        ) : activePage === "auto-rename" ? (
+          <AutoRenameEditor />
         ) : activePage === "update-format" ? (
           <UpdateTemplateEditor
             boards={boards}
@@ -517,6 +520,105 @@ function FieldEditor({ field, fieldIdx, allFields, onChange, onRemove, onClose }
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── AutoRenameEditor ──────────────────────────────────────────────────────────
+
+function AutoRenameEditor() {
+  const [state,   setState]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [runMsg,  setRunMsg]  = useState(null);
+
+  useEffect(() => {
+    axios.get("/api/auto-rename/status")
+      .then((r) => setState(r.data))
+      .catch(() => setState({ enabled: false, lastRun: null, seenIds: [], log: [] }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleToggle(val) {
+    try {
+      const { data } = await axios.post("/api/auto-rename/toggle", { enabled: val });
+      setState(data);
+    } catch { /* ignore */ }
+  }
+
+  async function handleRunNow() {
+    setRunning(true); setRunMsg(null);
+    try {
+      const { data } = await axios.post("/api/auto-rename/run");
+      setState(data);
+      setRunMsg("Done!");
+      setTimeout(() => setRunMsg(null), 3000);
+    } catch (err) {
+      setRunMsg("Error: " + (err.response?.data?.error || "run failed."));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const STATUS_LABEL = { renamed: "Renamed", formatted: "Already formatted", error: "Error" };
+
+  if (loading) return <div className="tr-page"><p className="ut-hint">Loading…</p></div>;
+
+  return (
+    <div className="tr-page">
+      <div className="tr-header">
+        <div className="ut-section-title">Auto Rename</div>
+        <p className="ut-hint">
+          Checks tasks in <strong>Form Requests</strong> and <strong>Ready For Assignment</strong> on
+          both boards every 5 minutes. Tasks without proper naming (2+ segments) are renamed
+          automatically. Already-formatted tasks are tracked and skipped on future runs.
+        </p>
+      </div>
+
+      <div className="ar-controls">
+        <Toggle
+          label={state?.enabled ? "Auto Rename: ON" : "Auto Rename: OFF"}
+          checked={state?.enabled ?? false}
+          onChange={handleToggle}
+        />
+        <div className="ar-run-row">
+          <button className="ef-save-btn" onClick={handleRunNow} disabled={running}>
+            {running ? "Running…" : "Run Now"}
+          </button>
+          {runMsg && (
+            <span className={`ef-save-msg${runMsg.startsWith("Error") ? " ef-save-msg--err" : ""}`}>
+              {runMsg}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {state?.lastRun && (
+        <p className="ar-last-run">Last run: {new Date(state.lastRun).toLocaleString()}</p>
+      )}
+
+      {state?.log?.length > 0 ? (
+        <div className="ar-log">
+          {state.log.map((entry, i) => (
+            <div key={i} className={`ar-entry ar-entry--${entry.status}`}>
+              <span className="ar-entry-board">{entry.boardLabel}</span>
+              <span className="ar-entry-name">
+                {entry.status === "renamed"
+                  ? <>{entry.oldName} <span className="ar-arrow">→</span> {entry.newName}</>
+                  : entry.name}
+              </span>
+              {entry.status === "error" && (
+                <span className="ar-entry-error">{entry.error}</span>
+              )}
+              <span className={`ar-badge ar-badge--${entry.status}`}>
+                {STATUS_LABEL[entry.status]}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        !loading && <p className="ar-empty">No tasks processed yet. Hit <strong>Run Now</strong> to start.</p>
+      )}
     </div>
   );
 }

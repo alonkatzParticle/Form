@@ -41,7 +41,9 @@ function buildAutoName(board, task) {
       let val = task[seg.field];
       if (!val && seg.fallback) val = task[seg.fallback];
       if (!val) return null;
+      if (seg.onlyWhenField && task[seg.onlyWhenField] !== seg.onlyWhenValue) return null;
       if (seg.onlyValues && !seg.onlyValues.includes(val)) return null;
+      if (seg.skipValues && seg.skipValues.includes(val)) return null;
       if (seg.valueMap && seg.valueMap[val]) val = seg.valueMap[val];
       return val;
     })
@@ -185,7 +187,11 @@ function toMondayValue(field, value) {
   switch (type) {
     case "item_name": return null;
     case "file":      return null; // uploaded separately after item creation
-    case "status":    return { label: value };
+    case "status": {
+      // Only send if the value is a valid option — prevents AI-generated typos from crashing Monday
+      if (field.options && !field.options.includes(value)) return null;
+      return { label: value };
+    }
     case "multi_select": return { labels: value };
     case "date":      return { date: value };
     case "number":    return String(value);
@@ -235,9 +241,9 @@ function initTask(fields) {
     } else if (field.type === "number") {
       task[field.key] = null;
     } else if (field.type === "file") {
-      task[field.key] = null; // FileList or null
+      task[field.key] = null;
     } else {
-      task[field.key] = "";
+      task[field.key] = field.defaultValue ?? "";
     }
   }
   return task;
@@ -692,66 +698,66 @@ function FileInput({ value, onChange }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-function SuccessScreen({ taskName, boardLabel, taskUrl, onReset }) {
-  return (
-    <div className="success-screen">
-      <div className="success-icon">✓</div>
-      <h2 className="success-title">Task Created!</h2>
-      <p className="success-task-name">"{taskName}"</p>
-      <p className="success-subtitle">Your task has been added to the <strong>{boardLabel}</strong> board on Monday.com</p>
-      {taskUrl && (
-        <a className="btn-monday-link" href={taskUrl} target="_blank" rel="noreferrer">
-          View on Monday.com
-        </a>
-      )}
-      <button className="btn-submit" onClick={onReset}>
-        Submit Another Task
-      </button>
-    </div>
-  );
-}
-
-export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, frequencyOrder = {} }) {
+export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview }) {
   const DRAFT_KEY = `task_draft_${board.id}`;
 
   const [task, setTask] = useState(() => initTask(board.fields));
-  const [submitting, setSubmitting] = useState(false);
+  const [generatingBrief, setGeneratingBrief] = useState(false);
   const [submitError, setSubmitError] = useState(null);
-  const [createdTaskName, setCreatedTaskName] = useState(null);
-  const [createdTaskUrl, setCreatedTaskUrl] = useState(null);
 
   // Draft recovery — check localStorage on mount
   const [hasDraft, setHasDraft] = useState(() => {
     try { return !!localStorage.getItem(`task_draft_${board.id}`); } catch { return false; }
   });
-  // Skip autosave on the next task change (used after resets to avoid overwriting with empty state)
-  const skipNextSave = useRef(false);
 
   // Re-init form state when the board changes (tab switch)
+  // Uses a ref to track board.id so we can skip the initial mount run
+  const prevBoardId = useRef(board.id);
   useEffect(() => {
-    skipNextSave.current = true;
+    if (prevBoardId.current === board.id) return;
+    prevBoardId.current = board.id;
     setTask(initTask(board.fields));
     setSubmitError(null);
-    setCreatedTaskName(null);
     try { setHasDraft(!!localStorage.getItem(`task_draft_${board.id}`)); } catch {}
   }, [board.id]);
 
-  // Autosave draft to localStorage on every meaningful change
-  useEffect(() => {
-    if (skipNextSave.current) { skipNextSave.current = false; return; }
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(task)); } catch {}
-  }, [task]);
-
-  // Merge AI result into form state when it arrives
+  // Merge AI result into form state when it arrives, and autosave it
   useEffect(() => {
     if (aiResult) {
-      setTask((prev) => ({ ...prev, ...aiResult }));
+      setTask((prev) => {
+        const updated = { ...prev, ...aiResult };
+        try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
+        return updated;
+      });
       onAIResultApplied?.();
     }
   }, [aiResult]);
 
+  // Apply Wednesday's field changes (selective update)
+  useEffect(() => {
+    if (wednesdayResult) {
+      setTask((prev) => {
+        const updated = { ...prev, ...wednesdayResult };
+        try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
+        return updated;
+      });
+      onWednesdayResultApplied?.();
+    }
+  }, [wednesdayResult]);
+
+  // Notify Wednesday of form state changes
+  useEffect(() => {
+    onTaskChange?.(task);
+  }, [task]);
+
+  // Autosave happens directly in setField — no effect needed, no timing issues
   function setField(key, value) {
-    setTask((prev) => ({ ...prev, [key]: value }));
+    const newTask = (prev) => {
+      const updated = { ...prev, [key]: value };
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
+      return updated;
+    };
+    setTask(newTask);
   }
 
   function restoreDraft() {
@@ -765,9 +771,10 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   function discardDraft() {
     try { localStorage.removeItem(DRAFT_KEY); } catch {}
     setHasDraft(false);
+    onDraftDiscarded?.();
   }
 
-  async function handleSubmit(e) {
+  async function handleReview(e) {
     e.preventDefault();
     const missingField = board.fields
       .filter((f) => f.required && isVisible(f, task))
@@ -780,77 +787,39 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
       setSubmitError(`${missingField.label} is required`);
       return;
     }
-    const generatedName = buildAutoName(board, task);
-    setSubmitting(true);
     setSubmitError(null);
+    const itemName = buildAutoName(board, task);
+    const columnValues = buildColumnValues(board.fields, task);
+
+    // Build display-ready values for AI brief generation (skip files and item_name fields)
+    const formValues = board.fields
+      .filter((f) => isVisible(f, task) && f.type !== "file" && f.mondayValueType !== "item_name")
+      .map((f) => {
+        const val = task[f.key];
+        if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.length === 0)) return null;
+        let display;
+        if (f.type === "people") {
+          display = val.map((id) => users.find((u) => String(u.id) === String(id))?.name ?? id).join(", ");
+        } else if (Array.isArray(val)) {
+          display = val.join(", ");
+        } else {
+          display = String(val);
+        }
+        return { label: f.label, value: display };
+      })
+      .filter(Boolean);
+
+    setGeneratingBrief(true);
     try {
-      // Step 1 — create the item (no update yet; we need the item URL first)
-      const { data } = await axios.post("/api/monday/create-item", {
-        boardId: board.boardId,
-        itemName: generatedName,
-        columnValues: buildColumnValues(board.fields, task),
-      });
-      const itemId  = data?.create_item?.id;
-      const itemUrl = data?.create_item?.url ?? null;
-      setCreatedTaskUrl(itemUrl);
-
-      // Step 2 — upload files and count how many were attached
-      let filesUploaded = 0;
-      if (itemId) {
-        const fileFields = board.fields.filter(
-          (f) => f.type === "file" && f.mondayColumnId && task[f.key]
-        );
-        for (const field of fileFields) {
-          for (const file of Array.from(task[field.key])) {
-            const fd = new FormData();
-            fd.append("itemId", itemId);
-            fd.append("columnId", field.mondayColumnId);
-            fd.append("file", file);
-            await axios.post("/api/monday/upload-file", fd);
-            filesUploaded++;
-          }
-        }
-      }
-
-      // Step 3 — post the update, including a file link when files were uploaded
-      if (itemId) {
-        const updateBody = buildUpdateBody(
-          board.fields,
-          task,
-          users,
-          board.updateTemplate ?? DEFAULT_UPDATE_TEMPLATES[board.id] ?? null,
-          filesUploaded > 0 ? itemUrl : null,
-        );
-        if (updateBody) {
-          await axios
-            .post("/api/monday/create-update", { itemId, body: updateBody })
-            .catch((err) => console.warn("Update post failed (item still created):", err.message));
-        }
-      }
-
-      try { localStorage.removeItem(DRAFT_KEY); } catch {}
-      setCreatedTaskName(generatedName);
-      skipNextSave.current = true;
-      setTask(initTask(board.fields));
-    } catch (err) {
-      setSubmitError(err.response?.data?.error || "Failed to create task");
+      const { data } = await axios.post("/api/ai/brief", { formValues, boardType: board.id });
+      onReview({ task, itemName, columnValues, briefHtml: data.html });
+    } catch {
+      // Fall back to template-based brief if AI fails
+      const briefHtml = buildUpdateBody(board.fields, task, users, board.updateTemplate ?? DEFAULT_UPDATE_TEMPLATES[board.id] ?? null);
+      onReview({ task, itemName, columnValues, briefHtml });
     } finally {
-      setSubmitting(false);
+      setGeneratingBrief(false);
     }
-  }
-
-  function handleReset() {
-    try { localStorage.removeItem(DRAFT_KEY); } catch {}
-    skipNextSave.current = true;
-    setCreatedTaskName(null);
-    setCreatedTaskUrl(null);
-    setSubmitError(null);
-    setTask(initTask(board.fields));
-  }
-
-  // ─── Success screen ──────────────────────────────────────────────────────────
-  if (createdTaskName) {
-    return <SuccessScreen taskName={createdTaskName} boardLabel={board.label} taskUrl={createdTaskUrl} onReset={handleReset} />;
   }
 
   // ─── Layout pass ─────────────────────────────────────────────────────────────
@@ -859,7 +828,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <form className="task-form" onSubmit={handleSubmit}>
+    <form className="task-form" onSubmit={handleReview}>
       {hasDraft && (
         <div className="draft-banner">
           <span>You have an unsaved draft for this form.</span>
@@ -894,8 +863,8 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
 
       {submitError && <div className="msg-error">{submitError}</div>}
 
-      <button type="submit" className="btn-submit" disabled={submitting}>
-        {submitting ? "Creating Task…" : "Create Task on Monday"}
+      <button type="submit" className="btn-submit" disabled={generatingBrief}>
+        {generatingBrief ? "Generating Brief…" : "Review Brief →"}
       </button>
     </form>
   );

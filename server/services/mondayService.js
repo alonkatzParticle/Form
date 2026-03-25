@@ -179,6 +179,29 @@ export async function getNextItemsPage(cursor, limit = 200) {
   return data.next_items_page ?? null;
 }
 
+// Fetch items from specific groups on a board — used by the auto-rename service.
+export async function getGroupItems(boardId, groupIds) {
+  const query = `
+    query GetGroupItems($boardId: ID!, $groupIds: [String]!) {
+      boards(ids: [$boardId]) {
+        groups(ids: $groupIds) {
+          id
+          title
+          items_page(limit: 100) {
+            items {
+              id
+              name
+              column_values { id text }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await mondayQuery(query, { boardId, groupIds });
+  return data.boards[0]?.groups ?? [];
+}
+
 // Fetch board column details (IDs, titles, types) — useful for mapping form fields to column IDs.
 export async function getBoardColumns(boardId) {
   const query = `

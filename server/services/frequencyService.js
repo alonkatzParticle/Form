@@ -11,7 +11,10 @@ import { fileURLToPath } from "url";
 import { getItemsPage, getNextItemsPage } from "./mondayService.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const CACHE_PATH = resolve(__dirname, "../frequencyCache.json");
+// On Vercel the filesystem is read-only; use /tmp for cache.
+const CACHE_PATH = process.env.VERCEL
+  ? "/tmp/frequencyCache.json"
+  : resolve(__dirname, "../frequencyCache.json");
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_ITEMS = 500; // per board — more than enough to cover 30 days
 

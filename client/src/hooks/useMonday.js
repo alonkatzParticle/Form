@@ -20,7 +20,10 @@ export function useMonday(boardId) {
       axios.get(`/api/monday/examples?boardId=${boardId}`),
     ])
       .then(([usersRes, examplesRes]) => {
-        setUsers(usersRes.data);
+        setUsers(usersRes.data.map((u) => ({
+          ...u,
+          name: u.name.replace(/\b\w/g, (c) => c.toUpperCase()),
+        })));
         setExampleItems(examplesRes.data);
       })
       .catch((err) => {

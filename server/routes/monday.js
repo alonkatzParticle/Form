@@ -120,7 +120,9 @@ function applyNameRules(board, task) {
       let val = task[seg.field];
       if (!val && seg.fallback) val = task[seg.fallback];
       if (!val) return null;
+      if (seg.onlyWhenField && task[seg.onlyWhenField] !== seg.onlyWhenValue) return null;
       if (seg.onlyValues && !seg.onlyValues.includes(val)) return null;
+      if (seg.skipValues && seg.skipValues.includes(val)) return null;
       if (seg.valueMap && seg.valueMap[val]) val = seg.valueMap[val];
       return val;
     })

@@ -61,6 +61,30 @@ Features to add after the MVP is shipped. Add new items here as they come up.
 
 ---
 
+## AI Learning System
+
+- [ ] **Feedback capture** — Add a "brief was good / needed major edits" signal on the brief preview page after submission. Store approved briefs (input fields + final HTML) in a lightweight JSON file or database.
+
+- [ ] **Golden examples library** — A curated set of the best real input → output pairs, injected into the AI prompt as "gold standard" examples. Replace weak examples with better ones over time. Lives in `server/goldenExamples.json`.
+
+- [ ] **Prompt versioning** — Track which version of a prompt produced which outputs so you can compare results and roll back if a change makes things worse.
+
+- [ ] **Auto-promote good examples** — When a brief is submitted with zero or minimal edits in the contentEditable, automatically flag it as a candidate for the golden examples library.
+
+> **Why this matters:** Claude doesn't learn from usage — each call is stateless. "Learning" here means enriching the context (examples, rules) given to the AI on each call. The richer and more accurate the examples, the more repeatable the outputs.
+
+---
+
+## Wednesday (AI Chat Assistant)
+
+- [ ] **Quick reply chips** — Add shortcut chips above the input box for common actions: "Fill the whole form", "Review what I have", "Start over", "Just the script". Tapping a chip sends it as a message.
+
+- [ ] **Brand knowledge document** — Create a monthly-updated file Wednesday reads alongside the skill files. Should include: hero products this month, active promotions, top-performing angles, angles to avoid, upcoming campaigns, concepts with creative fatigue.
+
+- [ ] **Undo last changes** — If the user says "go back" or "undo that", Wednesday should be able to revert the last batch of field changes she made.
+
+---
+
 ## AI Improvements
 
 - [ ] **Inline LLM per field** — Add a small AI button directly inside individual form fields

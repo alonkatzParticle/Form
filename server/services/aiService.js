@@ -1,90 +1,102 @@
-// AI service using Anthropic Claude.
-// All prompt logic lives here so it's easy to tune without touching routes.
+// AI service — reads all prompts and settings from ../aiAgents.js
+// To change AI behavior, edit aiAgents.js. This file handles the API calls only.
 import Anthropic from "@anthropic-ai/sdk";
+import { getSkillContent, getBrandKnowledge } from "./skillLoader.js";
+import { AI_AGENTS, FIELD_DEFINITIONS } from "../aiAgents.js";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+let _client = null;
+function getClient() {
+  if (!_client) _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return _client;
+}
 
-// Builds the system prompt that tells Claude how to fill a task brief.
-// exampleItems are pulled from the real Monday board so Claude learns from past tasks.
-function buildSystemPrompt(boardType, exampleItems = []) {
-  const fieldDefs =
-    boardType === "video"
-      ? `
-- taskName: Short, descriptive task title (no slashes)
-- department: One of: Socials, Website, Special Project, Retention, Creative, Marketing/Media, Branding, TV, Amazon, Ulta
-- product: The specific product being featured
-- deadline: ISO date string or null if not specified
-- platform: One of: Meta, GT | Meta, Applovin, Youtube | Google, GIF | Meta
-- type: One of: Iterations/Cuts, GIF Static, Miscellaneous, Collection, Motion Design, Translation, Special Project, AI Project, UGC/Creator, Script, Long Form
-- videoConcept: Brief description of the overall idea or story
-- hook: Opening line or visual hook (per version if applicable)
-- scriptMessage: The full script or key message
-- versionsNeeded: Number of versions (integer)
-- sizesNeeded: Array of sizes needed, e.g. ["9x16", "4x5"]
-- priority: One of: Low, Medium, High, Critical ⚠️
-- dropboxLink: URL string or empty string
-- targetAudience: Description of target audience (age, interests, location)
-- requestor: [] (leave empty, filled by user)
-- editorDesigner: [] (leave empty, filled by user)`
-      : `
-- taskName: Short, descriptive task title (no slashes)
-- department: One of: Email, Marketing, Socials, Projects, GT, Default, Adge Data, TV, Branding, Products & Packaging, Amazon, Creative, GIF Design, Website, Ulta
-- productBundle: The product or bundle being designed
-- platform: One of: Meta, Google, Applovin, Newsletter, GT - Meta, Other
-- websiteType: One of: PDP, LP, Other
-- deadline: ISO date string or null if not specified
-- priority: One of: Low, Medium, High, Critical ⚠️
-- amountOfVersions: Number of versions (integer or null)
-- conceptIdea: Description of the visual subject and scene
-- supportingText: Additional text or copy if needed
-- sizes: Array of sizes, e.g. ["1x1", "4x5"]
-- otherSizes: String for custom sizes, or empty string
-- howDidYouCreate: One of: Adge, Upspring, Motion, ChatGPT, or empty string
-- dropbox: URL string or empty string
-- requestor: [] (leave empty, filled by user)
-- editorDesigner: [] (leave empty, filled by user)`;
+// Replace {{PLACEHOLDERS}} in a prompt string with runtime values.
+function fillPlaceholders(template, replacements) {
+  return Object.entries(replacements).reduce(
+    (str, [key, val]) => str.replaceAll(`{{${key}}}`, val ?? ""),
+    template
+  );
+}
 
-  const examples =
+// Builds the final system prompt for a given form-fill agent.
+function buildSystemPrompt(agent, boardType, exampleItems = []) {
+  const fieldDefs = FIELD_DEFINITIONS[boardType] ?? "";
+
+  const skillKnowledge = agent.useSkillKnowledge ? getSkillContent(boardType) : "";
+  const brandKnowledge = agent.useSkillKnowledge ? getBrandKnowledge() : "";
+  const skillSection = (skillKnowledge || brandKnowledge)
+    ? `\n\n---\n\n## BRAND & PRODUCT KNOWLEDGE\n\nYou have deep knowledge of this brand. Use it to generate production-quality content — especially hooks, video concepts, scripts, concept ideas, and task names. Apply the brand voice, product details, and naming conventions from the knowledge below.\n\n${brandKnowledge}${skillKnowledge ? `\n\n---\n\n## CREATIVE SYSTEM KNOWLEDGE\n\n${skillKnowledge}` : ""}\n\n---\n\n`
+    : "";
+
+  const boardExamples =
     exampleItems.length > 0
       ? `\n\nHere are examples of real tasks from this board to guide your style and tone:\n${JSON.stringify(exampleItems.slice(0, 10), null, 2)}`
       : "";
 
-  return `You are a creative marketing task brief assistant. Your job is to fill out structured task brief forms for a marketing team.
-
-When given input, return a JSON object with these fields:
-${fieldDefs}
-
-Rules:
-- Return ONLY valid JSON. No markdown, no explanation, no code fences.
-- If a field cannot be determined from the input, use "" for strings, null for dates/numbers, and [] for arrays.
-- Keep descriptions concise and professional.
-- Match the tone and style of the examples below.${examples}`;
+  return fillPlaceholders(agent.systemPrompt, {
+    FIELD_DEFINITIONS: fieldDefs,
+    SKILL_KNOWLEDGE: skillSection,
+    BOARD_EXAMPLES: boardExamples,
+  });
 }
 
-// Main AI assist function.
-// mode: "autofill" | "generate" | "format"
-// input: the user's rough text
-// boardType: "video" | "design"
-// exampleItems: recent Monday tasks for context
-export async function assistWithTask({ mode, input, boardType, exampleItems }) {
-  const modeInstructions = {
-    autofill: `The user has provided a rough description. Fill in as many fields as you can infer from it.`,
-    generate: `The user has provided a one-line idea. Generate a complete, detailed task brief from it.`,
-    format: `The user has pasted an existing brief. Reformat and restructure it into the proper fields. Preserve the original intent.`,
-  };
+// Generates a formatted HTML brief from resolved form values.
+// formValues: [{ label, value }] — only non-empty, display-ready values.
+export async function generateBrief({ formValues, boardType }) {
+  const agent = AI_AGENTS.briefWriter;
+  const fieldList = formValues.map(({ label, value }) => `${label}: ${value}`).join("\n");
+  const example = agent.examples[boardType] ?? agent.examples.video;
 
-  const userMessage = `${modeInstructions[mode]}\n\nInput:\n${input}`;
+  const scriptSectionsDef = Object.entries(agent.scriptSections || {})
+    .map(([name, { color, description }]) => `- ${name} (${description}): color ${color}`)
+    .join("\n");
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: buildSystemPrompt(boardType, exampleItems),
-    messages: [{ role: "user", content: userMessage }],
+  const system = fillPlaceholders(agent.systemPrompt, {
+    BRIEF_EXAMPLE: example,
+    SCRIPT_SECTIONS: scriptSectionsDef,
   });
 
-  const text = message.content[0].text.trim();
+  const message = await getClient().messages.create({
+    model: agent.model,
+    max_tokens: agent.maxTokens,
+    system,
+    messages: [{ role: "user", content: `Board type: ${boardType}\n\nFilled values:\n${fieldList}` }],
+  });
 
-  // Parse the JSON response. If it fails, return the raw text so the caller can handle it.
+  let html = message.content[0].text.trim();
+  html = html.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return html;
+}
+
+// Maps the mode string from the client to the agent object in aiAgents.js
+const MODE_TO_AGENT = {
+  autofill: AI_AGENTS.autoFill,
+  generate: AI_AGENTS.generateTask,
+  format:   AI_AGENTS.pasteFormat,
+};
+
+// Main AI assist function — powers the form-fill AI panel.
+// mode: "autofill" | "generate" | "format"
+export async function assistWithTask({ mode, input, boardType, exampleItems }) {
+  const agent = MODE_TO_AGENT[mode] ?? AI_AGENTS.autoFill;
+
+  const message = await getClient().messages.create({
+    model: agent.model,
+    max_tokens: agent.maxTokens,
+    system: buildSystemPrompt(agent, boardType, exampleItems),
+    messages: [{ role: "user", content: `${agent.modeInstruction}\n\nInput:\n${input}` }],
+  });
+
+  let text = message.content[0].text.trim();
+  // Strip markdown code fences
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  // Fallback: extract the outermost JSON object in case the model added surrounding text
+  const jsonStart = text.indexOf("{");
+  const jsonEnd = text.lastIndexOf("}");
+  if (jsonStart !== -1 && jsonEnd > jsonStart) {
+    text = text.slice(jsonStart, jsonEnd + 1);
+  }
+
   try {
     return JSON.parse(text);
   } catch {

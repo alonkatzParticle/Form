@@ -4,7 +4,7 @@
 // Returns: JSON matching the VideoTask or DesignTask shape
 
 import express from "express";
-import { assistWithTask } from "../services/aiService.js";
+import { assistWithTask, generateBrief } from "../services/aiService.js";
 
 const router = express.Router();
 
@@ -24,6 +24,23 @@ router.post("/assist", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("AI assist error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Generate a formatted HTML brief from resolved form values.
+// Body: { formValues: [{ label, value }], boardType }
+// Returns: { html: "<h3>…</h3><p>…</p>" }
+router.post("/brief", async (req, res) => {
+  try {
+    const { formValues, boardType } = req.body;
+    if (!formValues || !boardType) {
+      return res.status(400).json({ error: "formValues and boardType are required" });
+    }
+    const html = await generateBrief({ formValues, boardType });
+    res.json({ html });
+  } catch (err) {
+    console.error("AI brief error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

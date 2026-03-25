@@ -18,7 +18,6 @@
             "Special Project (SP)",
             "Retention",
             "Creative",
-            "Social Media",
             "TV",
             "Amazon",
             "Ulta",
@@ -36,7 +35,7 @@
             "Power Shower Set",
             "Ab Firming Cream",
             "Shampoo",
-            "Gravité",
+            "Gravit\u00e9",
             "Face Mask",
             "Face Wash",
             "Body Wash",
@@ -78,7 +77,7 @@
           "type": "text",
           "required": true,
           "hint": "Please don't include \"/\" in the name",
-          "placeholder": "e.g. Face Cream Q2 UGC — 9x16 Versions",
+          "placeholder": "e.g. Face Cream Q2 UGC \u2014 9x16 Versions",
           "mondayColumnId": null,
           "mondayValueType": "item_name"
         },
@@ -113,16 +112,14 @@
           "label": "How did you make this?",
           "type": "select",
           "mondayColumnId": "color_mm1q4zbz",
+          "defaultValue": "Claude",
           "options": [
             "Adge",
             "Upspring",
-            "ChatGPT"
+            "ChatGPT",
+            "Claude"
           ],
-          "section": "Additional Details",
-          "showWhen": {
-            "field": "department",
-            "includes": "Marketing/Media"
-          }
+          "section": "Additional Details"
         },
         {
           "key": "requestor",
@@ -178,25 +175,16 @@
           "type": "textarea",
           "required": true,
           "hint": "Briefly describe overall idea or story for the video",
-          "placeholder": "e.g. Show the product in a morning routine, emphasizing freshness…",
+          "placeholder": "e.g. Show the product in a morning routine, emphasizing freshness\u2026",
           "rows": 4,
           "mondayColumnId": "long_text_mkn8c1ax"
-        },
-        {
-          "key": "hook",
-          "label": "Hook",
-          "type": "text",
-          "hint": "Provide according to versions requested",
-          "placeholder": "e.g. 'You've been washing your face wrong your entire life'",
-          "mondayColumnId": "short_text_mkn8n4bx",
-          "mondayValueType": "short_text"
         },
         {
           "key": "scriptMessage",
           "label": "Script / Message",
           "type": "textarea",
           "hint": "Include link to script if applicable",
-          "placeholder": "Paste full script or key message here…",
+          "placeholder": "Paste full script or key message here\u2026",
           "rows": 5,
           "mondayColumnId": "long_text_Mjj2uK4g",
           "durationEstimator": true
@@ -222,7 +210,7 @@
             "Low",
             "Medium",
             "High",
-            "Critical ⚠️️"
+            "Critical \u26a0\ufe0f\ufe0f"
           ]
         },
         {
@@ -251,14 +239,21 @@
           "label": "DropBox Link",
           "type": "url",
           "hint": "Paste folder link for saving finished videos",
-          "placeholder": "https://www.dropbox.com/…",
+          "placeholder": "https://www.dropbox.com/\u2026",
           "mondayColumnId": "link4__1",
           "mondayValueType": "link",
           "linkText": "DropBox",
           "section": "Additional Details"
         }
       ],
-      "updateTemplate": "<h3><u>Task Brief</u></h3><br><p><b>Product:</b> {{product}}</p><p><b>Type:</b> {{type}}</p><p><b>Platform:</b> {{platform}}</p><p><b>Requestor:</b> {{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"> </span>{{deadline}}</p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{versionsNeeded}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizesNeeded}}</p><p><br></p><h3>Video Concept</h3><p>{{videoConcept}}</p><br><p><b>Hook:</b> {{hook}}</p><p><br></p><p><b>Script / Message:</b>&nbsp;</p><p>{{scriptMessage}}</p><p><br></p><p><b>Dropbox:</b> {{dropboxLink}}</p><p><br></p><p><br></p>"
+      "updateTemplate": "<h3><u>Task Brief</u></h3><br><p><b>Product:</b> {{product}}</p><p><b>Type:</b> {{type}}</p><p><b>Platform:</b> {{platform}}</p><p><b>Requestor:</b> {{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"> </span>{{deadline}}</p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{versionsNeeded}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizesNeeded}}</p><p><br></p><h3>Video Concept</h3><p>{{videoConcept}}</p><br><p><b>Hook:</b> {{hook}}</p><p><br></p><p><b>Script / Message:</b>&nbsp;</p><p>{{scriptMessage}}</p><p><br></p><p><b>Dropbox:</b> {{dropboxLink}}</p><p><br></p><p><br></p>",
+      "autoName": {
+        "segments": [
+          { "field": "product" },
+          { "field": "platform" },
+          { "field": "taskName" }
+        ]
+      }
     },
     {
       "id": "design",
@@ -271,7 +266,7 @@
           "type": "text",
           "required": true,
           "hint": "Please don't include \"/\" in the name",
-          "placeholder": "e.g. Face Cream PDP Banner — Q2",
+          "placeholder": "e.g. Face Cream PDP Banner \u2014 Q2",
           "mondayColumnId": null,
           "mondayValueType": "item_name"
         },
@@ -312,7 +307,7 @@
             "Power Shower Set",
             "Ab Firming Cream",
             "Shampoo",
-            "Gravité",
+            "Gravit\u00e9",
             "Face Mask",
             "Face Wash",
             "Body Wash",
@@ -414,7 +409,7 @@
             "Low",
             "Medium",
             "High",
-            "Critical ⚠️️"
+            "Critical \u26a0\ufe0f\ufe0f"
           ]
         },
         {
@@ -432,7 +427,7 @@
           "type": "textarea",
           "required": true,
           "hint": "Describe visual subject and scene",
-          "placeholder": "e.g. Flat-lay hero shot of the face cream surrounded by botanicals…",
+          "placeholder": "e.g. Flat-lay hero shot of the face cream surrounded by botanicals\u2026",
           "rows": 4,
           "mondayColumnId": "long_textpvqldjpg"
         },
@@ -497,13 +492,20 @@
           "label": "Dropbox",
           "type": "url",
           "hint": "For uploading finished project",
-          "placeholder": "https://www.dropbox.com/…",
+          "placeholder": "https://www.dropbox.com/\u2026",
           "mondayColumnId": "link0__1",
           "mondayValueType": "link",
           "linkText": "Dropbox"
         }
       ],
-      "updateTemplate": "<h2><u>Task Brief</u></h2><p><br></p><p><b>Product:</b>&nbsp;{{productBundle}}</p><p><b>Platform:</b>&nbsp;{{platform}}</p><p><b>Requestor:</b>&nbsp;{{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">&nbsp;{{deadline}}</span></p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{amountOfVersions}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizes}}&nbsp;{{otherSizes}}</p><p><br></p><h3><span style=\"font-size: 1rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Concept</span></h3><p>{{conceptIdea}}</p><p></p><p><br></p><p><b>Dropbox:</b>&nbsp;{{dropbox}}</p><p><br></p><p><br></p>"
+      "updateTemplate": "<h2><u>Task Brief</u></h2><p><br></p><p><b>Product:</b>&nbsp;{{productBundle}}</p><p><b>Platform:</b>&nbsp;{{platform}}</p><p><b>Requestor:</b>&nbsp;{{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">&nbsp;{{deadline}}</span></p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{amountOfVersions}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizes}}&nbsp;{{otherSizes}}</p><p><br></p><h3><span style=\"font-size: 1rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Concept</span></h3><p>{{conceptIdea}}</p><p></p><p><br></p><p><b>Dropbox:</b>&nbsp;{{dropbox}}</p><p><br></p><p><br></p>",
+      "autoName": {
+        "segments": [
+          { "field": "productBundle" },
+          { "field": "platform" },
+          { "field": "taskName" }
+        ]
+      }
     }
   ]
 }

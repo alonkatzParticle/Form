@@ -12,6 +12,7 @@ const MODES = [
 ];
 
 export default function AIPanel({ boardType, exampleItems = [], onResult }) {
+  const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("autofill");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,42 +42,52 @@ export default function AIPanel({ boardType, exampleItems = [], onResult }) {
   }
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <div>
-          <h2>AI Assistant</h2>
-          <p className="card-subtitle">Let AI help you fill the form</p>
+    <div className={`card ai-panel-card${open ? " ai-panel-card--open" : ""}`}>
+      <button
+        type="button"
+        className="ai-panel-toggle"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="ai-panel-toggle-label">
+          <span className="ai-panel-icon">✦</span>
+          AI Assistant
+        </span>
+        <span className="ai-panel-toggle-hint">
+          {open ? "" : "Auto-fill or generate a brief with AI"}
+        </span>
+        <span className="ai-panel-chevron">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="card-body ai-panel">
+          <div className="ai-tabs">
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                className={`ai-tab ${mode === m.id ? "active" : ""}`}
+                onClick={() => setMode(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          <p className="hint">{activeMode.hint}</p>
+
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type or paste here…"
+            rows={5}
+          />
+
+          <button className="btn-ai" onClick={handleSubmit} disabled={loading || !input.trim()}>
+            {loading ? "Thinking…" : "Fill Form with AI"}
+          </button>
+
+          {error && <div className="msg-error">{error}</div>}
         </div>
-      </div>
-      <div className="card-body ai-panel">
-        {/* Mode tabs */}
-        <div className="ai-tabs">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              className={`ai-tab ${mode === m.id ? "active" : ""}`}
-              onClick={() => setMode(m.id)}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-
-        <p className="hint">{activeMode.hint}</p>
-
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type or paste here…"
-          rows={5}
-        />
-
-        <button className="btn-ai" onClick={handleSubmit} disabled={loading || !input.trim()}>
-          {loading ? "Thinking…" : "Fill Form with AI"}
-        </button>
-
-        {error && <div className="msg-error">{error}</div>}
-      </div>
+      )}
     </div>
   );
 }

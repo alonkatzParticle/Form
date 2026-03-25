@@ -1,6 +1,7 @@
 {
   "name": "task-creator",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
