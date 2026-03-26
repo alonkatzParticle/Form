@@ -78,11 +78,18 @@ export default function AIPanel({ boardType, exampleItems = [], onResult, taskCo
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type or paste here…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (!loading && input.trim()) handleSubmit();
+              }
+            }}
+            placeholder="Type or paste here… (Enter to submit, Shift+Enter for new line)"
             rows={5}
           />
 
           <button className="btn-ai" onClick={handleSubmit} disabled={loading || !input.trim()}>
+            {loading && <span className="btn-spinner" />}
             {loading ? "Thinking…" : "Fill Form with AI"}
           </button>
 

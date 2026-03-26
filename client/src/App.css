@@ -925,6 +925,22 @@ body {
   cursor: not-allowed;
 }
 
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+.btn-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btn-spin 0.55s linear infinite;
+  vertical-align: middle;
+  margin-right: 7px;
+  flex-shrink: 0;
+}
+
 /* ─── Inline duration estimator (lives below the Script field) ───────────────── */
 .inline-duration {
   display: flex;

@@ -889,6 +889,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
       {submitError && <div className="msg-error">{submitError}</div>}
 
       <button type="submit" className="btn-submit" disabled={generatingBrief}>
+        {generatingBrief && <span className="btn-spinner" style={{borderColor:"rgba(255,255,255,0.35)", borderTopColor:"#fff"}} />}
         {generatingBrief ? "Generating Brief…" : "Review Brief →"}
       </button>
     </form>
