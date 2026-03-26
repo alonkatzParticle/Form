@@ -1,0 +1,152 @@
+{
+  "video": {
+    "department": [
+      "Marketing/Media",
+      "Creative",
+      "TV",
+      "Website",
+      "Special Project (SP)",
+      "Socials",
+      "Retention",
+      "Amazon"
+    ],
+    "product": [
+      "Face Cream",
+      "Not a Product Task",
+      "Anti Gray Serum",
+      "Sunscreen",
+      "Shampoo",
+      "Shaving Gel",
+      "-",
+      "Power Shower Set",
+      "Neck Cream",
+      "Deodorant",
+      "Hand Cream",
+      "Gravité",
+      "Test Product",
+      "Multiple Products",
+      "Lip Balm"
+    ],
+    "platform": [
+      "Meta"
+    ],
+    "howDidYouMake": [
+      "Upspring",
+      "Claude"
+    ],
+    "requestor": [
+      "Aviad Eilam",
+      "Tom Tabaritzi",
+      "Anton Shpakovskiy",
+      "Lilian Krumholz",
+      "Alon Katz",
+      "Omer Barak",
+      "Tomer Wilf Lezmy",
+      "Nicole Luvich",
+      "Samantha Metta",
+      "Elinor Yazdi Shfaim",
+      "Jonathan",
+      "Shimon Finkelstein"
+    ],
+    "editorDesigner": [
+      "matan shapira",
+      "Yael Ben-Dor",
+      "Omri Tabachnik",
+      "Isaac Yashar"
+    ],
+    "type": [
+      "Script (<1 min)",
+      "Script - Short Form (<20 seconds)",
+      "UGC/Creator",
+      "Upload B-Rolls",
+      "Iterations/Cuts/Edits",
+      "AI Creator",
+      "GIF - New Static",
+      "AI Project",
+      "Long Form (+1 min)",
+      "Special Project"
+    ],
+    "priority": [
+      "Medium",
+      "Low",
+      "High"
+    ],
+    "sizesNeeded": [
+      "4x5",
+      "9x16",
+      "16x9",
+      "Other",
+      "1x1"
+    ]
+  },
+  "design": {
+    "department": [
+      "Marketing",
+      "Website",
+      "GIF Design",
+      "Projects",
+      "Socials",
+      "Products & Packaging"
+    ],
+    "productBundle": [
+      "Face Cream",
+      "Multiple Products",
+      "Shampoo",
+      "Test Product",
+      "Deodorant",
+      "Not a Product Task",
+      "Hair Gummies",
+      "Shaving Gel",
+      "Gravité",
+      "Sunscreen",
+      "Hair Revival Kit",
+      "Advanced Bundle",
+      "Power Shower Set",
+      "Bold Moves Bundle",
+      "Instant Eye Firming Cream"
+    ],
+    "platform": [
+      "Meta",
+      "Other",
+      "Newsletter",
+      "Gentleman Today"
+    ],
+    "websiteType": [
+      "Other",
+      "PDP"
+    ],
+    "requestor": [
+      "Aviad Eilam",
+      "Anton Shpakovskiy",
+      "Tom Tabaritzi",
+      "Lilian Krumholz",
+      "Nicole Luvich",
+      "Omer Barak",
+      "Tomer Wilf Lezmy",
+      "Alon Katz",
+      "Elinor Yazdi Shfaim",
+      "Jonathan",
+      "Samantha Metta",
+      "Mor Ben Tal"
+    ],
+    "editorDesigner": [
+      "Natalie Abesdid",
+      "Dan Lowenstein"
+    ],
+    "priority": [
+      "Medium",
+      "High",
+      "Low"
+    ],
+    "sizes": [
+      "1x1",
+      "9x16",
+      "Other",
+      "4x5"
+    ],
+    "howDidYouCreate": [
+      "ChatGPT",
+      "Upspring"
+    ]
+  }
+}
