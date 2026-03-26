@@ -184,10 +184,10 @@ EXAMPLE OUTPUT:
 <p>A fast-paced, animated explainer that dives into the science behind Particle's Anti-Gray Serum, demystifying how it naturally restores hair color + UGC content &amp; transformations</p>
 
 <h3>Script</h3>
-<p><span style="color:#E8412A"><b>Hook:</b> Going gray isn't just aging — it's biology. Inside your hair follicles, there's a pigment called melanin — it's what gives your hair its color.</span><br/><span style="color:#D97706"><b>Problem:</b> Over time, your body produces less melanin... and boom — gray hair. Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A"><b>Solution:</b> Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED"><b>Social Proof:</b> Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB"><b>CTA:</b> Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>
+<p><span style="color:#E8412A">Going gray isn't just aging — it's biology. Inside your hair follicles, there's a pigment called melanin — it's what gives your hair its color.</span><br/><span style="color:#D97706">Over time, your body produces less melanin... and boom — gray hair. Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A">Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED">Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB">Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>
 
 <h3>Visuals</h3>
-<p><span style="color:#E8412A"><b>Hook:</b> Close-up of a man running his hand through his hair in the mirror, noticing the gray.</span><br/><span style="color:#D97706"><b>Problem:</b> Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic.</span><br/><span style="color:#16A34A"><b>Solution:</b> Product hero shot, dropper applying serum to scalp.</span><br/><span style="color:#7C3AED"><b>Social Proof:</b> Real before/after photos, five-star reviews stacking on screen.</span><br/><span style="color:#2563EB"><b>CTA:</b> Clean white background, bottle center frame, URL bold underneath.</span></p>`,
+<p><span style="color:#E8412A">Close-up of a man running his hand through his hair in the mirror, noticing the gray.</span><br/><span style="color:#D97706">Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic.</span><br/><span style="color:#16A34A">Product hero shot, dropper applying serum to scalp.</span><br/><span style="color:#7C3AED">Real before/after photos, five-star reviews stacking on screen.</span><br/><span style="color:#2563EB">Clean white background, bottle center frame, URL bold underneath.</span></p>`,
 
       design: `EXAMPLE INPUT:
 Product/Bundle: Hand Cream
@@ -218,7 +218,7 @@ FORMATTING RULES:
 5. Short metadata fields first, then creative sections.
 
 SCRIPT & VISUALS COLOR CODING:
-For the Script/Message and Visuals fields, output each section as a single <span style="color:COLOR"> wrapping ALL the text for that section (multiple sentences joined together). Use <b>Label:</b> as the prefix inside the span. Connect sections with <br/> only — never use separate <p> tags or blank lines between sections within the same field.
+For the Script/Message and Visuals fields, output each section as a single <span style="color:COLOR"> wrapping ALL the text for that section (multiple sentences joined). No labels — the color alone identifies the section. Connect sections with <br/> only — never use separate <p> tags or blank lines between sections within the same field.
 Section colors: Hook=#E8412A, Problem=#D97706, Solution=#16A34A, Social Proof=#7C3AED, CTA=#2563EB.
 Only include sections that have content. Follow the example output exactly.
 
