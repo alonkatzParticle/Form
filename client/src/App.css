@@ -617,6 +617,38 @@ body {
   margin-top: 8px;
 }
 
+/* ─── Brief title row ────────────────────────────────────────────────────────── */
+.brief-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.brief-title-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.brief-title-input {
+  flex: 1;
+  padding: 9px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.brief-title-input:focus {
+  outline: none;
+  border-color: var(--purple);
+}
+
 /* ─── Brief preview ──────────────────────────────────────────────────────────── */
 .brief-preview-wrap {
   max-width: 760px;

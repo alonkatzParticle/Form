@@ -26,6 +26,7 @@ function SuccessScreen({ taskName, boardLabel, taskUrl, onReset }) {
 
 export default function BriefPreview({ board, task, itemName, columnValues, briefHtml, onBack, onSuccess }) {
   const editorRef = useRef(null);
+  const [editableItemName, setEditableItemName] = useState(itemName);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [createdTaskName, setCreatedTaskName] = useState(null);
@@ -47,7 +48,7 @@ export default function BriefPreview({ board, task, itemName, columnValues, brie
       // Step 1 — create the item
       const { data } = await axios.post("/api/monday/create-item", {
         boardId: board.boardId,
-        itemName,
+        itemName: editableItemName || itemName,
         columnValues,
       });
       const itemId = data?.create_item?.id;
@@ -88,7 +89,7 @@ export default function BriefPreview({ board, task, itemName, columnValues, brie
       // Clear the autosaved draft for this board
       try { localStorage.removeItem(`task_draft_${board.id}`); } catch {}
 
-      setCreatedTaskName(itemName);
+      setCreatedTaskName(editableItemName || itemName);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create task");
     } finally {
@@ -116,6 +117,17 @@ export default function BriefPreview({ board, task, itemName, columnValues, brie
           ← Back to Form
         </button>
         <h2 className="brief-preview-title">Review Brief</h2>
+      </div>
+
+      <div className="brief-title-row">
+        <label className="brief-title-label">Task Title</label>
+        <input
+          className="brief-title-input"
+          type="text"
+          value={editableItemName}
+          onChange={(e) => setEditableItemName(e.target.value)}
+          placeholder="Task title…"
+        />
       </div>
 
       <div className="card">
