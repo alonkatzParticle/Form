@@ -29,7 +29,6 @@ export default function AIPanel({ boardType, onResult, taskContext = {} }) {
         mode,
         input,
         boardType,
-        exampleItems,
         taskContext,
       });
       // Pass the AI-filled task object up to the parent form
