@@ -6,7 +6,7 @@
 // Stores formatted summaries in memory — no disk I/O on each AI request.
 
 import { getSettings } from "./settingsService.js";
-import { mondayQuery } from "./mondayService.js";
+import { getExampleItems } from "./mondayService.js";
 
 const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const MAX_EXAMPLES        = 10;
@@ -42,23 +42,9 @@ const FIELD_MAP = {
 };
 
 async function fetchBoardExamples(boardId, boardType) {
-  const query = `
-    query GetItems($boardId: ID!) {
-      boards(ids: [$boardId]) {
-        items_page(limit: 100) {
-          items {
-            name
-            column_values { id text }
-          }
-        }
-      }
-    }
-  `;
-
   let items;
   try {
-    const data = await mondayQuery(query, { boardId });
-    items = data.boards?.[0]?.items_page?.items || [];
+    items = await getExampleItems(boardId, 100);
   } catch (err) {
     console.warn(`[recentTasks] Failed to fetch ${boardType} board:`, err.message);
     return [];
