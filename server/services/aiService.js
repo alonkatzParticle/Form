@@ -97,13 +97,17 @@ function getTargetRange(task) {
   return { min: 28, max: 47 }; // default 30-45s with small buffer
 }
 
+// Average spoken words per second — used to give Claude a concrete word-count target.
+const WORDS_PER_SECOND = 2.5;
+
 // Trims or expands a script to fit within the target range using ElevenLabs + Claude.
-// Max 2 iterations. Fails gracefully — returns the last script + duration.
+// Tells Claude the exact word count to aim for so it knows how aggressively to cut.
+// Max 3 iterations. Fails gracefully — returns the last script + duration.
 export async function trimScriptToTarget(script, targetRange) {
   let current = script;
   let lastSeconds = null;
 
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < 3; i++) {
     let seconds;
     try {
       ({ estimatedSeconds: seconds } = await estimateScriptDuration(current));
@@ -115,13 +119,21 @@ export async function trimScriptToTarget(script, targetRange) {
     if (seconds >= targetRange.min && seconds <= targetRange.max) break;
 
     const direction = seconds > targetRange.max ? "shorten" : "lengthen";
-    const targetDesc = `${targetRange.min}–${targetRange.max} seconds`;
+    const targetMid = Math.round((targetRange.min + targetRange.max) / 2);
+
+    // Give Claude a concrete word-count target so it knows exactly how much to cut/add
+    const currentWords = current.trim().split(/\s+/).length;
+    const targetWords  = Math.round(targetMid * WORDS_PER_SECOND);
+    const pctChange    = Math.round(Math.abs(targetWords - currentWords) / currentWords * 100);
+    const action       = direction === "shorten"
+      ? `Cut it from ~${currentWords} words down to ~${targetWords} words (remove ~${pctChange}% of the content). Remove whole sentences — don't just trim words.`
+      : `Expand it from ~${currentWords} words up to ~${targetWords} words (add ~${pctChange}% more content). Add detail to existing sections.`;
 
     const msg = await getClient().messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
-      system: `You are editing a video ad script for Particle for Men. ${direction === "shorten" ? "Shorten" : "Lengthen"} the script so it reads in ${targetDesc} of spoken audio. Keep the natural Hook→Problem→Solution→Social Proof→CTA flow. Write clean spoken words only — no labels, no directions. Return ONLY the revised script text, nothing else.`,
-      messages: [{ role: "user", content: `Current script (${seconds}s, target ${targetDesc}):\n\n${current}` }],
+      system: `You are editing a video ad script for Particle for Men. The script needs to read in exactly ${targetMid} seconds of spoken audio (acceptable range: ${targetRange.min}–${targetRange.max}s). ${action} Keep the natural Hook→Problem→Solution→Social Proof→CTA flow. Write clean spoken words only — no section labels, no directions. Return ONLY the revised script text, nothing else.`,
+      messages: [{ role: "user", content: `Current script (${seconds}s, ${currentWords} words — target ${targetMid}s / ~${targetWords} words):\n\n${current}` }],
     });
     current = msg.content[0].text.trim();
   }
