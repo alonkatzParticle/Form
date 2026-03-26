@@ -124,9 +124,9 @@ function getTargetRange(task) {
 }
 
 // Trims or expands a script to hit a target duration.
-// Strategy: calibrate speaking rate from a real ElevenLabs measurement, compute exact
-// target word count, ask Claude to hit it. Re-measures and retries once if still off.
-// Total: up to 3 ElevenLabs calls + 2 Claude calls max.
+// Strategy: measure with ElevenLabs, tell Claude the exact current seconds and how many
+// more to cut/add — no word count math. Repeat up to 3 times with fresh measurements.
+// Total: up to 4 ElevenLabs calls + 3 Claude calls max.
 export async function trimScriptToTarget(script, targetRange) {
   const targetMid = Math.round((targetRange.min + targetRange.max) / 2);
 
@@ -135,60 +135,43 @@ export async function trimScriptToTarget(script, targetRange) {
     return estimatedSeconds;
   }
 
-  async function rewrite(current, currentSecs, tWords, direction) {
-    const reductionPct = Math.abs(currentSecs - targetMid) / currentSecs;
-    const aggression = reductionPct > 0.25
-      ? " This is a large change — cut (or add) entire sentences and whole sections aggressively. Do not just trim words."
-      : "";
-    const action = direction === "shorten"
-      ? `Shorten it to exactly ${tWords} words. Remove whole sentences to hit the count.${aggression}`
-      : `Expand it to exactly ${tWords} words. Add more detail to existing sections.${aggression}`;
-    const currentWords = current.trim().split(/\s+/).length;
+  async function rewrite(current, currentSecs) {
+    const delta     = Math.abs(currentSecs - targetMid);
+    const direction = currentSecs > targetRange.max ? "shorten" : "lengthen";
+    const isLarge   = delta / currentSecs > 0.2;
+
+    const instruction = direction === "shorten"
+      ? `This script is ${currentSecs} seconds long. Cut it down to ${targetMid} seconds — that means removing about ${delta} seconds of spoken content.${isLarge ? " This is a significant cut. Remove entire sentences and whole sections. Be aggressive — do not just trim individual words." : " Remove the least important sentences."}`
+      : `This script is ${currentSecs} seconds long. Expand it to ${targetMid} seconds — that means adding about ${delta} seconds of spoken content. Expand existing sections with more detail.`;
+
     const msg = await getClient().messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
-      system: `You are editing a video ad script for Particle for Men. ${action} Keep the Hook→Problem→Solution→Social Proof→CTA flow. Write clean spoken words only — no section labels, no directions. Return ONLY the revised script. Word count must be exactly ${tWords} words (±3 max).`,
-      messages: [{ role: "user", content: `Current script (${currentSecs}s, ${currentWords} words → target ${targetMid}s, ${tWords} words):\n\n${current}` }],
+      system: `You are editing a video ad script for Particle for Men. ${instruction} Keep the Hook→Problem→Solution→Social Proof→CTA flow. Write clean spoken words only — no section labels, no directions. Return ONLY the revised script, nothing else.`,
+      messages: [{ role: "user", content: current }],
     });
     return msg.content[0].text.trim();
   }
 
-  // Step 1 — measure current
-  let currentSeconds;
-  try { currentSeconds = await measure(script); }
+  // Measure current
+  let current = script;
+  let currentSecs;
+  try { currentSecs = await measure(current); }
   catch { return { script, estimatedSeconds: null }; }
 
-  if (currentSeconds >= targetRange.min && currentSeconds <= targetRange.max) {
-    return { script, estimatedSeconds: currentSeconds };
+  // Up to 3 passes
+  for (let i = 0; i < 3; i++) {
+    if (currentSecs >= targetRange.min && currentSecs <= targetRange.max) break;
+
+    current = await rewrite(current, currentSecs);
+
+    let measured = null;
+    try { measured = await measure(current); }
+    catch { break; }
+    currentSecs = measured;
   }
 
-  const direction = currentSeconds > targetRange.max ? "shorten" : "lengthen";
-
-  // Step 2 — first pass: calibrate rate, compute target word count, rewrite
-  const words1      = script.trim().split(/\s+/).length;
-  const secsPerWord = currentSeconds / words1;
-  const targetWords = Math.round(targetMid / secsPerWord);
-  const revised1    = await rewrite(script, currentSeconds, targetWords, direction);
-
-  let seconds1;
-  try { seconds1 = await measure(revised1); }
-  catch { return { script: revised1, estimatedSeconds: null }; }
-
-  if (seconds1 >= targetRange.min && seconds1 <= targetRange.max) {
-    return { script: revised1, estimatedSeconds: seconds1 };
-  }
-
-  // Step 3 — second pass: re-calibrate from the first result and try again
-  const words2       = revised1.trim().split(/\s+/).length;
-  const secsPerWord2 = seconds1 / words2;
-  const targetWords2 = Math.round(targetMid / secsPerWord2);
-  const revised2     = await rewrite(revised1, seconds1, targetWords2, direction);
-
-  let seconds2 = null;
-  try { seconds2 = await measure(revised2); }
-  catch { /* silent */ }
-
-  return { script: revised2, estimatedSeconds: seconds2 };
+  return { script: current, estimatedSeconds: currentSecs };
 }
 
 // Maps the mode string from the client to the agent object in aiAgents.js
