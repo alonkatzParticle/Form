@@ -77,7 +77,7 @@ export async function generateBrief({ formValues, boardType }) {
     const legendItems = Object.entries(sections)
       .map(([name, { color }]) => `<span style="color:${color};font-weight:700;">■</span> ${name}`)
       .join(" &nbsp; ");
-    const legend = `<p style="font-size:11px;margin:2px 0 6px 0;opacity:0.8;">${legendItems}</p>`;
+    const legend = `<p style="font-size:14px;margin:2px 0 10px 0;">${legendItems}</p>`;
 
     // Inject legend after Script heading
     if (html.includes("Script")) {

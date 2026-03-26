@@ -17,6 +17,17 @@ import elevenLabsRoutes from "./routes/elevenlabs.js";
 import settingsRoutes from "./routes/settings.js";
 import autoRenameRoutes from "./routes/autoRename.js";
 import wednesdayRoutes from "./routes/wednesday.js";
+import { refreshAllBoards } from "./services/frequencyService.js";
+import { getSettings } from "./services/settingsService.js";
+import { startRecentTasksRefresh } from "./services/recentTasksService.js";
+import { ensureTable } from "./services/dbCacheService.js";
+
+// Fire background refreshes on cold start (non-blocking — don't await).
+// On Vercel each cold start is a fresh instance; this populates the in-memory
+// caches so dropdowns are frequency-sorted and AI examples are up to date.
+ensureTable().catch(() => {});
+refreshAllBoards(getSettings()).catch(() => {});
+startRecentTasksRefresh();
 
 const app = express();
 
