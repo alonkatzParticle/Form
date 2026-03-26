@@ -138,12 +138,11 @@ export async function trimScriptToTarget(script, targetRange) {
     current = msg.content[0].text.trim();
   }
 
-  // Final estimate after last edit (or first if we exited early)
-  if (lastSeconds === null) {
-    try {
-      ({ estimatedSeconds: lastSeconds } = await estimateScriptDuration(current));
-    } catch { /* silent */ }
-  }
+  // Always re-measure the final script so the returned duration reflects what Claude
+  // actually produced — not the measurement from before the last edit.
+  try {
+    ({ estimatedSeconds: lastSeconds } = await estimateScriptDuration(current));
+  } catch { /* silent — return last known measurement */ }
 
   return { script: current, estimatedSeconds: lastSeconds };
 }
