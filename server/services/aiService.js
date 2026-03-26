@@ -124,54 +124,71 @@ function getTargetRange(task) {
 }
 
 // Trims or expands a script to hit a target duration.
-// Strategy:
-//   1. Measure current script once with ElevenLabs → get real duration + calibrate speaking rate
-//   2. Calculate exact target word count using that calibrated rate (avoids hardcoded assumptions)
-//   3. One Claude call — rewrite to exactly that word count
-//   4. One final ElevenLabs measure to confirm
-// Total: 2 ElevenLabs calls + 1 Claude call. Fast and accurate.
+// Strategy: calibrate speaking rate from a real ElevenLabs measurement, compute exact
+// target word count, ask Claude to hit it. Re-measures and retries once if still off.
+// Total: up to 3 ElevenLabs calls + 2 Claude calls max.
 export async function trimScriptToTarget(script, targetRange) {
   const targetMid = Math.round((targetRange.min + targetRange.max) / 2);
 
-  // Step 1 — measure current duration
-  let currentSeconds;
-  try {
-    ({ estimatedSeconds: currentSeconds } = await estimateScriptDuration(script));
-  } catch {
-    // ElevenLabs unavailable — return script unchanged
-    return { script, estimatedSeconds: null };
+  async function measure(text) {
+    const { estimatedSeconds } = await estimateScriptDuration(text);
+    return estimatedSeconds;
   }
 
-  // Already on target — nothing to do
+  async function rewrite(current, currentSecs, tWords, direction) {
+    const reductionPct = Math.abs(currentSecs - targetMid) / currentSecs;
+    const aggression = reductionPct > 0.25
+      ? " This is a large change — cut (or add) entire sentences and whole sections aggressively. Do not just trim words."
+      : "";
+    const action = direction === "shorten"
+      ? `Shorten it to exactly ${tWords} words. Remove whole sentences to hit the count.${aggression}`
+      : `Expand it to exactly ${tWords} words. Add more detail to existing sections.${aggression}`;
+    const currentWords = current.trim().split(/\s+/).length;
+    const msg = await getClient().messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1024,
+      system: `You are editing a video ad script for Particle for Men. ${action} Keep the Hook→Problem→Solution→Social Proof→CTA flow. Write clean spoken words only — no section labels, no directions. Return ONLY the revised script. Word count must be exactly ${tWords} words (±3 max).`,
+      messages: [{ role: "user", content: `Current script (${currentSecs}s, ${currentWords} words → target ${targetMid}s, ${tWords} words):\n\n${current}` }],
+    });
+    return msg.content[0].text.trim();
+  }
+
+  // Step 1 — measure current
+  let currentSeconds;
+  try { currentSeconds = await measure(script); }
+  catch { return { script, estimatedSeconds: null }; }
+
   if (currentSeconds >= targetRange.min && currentSeconds <= targetRange.max) {
     return { script, estimatedSeconds: currentSeconds };
   }
 
-  // Step 2 — calibrate speaking rate from the actual measurement, then compute target word count
-  const currentWords  = script.trim().split(/\s+/).length;
-  const secsPerWord   = currentSeconds / currentWords;          // calibrated to this script + voice
-  const targetWords   = Math.round(targetMid / secsPerWord);
-  const direction     = currentSeconds > targetRange.max ? "shorten" : "lengthen";
-  const action        = direction === "shorten"
-    ? `Rewrite it to be exactly ${targetWords} words. Remove whole sentences to hit the count — don't just shave words.`
-    : `Rewrite it to be exactly ${targetWords} words. Expand existing sections with more detail to hit the count.`;
+  const direction = currentSeconds > targetRange.max ? "shorten" : "lengthen";
 
-  // Step 3 — one Claude call with a precise word count target
-  const msg = await getClient().messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: `You are editing a video ad script for Particle for Men. ${action} Keep the natural Hook→Problem→Solution→Social Proof→CTA flow. Write clean spoken words only — no section labels, no directions. Return ONLY the revised script, nothing else. Word count must be exactly ${targetWords} words (±3 words maximum).`,
-    messages: [{ role: "user", content: `Current script (${currentSeconds}s, ${currentWords} words → target ${targetMid}s, ${targetWords} words):\n\n${script}` }],
-  });
-  const revised = msg.content[0].text.trim();
+  // Step 2 — first pass: calibrate rate, compute target word count, rewrite
+  const words1      = script.trim().split(/\s+/).length;
+  const secsPerWord = currentSeconds / words1;
+  const targetWords = Math.round(targetMid / secsPerWord);
+  const revised1    = await rewrite(script, currentSeconds, targetWords, direction);
 
-  // Step 4 — final measurement to confirm and return accurate duration
-  let finalSeconds = null;
-  try {
-    ({ estimatedSeconds: finalSeconds } = await estimateScriptDuration(revised));
-  } catch { /* silent */ }
+  let seconds1;
+  try { seconds1 = await measure(revised1); }
+  catch { return { script: revised1, estimatedSeconds: null }; }
 
-  return { script: revised, estimatedSeconds: finalSeconds };
+  if (seconds1 >= targetRange.min && seconds1 <= targetRange.max) {
+    return { script: revised1, estimatedSeconds: seconds1 };
+  }
+
+  // Step 3 — second pass: re-calibrate from the first result and try again
+  const words2       = revised1.trim().split(/\s+/).length;
+  const secsPerWord2 = seconds1 / words2;
+  const targetWords2 = Math.round(targetMid / secsPerWord2);
+  const revised2     = await rewrite(revised1, seconds1, targetWords2, direction);
+
+  let seconds2 = null;
+  try { seconds2 = await measure(revised2); }
+  catch { /* silent */ }
+
+  return { script: revised2, estimatedSeconds: seconds2 };
 }
 
 // Maps the mode string from the client to the agent object in aiAgents.js
