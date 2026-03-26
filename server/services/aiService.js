@@ -23,11 +23,12 @@ function fillPlaceholders(template, replacements) {
 function buildSystemPrompt(agent, boardType, exampleItems = []) {
   const fieldDefs = FIELD_DEFINITIONS[boardType] ?? "";
 
-  const skillKnowledge = agent.useSkillKnowledge ? getSkillContent(boardType) : "";
-  // Cap brand knowledge for form-fill agents — full file is ~10k tokens and hits rate limits.
-  // 5,000 chars covers brand overview, voice, and key product summaries.
+  // Cap skill + brand content — full files are 10k–20k tokens and slow inference significantly.
+  // 6,000 chars of skill examples + 4,000 chars of brand knowledge covers the most useful signal.
+  const rawSkill = agent.useSkillKnowledge ? getSkillContent(boardType) : "";
+  const skillKnowledge = rawSkill.length > 6000 ? rawSkill.slice(0, 6000) + "\n\n[…truncated]" : rawSkill;
   const rawBrand = agent.useSkillKnowledge ? getBrandKnowledge() : "";
-  const brandKnowledge = rawBrand.length > 5000 ? rawBrand.slice(0, 5000) + "\n\n[…truncated for brevity]" : rawBrand;
+  const brandKnowledge = rawBrand.length > 4000 ? rawBrand.slice(0, 4000) + "\n\n[…truncated]" : rawBrand;
   const skillSection = (skillKnowledge || brandKnowledge)
     ? `\n\n---\n\n## BRAND & PRODUCT KNOWLEDGE\n\nYou have deep knowledge of this brand. Use it to generate production-quality content — especially hooks, video concepts, scripts, concept ideas, and task names. Apply the brand voice, product details, and naming conventions from the knowledge below.\n\n${brandKnowledge}${skillKnowledge ? `\n\n---\n\n## CREATIVE SYSTEM KNOWLEDGE\n\n${skillKnowledge}` : ""}\n\n---\n\n`
     : "";
