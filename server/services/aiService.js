@@ -99,7 +99,7 @@ function getTargetRange(task) {
 
 // Trims or expands a script to fit within the target range using ElevenLabs + Claude.
 // Max 2 iterations. Fails gracefully — returns the last script + duration.
-async function trimScriptToTarget(script, targetRange) {
+export async function trimScriptToTarget(script, targetRange) {
   let current = script;
   let lastSeconds = null;
 

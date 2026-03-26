@@ -4,7 +4,7 @@
 // Returns: JSON matching the VideoTask or DesignTask shape
 
 import express from "express";
-import { assistWithTask, generateBrief } from "../services/aiService.js";
+import { assistWithTask, generateBrief, trimScriptToTarget } from "../services/aiService.js";
 
 const router = express.Router();
 
@@ -41,6 +41,34 @@ router.post("/brief", async (req, res) => {
     res.json({ html });
   } catch (err) {
     console.error("AI brief error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Trim or expand a script to a specific target duration using ElevenLabs + Claude.
+// Body: { script, targetDuration, type }
+// Returns: { script, estimatedSeconds }
+router.post("/trim-script", async (req, res) => {
+  try {
+    const { script, targetDuration, type } = req.body;
+    if (!script) return res.status(400).json({ error: "script is required" });
+
+    // Build target range from user's specified duration or video type
+    let targetRange;
+    if (targetDuration && targetDuration > 0) {
+      targetRange = { min: targetDuration - 4, max: targetDuration + 4 };
+    } else if (type?.includes("Short Form")) {
+      targetRange = { min: 12, max: 22 };
+    } else if (type?.includes("Long Form")) {
+      targetRange = { min: 60, max: 120 };
+    } else {
+      targetRange = { min: 28, max: 47 };
+    }
+
+    const result = await trimScriptToTarget(script, targetRange);
+    res.json(result);
+  } catch (err) {
+    console.error("Trim script error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

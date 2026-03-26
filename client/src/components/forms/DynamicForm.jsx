@@ -878,6 +878,8 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
                 autoResult={aiDuration}
                 targetDuration={task.targetDuration}
                 onTargetChange={(val) => setField("targetDuration", val)}
+                onScriptChange={(val) => setField(group.field.key, val)}
+                videoType={task.type || ""}
               />
             )}
           </div>

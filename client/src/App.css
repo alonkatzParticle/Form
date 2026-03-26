@@ -904,22 +904,28 @@ body {
 .inline-duration-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.duration-target-label {
+/* "Set video duration" — plain div so global label CSS doesn't interfere */
+.duration-target-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.duration-target-label {
   font-size: 0.82rem;
   color: var(--muted);
   font-weight: 500;
   white-space: nowrap;
+  margin: 0;
+  padding: 0;
 }
 
 .duration-target-input {
-  width: 64px;
+  width: 60px;
   padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -939,6 +945,29 @@ body {
   color: var(--muted);
 }
 
+/* "Change duration of Script" button */
+.btn-trim {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--purple);
+  background: transparent;
+  color: var(--purple);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-trim:hover:not(:disabled) {
+  background: var(--purple-light);
+}
+
+.btn-trim:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .duration-status {
   font-size: 0.78rem;
   font-weight: 600;
@@ -948,6 +977,69 @@ body {
 
 .duration-status--ok  { background: #dcfce7; color: #16a34a; }
 .duration-status--off { background: #fef9c3; color: #92400e; }
+
+/* Trim preview card */
+.trim-preview-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trim-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trim-preview-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.trim-preview-script {
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  margin: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.trim-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-trim-apply {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--purple);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-trim-apply:hover { opacity: 0.9; }
+
+.btn-trim-cancel {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-trim-cancel:hover { background: var(--bg-hover, #f1f5f9); }
 
 .inline-duration .btn-estimate {
   align-self: flex-start;
