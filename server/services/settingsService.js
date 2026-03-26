@@ -7,22 +7,7 @@
 import { existsSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// Pre-generated frequency order — committed to the repo, updated weekly by GitHub Actions.
-// Read once and cache in memory (it never changes at runtime).
-const FREQ_ORDER_PATH = resolve(__dirname, "../data/frequencyOrder.json");
-let _frequencyOrder = null;
-function getFrequencyOrder() {
-  if (_frequencyOrder) return _frequencyOrder;
-  try {
-    _frequencyOrder = JSON.parse(readFileSync(FREQ_ORDER_PATH, "utf-8"));
-  } catch {
-    _frequencyOrder = {};
-  }
-  return _frequencyOrder;
-}
+import { getFrequencyOrder } from "./frequencyService.js";
 
 // Source paths — bundled with the deployment (read-only on Vercel)
 const SRC_SETTINGS   = resolve(__dirname, "../settings.json");

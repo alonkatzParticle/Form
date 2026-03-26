@@ -8,6 +8,12 @@
       "includeFiles": "server/**"
     }
   },
+  "crons": [
+    {
+      "path": "/api/admin/refresh-frequency",
+      "schedule": "0 9 * * 6"
+    }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index" },
     { "source": "/:path*", "destination": "/index.html" }

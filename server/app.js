@@ -17,15 +17,20 @@ import elevenLabsRoutes from "./routes/elevenlabs.js";
 import settingsRoutes from "./routes/settings.js";
 import autoRenameRoutes from "./routes/autoRename.js";
 import wednesdayRoutes from "./routes/wednesday.js";
+import adminRoutes from "./routes/admin.js";
 import { startRecentTasksRefresh } from "./services/recentTasksService.js";
 import { ensureTable } from "./services/dbCacheService.js";
+import { loadFrequencyIntoMemory } from "./services/frequencyService.js";
+import { getSettings } from "./services/settingsService.js";
 
-// Run startup tasks (non-blocking). Frequency order is now a static pre-built JSON file —
-// no Monday fetch needed on startup. Only recent task examples need a cold-start fetch.
-export const startupReady = Promise.all([
-  ensureTable(),
-  startRecentTasksRefresh(),
-]).catch(() => {});
+// On cold start: ensure DB table exists, load frequency from Neon into memory,
+// and fetch recent task examples. All non-blocking — static JSON seed covers the gap.
+export const startupReady = ensureTable()
+  .then(() => Promise.all([
+    loadFrequencyIntoMemory(getSettings()),
+    startRecentTasksRefresh(),
+  ]))
+  .catch(() => {});
 
 const app = express();
 
@@ -39,6 +44,7 @@ app.use("/api/elevenlabs", elevenLabsRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/auto-rename", autoRenameRoutes);
 app.use("/api/wednesday", wednesdayRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
