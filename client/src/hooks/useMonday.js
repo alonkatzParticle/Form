@@ -22,7 +22,8 @@ export function useMonday(boardId) {
         })));
       })
       .catch((err) => {
-        setError(err.response?.data?.error || err.message);
+        const e = err.response?.data?.error;
+        setError(typeof e === "string" ? e : e?.message || err.message || "Unknown error");
       })
       .finally(() => setLoading(false));
   }, [boardId]);

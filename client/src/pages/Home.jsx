@@ -31,7 +31,10 @@ export default function Home({ onOpenSettings }) {
         setActiveBoardId(res.data.boards[0]?.id ?? null);
         setFrequencyOrder(res.data.frequencyOrder ?? {});
       })
-      .catch((err) => setSettingsError(err.response?.data?.error || err.message))
+      .catch((err) => {
+        const e = err.response?.data?.error;
+        setSettingsError(typeof e === "string" ? e : e?.message || err.message || "Failed to load settings");
+      })
       .finally(() => setSettingsLoading(false));
   }, []);
 
