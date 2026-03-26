@@ -721,11 +721,25 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     try { setHasDraft(!!localStorage.getItem(`task_draft_${board.id}`)); } catch {}
   }, [board.id]);
 
+  // Sanitize AI/Wednesday result — ensure multiselect and people fields always stay arrays.
+  // The AI can return null, "", or a string for these fields, which would crash .map() in the UI.
+  function sanitizeResult(result, prev) {
+    const sanitized = { ...result };
+    for (const field of board.fields) {
+      if (field.type === "multiselect" || field.type === "people") {
+        if (!Array.isArray(sanitized[field.key])) {
+          sanitized[field.key] = prev[field.key]; // keep existing [] rather than crashing
+        }
+      }
+    }
+    return sanitized;
+  }
+
   // Merge AI result into form state when it arrives, and autosave it
   useEffect(() => {
     if (aiResult) {
       setTask((prev) => {
-        const updated = { ...prev, ...aiResult };
+        const updated = { ...prev, ...sanitizeResult(aiResult, prev) };
         try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
         return updated;
       });
@@ -737,7 +751,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   useEffect(() => {
     if (wednesdayResult) {
       setTask((prev) => {
-        const updated = { ...prev, ...wednesdayResult };
+        const updated = { ...prev, ...sanitizeResult(wednesdayResult, prev) };
         try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
         return updated;
       });
