@@ -180,6 +180,14 @@
           "mondayColumnId": "long_text_mkn8c1ax"
         },
         {
+          "key": "visuals",
+          "label": "Visuals",
+          "type": "textarea",
+          "hint": "Optional — visual language and ideas for each section of the video",
+          "placeholder": "AI will suggest visuals aligned to the script sections\u2026",
+          "rows": 4
+        },
+        {
           "key": "scriptMessage",
           "label": "Script / Message",
           "type": "textarea",

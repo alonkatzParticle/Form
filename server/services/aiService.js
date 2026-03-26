@@ -24,7 +24,10 @@ function buildSystemPrompt(agent, boardType, exampleItems = []) {
   const fieldDefs = FIELD_DEFINITIONS[boardType] ?? "";
 
   const skillKnowledge = agent.useSkillKnowledge ? getSkillContent(boardType) : "";
-  const brandKnowledge = agent.useSkillKnowledge ? getBrandKnowledge() : "";
+  // Cap brand knowledge for form-fill agents — full file is ~10k tokens and hits rate limits.
+  // 5,000 chars covers brand overview, voice, and key product summaries.
+  const rawBrand = agent.useSkillKnowledge ? getBrandKnowledge() : "";
+  const brandKnowledge = rawBrand.length > 5000 ? rawBrand.slice(0, 5000) + "\n\n[…truncated for brevity]" : rawBrand;
   const skillSection = (skillKnowledge || brandKnowledge)
     ? `\n\n---\n\n## BRAND & PRODUCT KNOWLEDGE\n\nYou have deep knowledge of this brand. Use it to generate production-quality content — especially hooks, video concepts, scripts, concept ideas, and task names. Apply the brand voice, product details, and naming conventions from the knowledge below.\n\n${brandKnowledge}${skillKnowledge ? `\n\n---\n\n## CREATIVE SYSTEM KNOWLEDGE\n\n${skillKnowledge}` : ""}\n\n---\n\n`
     : "";
@@ -67,16 +70,34 @@ export async function generateBrief({ formValues, boardType }) {
   let html = message.content[0].text.trim();
   html = html.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/, "").trim();
 
-  // Inject color legend right after the Script heading (if one exists)
   const sections = agent.scriptSections;
-  if (sections && html.includes("Script")) {
+  if (sections) {
     const legendItems = Object.entries(sections)
       .map(([name, { color }]) => `<span style="color:${color};font-weight:700;">■</span> ${name}`)
       .join(" &nbsp; ");
     const legend = `<p style="font-size:11px;margin:2px 0 6px 0;opacity:0.8;">${legendItems}</p>`;
+
+    // Inject legend after Script heading
+    if (html.includes("Script")) {
+      html = html.replace(/(<h3[^>]*>[^<]*[Ss]cript[^<]*<\/h3>)/, `$1${legend}`);
+    }
+
+    // Inject legend after Visuals heading
+    if (html.includes("Visual")) {
+      html = html.replace(/(<h3[^>]*>[^<]*[Vv]isual[^<]*<\/h3>)/, `$1${legend}`);
+    }
+
+    // Color-code "Label: text" lines inside the Visuals section
+    // Matches lines like "Hook: ..." "Problem: ..." etc. and wraps them in section colors
+    const sectionColors = Object.fromEntries(
+      Object.entries(sections).map(([name, { color }]) => [name.toLowerCase(), color])
+    );
     html = html.replace(
-      /(<h3[^>]*>[^<]*[Ss]cript[^<]*<\/h3>)/,
-      `$1${legend}`
+      /\b(Hook|Problem|Solution|Social Proof|CTA):\s*([^<\n]+)/gi,
+      (_, label, text) => {
+        const color = sectionColors[label.toLowerCase()] ?? "#000";
+        return `<span style="color:${color};"><b>${label}:</b> ${text.trim()}</span>`;
+      }
     );
   }
 
