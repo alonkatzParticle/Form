@@ -20,16 +20,28 @@ const SETTINGS_PATH   = process.env.VERCEL ? "/tmp/settings.json"   : SRC_SETTIN
 const NAME_RULES_PATH = process.env.VERCEL ? "/tmp/nameRules.json"   : SRC_NAME_RULES;
 
 // On Vercel, copy bundled defaults to /tmp on first access so they can be written later.
+// Wrapped in try/catch — if the bundled source path resolves differently inside the lambda,
+// we fall back silently (reads will use the original path, writes are best-effort).
 function ensureVercelCopies() {
   if (!process.env.VERCEL) return;
-  if (!existsSync(SETTINGS_PATH))   copyFileSync(SRC_SETTINGS,   SETTINGS_PATH);
-  if (!existsSync(NAME_RULES_PATH)) copyFileSync(SRC_NAME_RULES, NAME_RULES_PATH);
+  try {
+    if (!existsSync(SETTINGS_PATH))   copyFileSync(SRC_SETTINGS,   SETTINGS_PATH);
+    if (!existsSync(NAME_RULES_PATH)) copyFileSync(SRC_NAME_RULES, NAME_RULES_PATH);
+  } catch (e) {
+    // Ignore — reads will fall back to the bundled source path
+  }
+}
+
+// Resolve the best readable path — prefer /tmp copy if it exists, else fall back to bundled source.
+function readPath(tmpPath, srcPath) {
+  if (process.env.VERCEL && existsSync(tmpPath)) return tmpPath;
+  return srcPath;
 }
 
 export function getSettings() {
   ensureVercelCopies();
-  const settings  = JSON.parse(readFileSync(SETTINGS_PATH,   "utf-8"));
-  const nameRules = JSON.parse(readFileSync(NAME_RULES_PATH, "utf-8"));
+  const settings  = JSON.parse(readFileSync(readPath(SETTINGS_PATH,   SRC_SETTINGS),   "utf-8"));
+  const nameRules = JSON.parse(readFileSync(readPath(NAME_RULES_PATH, SRC_NAME_RULES), "utf-8"));
   settings.boards = settings.boards.map((board) =>
     nameRules[board.id] ? { ...board, autoName: nameRules[board.id] } : board
   );
