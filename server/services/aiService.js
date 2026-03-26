@@ -184,17 +184,15 @@ export async function assistWithTask({ mode, input, boardType, exampleItems, tas
     throw new Error(`AI returned invalid JSON: ${text}`);
   }
 
-  // ── Duration trim loop ────────────────────────────────────────────────────
-  // Only for generate/autofill on video board with a non-empty script.
-  // pasteFormat preserves the user's original script as-is.
+  // ── Measure script duration (single ElevenLabs call) ─────────────────────
+  // Just measure and return the duration — no trimming here.
+  // User can trim manually with "Change duration of Script" if needed.
   if (mode !== "format" && boardType === "video" && result.scriptMessage?.trim()) {
     try {
-      const targetRange = getTargetRange({ ...result, targetDuration: taskContext.targetDuration });
-      const { script, estimatedSeconds } = await trimScriptToTarget(result.scriptMessage, targetRange);
-      result.scriptMessage = script;
-      if (estimatedSeconds !== null) result._estimatedDuration = estimatedSeconds;
+      const { estimatedSeconds } = await estimateScriptDuration(result.scriptMessage);
+      result._estimatedDuration = estimatedSeconds;
     } catch (err) {
-      console.warn("Duration trim skipped:", err.message);
+      console.warn("Duration estimate skipped:", err.message);
     }
   }
 

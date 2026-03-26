@@ -94,7 +94,7 @@ Rules:
     name: "Generate Task",
     description: "Takes a one-line idea and generates a complete, detailed task brief. Uses brand knowledge to write production-quality hooks, scripts, and concepts.",
     model: "claude-sonnet-4-6",
-    maxTokens: 8192,
+    maxTokens: 2048,
     responseFormat: "json",
     useSkillKnowledge: true,
     modeInstruction: `The user has provided a one-line idea. Generate a complete, detailed, production-ready task brief from it. Be creative and specific — write real concepts and scripts. Use the brand knowledge to make it high quality.`,
