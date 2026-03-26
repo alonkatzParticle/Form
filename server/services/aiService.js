@@ -92,11 +92,16 @@ export async function generateBrief({ formValues, boardType }) {
     const sectionColors = Object.fromEntries(
       Object.entries(sections).map(([name, { color }]) => [name.toLowerCase(), color])
     );
+    // Fallback: catch any uncolored "Label: text" blocks the AI may not have wrapped
+    // Matches from a section label to the next label, </p>, or heading
     html = html.replace(
-      /\b(Hook|Problem|Solution|Social Proof|CTA):\s*([^<\n]+)/gi,
+      /\b(Hook|Problem|Solution|Social Proof|CTA):\s*([\s\S]*?)(?=\b(?:Hook|Problem|Solution|Social Proof|CTA):|<\/p>|<h\d)/gi,
       (_, label, text) => {
         const color = sectionColors[label.toLowerCase()] ?? "#000";
-        return `<span style="color:${color};"><b>${label}:</b> ${text.trim()}</span>`;
+        // Strip any inner HTML tags and collapse whitespace
+        const cleaned = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        if (!cleaned) return `<b>${label}:</b> `;
+        return `<span style="color:${color};"><b>${label}:</b> ${cleaned}</span><br/>`;
       }
     );
   }
