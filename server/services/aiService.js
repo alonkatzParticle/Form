@@ -210,17 +210,6 @@ export async function assistWithTask({ mode, input, boardType, exampleItems, tas
     throw new Error(`AI returned invalid JSON: ${text}`);
   }
 
-  // ── Measure script duration (single ElevenLabs call) ─────────────────────
-  // Just measure and return the duration — no trimming here.
-  // User can trim manually with "Change duration of Script" if needed.
-  if (mode !== "format" && boardType === "video" && result.scriptMessage?.trim()) {
-    try {
-      const { estimatedSeconds } = await estimateScriptDuration(result.scriptMessage);
-      result._estimatedDuration = estimatedSeconds;
-    } catch (err) {
-      console.warn("Duration estimate skipped:", err.message);
-    }
-  }
 
   return result;
 }
