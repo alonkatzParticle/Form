@@ -727,9 +727,19 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   function sanitizeResult(result, prev) {
     const sanitized = { ...result };
     for (const field of board.fields) {
+      // Arrays must stay arrays
       if (field.type === "multiselect" || field.type === "people") {
         if (!Array.isArray(sanitized[field.key])) {
-          sanitized[field.key] = prev[field.key]; // keep existing [] rather than crashing
+          sanitized[field.key] = prev[field.key];
+        }
+      }
+      // Dropdown fields: validate against options, strip "Particle " prefix if needed
+      if (field.options && sanitized[field.key] !== undefined) {
+        const raw = sanitized[field.key];
+        if (raw && typeof raw === "string" && !field.options.includes(raw)) {
+          // Try stripping "Particle " prefix (AI often adds the brand name)
+          const stripped = raw.replace(/^Particle\s+/i, "");
+          sanitized[field.key] = field.options.includes(stripped) ? stripped : "";
         }
       }
     }
