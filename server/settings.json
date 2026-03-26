@@ -190,6 +190,13 @@
           "durationEstimator": true
         },
         {
+          "key": "targetDuration",
+          "label": "Target Duration (seconds)",
+          "type": "number",
+          "hint": "Leave blank for auto (30–45s). AI will trim the script to fit.",
+          "placeholder": "e.g. 45"
+        },
+        {
           "key": "versionsNeeded",
           "label": "Versions Needed",
           "type": "number",

@@ -11,7 +11,7 @@ const MODES = [
   { id: "format", label: "Paste & Format", hint: "Paste an existing rough brief — AI will reformat it." },
 ];
 
-export default function AIPanel({ boardType, exampleItems = [], onResult }) {
+export default function AIPanel({ boardType, exampleItems = [], onResult, taskContext = {} }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("autofill");
   const [input, setInput] = useState("");
@@ -30,6 +30,7 @@ export default function AIPanel({ boardType, exampleItems = [], onResult }) {
         input,
         boardType,
         exampleItems,
+        taskContext,
       });
       // Pass the AI-filled task object up to the parent form
       onResult(res.data);

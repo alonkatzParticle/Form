@@ -130,6 +130,7 @@ export default function Home({ onOpenSettings }) {
               boardType={activeBoardId}
               exampleItems={exampleItems}
               onResult={setAiResult}
+              taskContext={formTask}
             />
             <div className="card">
               <div className="card-header">

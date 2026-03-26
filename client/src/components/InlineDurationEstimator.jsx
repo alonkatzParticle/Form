@@ -3,10 +3,18 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-export default function InlineDurationEstimator({ script = "" }) {
+export default function InlineDurationEstimator({ script = "", autoResult = null }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // When AI has already estimated duration server-side, pre-fill the result
+  useEffect(() => {
+    if (autoResult !== null) {
+      setResult(autoResult);
+      setError(null);
+    }
+  }, [autoResult]);
 
   // Clear result when script content changes significantly
   useEffect(() => {

@@ -704,6 +704,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   const [task, setTask] = useState(() => initTask(board.fields));
   const [generatingBrief, setGeneratingBrief] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [aiDuration, setAiDuration] = useState(null);
 
   // Draft recovery — check localStorage on mount
   const [hasDraft, setHasDraft] = useState(() => {
@@ -738,8 +739,11 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   // Merge AI result into form state when it arrives, and autosave it
   useEffect(() => {
     if (aiResult) {
+      // Extract and clear the server-side duration estimate before merging into form state
+      const { _estimatedDuration, ...fields } = aiResult;
+      if (_estimatedDuration !== undefined) setAiDuration(_estimatedDuration);
       setTask((prev) => {
-        const updated = { ...prev, ...sanitizeResult(aiResult, prev) };
+        const updated = { ...prev, ...sanitizeResult(fields, prev) };
         try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
         return updated;
       });
@@ -869,7 +873,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
               {renderInput(group.field, task, setField, users, frequencyOrder)}
             </Field>
             {group.field.durationEstimator && (
-              <InlineDurationEstimator script={task[group.field.key]} />
+              <InlineDurationEstimator script={task[group.field.key]} autoResult={aiDuration} />
             )}
           </div>
         );

@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.post("/assist", async (req, res) => {
   try {
-    const { mode, input, boardType, exampleItems } = req.body;
+    const { mode, input, boardType, exampleItems, taskContext } = req.body;
 
     if (!mode || !input || !boardType) {
       return res.status(400).json({ error: "mode, input, and boardType are required" });
@@ -20,7 +20,7 @@ router.post("/assist", async (req, res) => {
       return res.status(400).json({ error: "mode must be autofill, generate, or format" });
     }
 
-    const result = await assistWithTask({ mode, input, boardType, exampleItems: exampleItems || [] });
+    const result = await assistWithTask({ mode, input, boardType, exampleItems: exampleItems || [], taskContext: taskContext || {} });
     res.json(result);
   } catch (err) {
     console.error("AI assist error:", err.message);

@@ -26,7 +26,11 @@ export const FIELD_DEFINITIONS = {
 - platform: One of: Meta, GT | Meta, Applovin, Youtube | Google, GIF | Meta. Infer from context: "Facebook", "Instagram", or "Meta" → Meta. Only fill if inferable.
 - type: One of: Iterations/Cuts/Edits, GIF - New Static, GIF - Existing Static, Miscellaneous, Collection, Motion Design, Translation, Special Project, TV, AI Project, AI Creator, UGC/Creator, Amazon/Ulta, Long Form (+1 min), Script - Short Form (<20 seconds), Script (<1 min), Upload B-Rolls, CTA. Infer from context: UGC-style → UGC/Creator, AI avatar/voice → AI Creator, animated/motion graphics (not AI) → Motion Design, rework of existing video → Iterations/Cuts/Edits, ensemble/multiple people → Collection.
 - videoConcept: 1-2 sentences max describing the overall idea or story. Do not write the script here.
-- scriptMessage: Write the full script ONLY if type is one of: UGC/Creator, AI Creator, UGC Testimonial, Collection, Script (<1 min), Script - Short Form (<20 seconds), Long Form (+1 min). For all other types leave this empty. When writing a script, use this structure if it fits the concept: Hook (opening line that grabs attention) → Problem → Solution → Social Proof → CTA. One script only — never write multiple versions.
+- scriptMessage: Write the full script ONLY if type is one of: UGC/Creator, AI Creator, UGC Testimonial, Collection, Script (<1 min), Script - Short Form (<20 seconds), Long Form (+1 min). For all other types leave this empty.
+  FORMAT: Write clean spoken words only. No section labels, no [Hook]/[Problem] markers, no VO:/Visual:/On Screen: directions, no timestamps like [0–4s]. Just the lines a person would say out loud.
+  STRUCTURE: Write the lines in this order — Hook (one punchy attention-grabbing line) → Problem (the pain point) → Solution (product intro + key benefits/ingredients) → Social Proof (stats or real results) → CTA (click, visit, try). Do not label the sections — just write them in sequence as a natural script.
+  LENGTH: Default target is 30–45 seconds of spoken audio. For Script - Short Form (<20 seconds) keep to 15–20 seconds. For Long Form (+1 min) aim for 65+ seconds. The server will measure and trim automatically after you write it.
+  One script only — never write multiple versions.
 - versionsNeeded: Leave blank — filled by user.
 - sizesNeeded: Leave blank unless explicitly stated by the user.
 - priority: Leave blank — filled by user.
