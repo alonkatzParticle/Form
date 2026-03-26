@@ -84,10 +84,17 @@ export default function InlineDurationEstimator({
   }
 
   function formatDuration(seconds) {
-    if (seconds < 60) return `${seconds}s`;
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    const lo = Math.max(0, seconds - 2);
+    const hi = seconds + 2;
+    if (hi < 60) return `${lo}–${hi}s`;
+    // format each bound as m:ss if either crosses a minute
+    function fmt(s) {
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+    }
+    return `${fmt(lo)}–${fmt(hi)}`;
   }
 
   const onTarget = result !== null && targetDuration
