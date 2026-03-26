@@ -11,7 +11,7 @@ const MODES = [
   { id: "format", label: "Paste & Format", hint: "Paste an existing rough brief — AI will reformat it." },
 ];
 
-export default function AIPanel({ boardType, exampleItems = [], onResult, taskContext = {} }) {
+export default function AIPanel({ boardType, onResult, taskContext = {} }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("autofill");
   const [input, setInput] = useState("");

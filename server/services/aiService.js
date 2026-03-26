@@ -2,6 +2,7 @@
 // To change AI behavior, edit aiAgents.js. This file handles the API calls only.
 import Anthropic from "@anthropic-ai/sdk";
 import { getSkillContent, getBrandKnowledge } from "./skillLoader.js";
+import { getRecentTasks } from "./recentTasksService.js";
 import { AI_AGENTS, FIELD_DEFINITIONS } from "../aiAgents.js";
 import { estimateScriptDuration } from "./elevenLabsService.js";
 
@@ -20,23 +21,23 @@ function fillPlaceholders(template, replacements) {
 }
 
 // Builds the final system prompt for a given form-fill agent.
-function buildSystemPrompt(agent, boardType, exampleItems = []) {
+function buildSystemPrompt(agent, boardType) {
   const fieldDefs = FIELD_DEFINITIONS[boardType] ?? "";
 
-  // Cap skill + brand content — full files are 10k–20k tokens and slow inference significantly.
-  // 6,000 chars of skill examples + 4,000 chars of brand knowledge covers the most useful signal.
+  // Skill rules section (voice, anti-patterns, format structures — no bulky examples)
   const rawSkill = agent.useSkillKnowledge ? getSkillContent(boardType) : "";
-  const skillKnowledge = rawSkill.length > 6000 ? rawSkill.slice(0, 6000) + "\n\n[…truncated]" : rawSkill;
   const rawBrand = agent.useSkillKnowledge ? getBrandKnowledge() : "";
+  // Cap brand knowledge — full file is ~50k chars; first 4k covers brand overview + voice
   const brandKnowledge = rawBrand.length > 4000 ? rawBrand.slice(0, 4000) + "\n\n[…truncated]" : rawBrand;
-  const skillSection = (skillKnowledge || brandKnowledge)
-    ? `\n\n---\n\n## BRAND & PRODUCT KNOWLEDGE\n\nYou have deep knowledge of this brand. Use it to generate production-quality content — especially hooks, video concepts, scripts, concept ideas, and task names. Apply the brand voice, product details, and naming conventions from the knowledge below.\n\n${brandKnowledge}${skillKnowledge ? `\n\n---\n\n## CREATIVE SYSTEM KNOWLEDGE\n\n${skillKnowledge}` : ""}\n\n---\n\n`
+  const skillSection = (rawSkill || brandKnowledge)
+    ? `\n\n---\n\n## BRAND & PRODUCT KNOWLEDGE\n\n${brandKnowledge}${rawSkill ? `\n\n---\n\n## CREATIVE SYSTEM KNOWLEDGE\n\n${rawSkill}` : ""}\n\n---\n\n`
     : "";
 
-  const boardExamples =
-    exampleItems.length > 0
-      ? `\n\nHere are examples of real tasks from this board to guide your style and tone:\n${JSON.stringify(exampleItems.slice(0, 10), null, 2)}`
-      : "";
+  // Recent real examples fetched live from Monday (last 6 months, cached in memory)
+  const recentExamples = agent.useSkillKnowledge ? getRecentTasks(boardType) : [];
+  const boardExamples = recentExamples.length > 0
+    ? `\n\n---\n\n## RECENT REAL TASKS (use these as style and format reference)\n\n${recentExamples.join("\n\n---\n\n")}\n\n---\n\n`
+    : "";
 
   return fillPlaceholders(agent.systemPrompt, {
     FIELD_DEFINITIONS: fieldDefs,
@@ -184,13 +185,13 @@ const MODE_TO_AGENT = {
 
 // Main AI assist function — powers the form-fill AI panel.
 // mode: "autofill" | "generate" | "format"
-export async function assistWithTask({ mode, input, boardType, exampleItems, taskContext = {} }) {
+export async function assistWithTask({ mode, input, boardType, taskContext = {} }) {
   const agent = MODE_TO_AGENT[mode] ?? AI_AGENTS.autoFill;
 
   const message = await getClient().messages.create({
     model: agent.model,
     max_tokens: agent.maxTokens,
-    system: buildSystemPrompt(agent, boardType, exampleItems),
+    system: buildSystemPrompt(agent, boardType),
     messages: [{ role: "user", content: `${agent.modeInstruction}\n\nInput:\n${input}` }],
   });
 

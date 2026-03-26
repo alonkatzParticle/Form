@@ -36,7 +36,7 @@ export default function Home({ onOpenSettings }) {
   }, []);
 
   const activeBoard = boards.find((b) => b.id === activeBoardId);
-  const { users, exampleItems, loading, error } = useMonday(activeBoard?.boardId);
+  const { users, loading, error } = useMonday(activeBoard?.boardId);
 
   function handleBoardSwitch(id) {
     setActiveBoardId(id);
@@ -128,7 +128,6 @@ export default function Home({ onOpenSettings }) {
           <div className="layout-main">
             <AIPanel
               boardType={activeBoardId}
-              exampleItems={exampleItems}
               onResult={setAiResult}
               taskContext={formTask}
             />

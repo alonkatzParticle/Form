@@ -7,6 +7,7 @@ import { getSettings } from "./services/settingsService.js";
 import { getBoardColumns } from "./services/mondayService.js";
 import { refreshAllBoards } from "./services/frequencyService.js";
 import { getState as getAutoRenameState, runAutoRename } from "./services/autoRenameService.js";
+import { startRecentTasksRefresh } from "./services/recentTasksService.js";
 
 const PORT = process.env.PORT || 3001;
 
@@ -21,6 +22,8 @@ app.listen(PORT, () => {
       );
     }
   }, 5 * 60 * 1000);
+  // Fetch recent tasks from Monday for AI examples, refresh every 6 hours.
+  startRecentTasksRefresh();
   // Populate the frequency cache on startup, then refresh every 6 hours.
   refreshAllBoards(getSettings()).catch((err) =>
     console.warn("[frequency] Initial refresh failed:", err.message)
