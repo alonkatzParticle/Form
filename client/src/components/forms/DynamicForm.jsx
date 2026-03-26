@@ -873,7 +873,12 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
               {renderInput(group.field, task, setField, users, frequencyOrder)}
             </Field>
             {group.field.durationEstimator && (
-              <InlineDurationEstimator script={task[group.field.key]} autoResult={aiDuration} />
+              <InlineDurationEstimator
+                script={task[group.field.key]}
+                autoResult={aiDuration}
+                targetDuration={task.targetDuration}
+                onTargetChange={(val) => setField("targetDuration", val)}
+              />
             )}
           </div>
         );
