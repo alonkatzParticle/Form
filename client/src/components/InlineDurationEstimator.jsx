@@ -22,21 +22,21 @@ export default function InlineDurationEstimator({
 
   const hasScript = script.trim().length > 0;
 
-  // When AI has already estimated duration server-side, pre-fill the result
-  useEffect(() => {
-    if (autoResult !== null) {
-      setResult(autoResult);
-      setError(null);
-    }
-  }, [autoResult]);
-
-  // Clear result when script content changes
+  // Clear result when script content changes (runs first)
   useEffect(() => {
     setResult(null);
     setError(null);
     setTrimPreview(null);
     setTrimError(null);
   }, [script]);
+
+  // When AI has already estimated duration server-side, pre-fill the result (runs after clear)
+  useEffect(() => {
+    if (autoResult !== null) {
+      setResult(autoResult);
+      setError(null);
+    }
+  }, [autoResult]);
 
   async function handleEstimate() {
     if (!hasScript) return;
