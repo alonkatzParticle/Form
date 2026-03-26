@@ -9,6 +9,8 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getFrequencyOrder } from "./frequencyService.js";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 // Source paths — bundled with the deployment (read-only on Vercel)
 const SRC_SETTINGS   = resolve(__dirname, "../settings.json");
 const SRC_NAME_RULES = resolve(__dirname, "../nameRules.json");
