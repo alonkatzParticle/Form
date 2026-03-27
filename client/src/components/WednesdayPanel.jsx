@@ -112,7 +112,7 @@ function TypingIndicator() {
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel, formState, onApplyChanges, chatResetKey }) {
+export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel, formState, onApplyChanges, chatResetKey, referenceContext }) {
   const [messages, setMessages]       = useState([]);
   const [input, setInput]             = useState("");
   const [streaming, setStreaming]     = useState(false);
@@ -229,6 +229,7 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
           messages: history,
           boardType,
           formState,
+          referenceContext: referenceContext || null,
         }),
         signal: abortRef.current.signal,
       });
@@ -352,6 +353,11 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
             Wednesday
           </div>
           <div className="wed-panel-subtitle">{boardLabel}</div>
+          {referenceContext && (
+            <div className="wed-reference-badge" title="Reference media is loaded — Wednesday is aware of it">
+              📎 Reference loaded
+            </div>
+          )}
           <button className="wed-close-btn" onClick={onClose}>✕</button>
         </div>
 

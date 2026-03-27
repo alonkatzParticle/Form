@@ -21,6 +21,7 @@ export default function Home({ onOpenSettings }) {
   const [wednesdayResult, setWednesdayResult]   = useState(null);
   const [formTask, setFormTask]                 = useState({});
   const [chatResetKey, setChatResetKey]         = useState(0);
+  const [referenceContext, setReferenceContext] = useState(null);
 
   // Fetch board config from server on mount
   useEffect(() => {
@@ -133,6 +134,7 @@ export default function Home({ onOpenSettings }) {
               boardType={activeBoardId}
               onResult={setAiResult}
               taskContext={formTask}
+              onReferenceContext={setReferenceContext}
             />
             <div className="card">
               <div className="card-header">
@@ -167,6 +169,7 @@ export default function Home({ onOpenSettings }) {
             formState={formTask}
             onApplyChanges={(changes) => setWednesdayResult(changes)}
             chatResetKey={chatResetKey}
+            referenceContext={referenceContext}
           />
         </div>
       )}

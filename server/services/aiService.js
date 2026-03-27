@@ -175,11 +175,11 @@ export async function trimScriptToTarget(script, targetRange) {
   return { script: current, estimatedSeconds: currentSecs };
 }
 
-// Maps the mode string from the client to the agent object in aiAgents.js
 const MODE_TO_AGENT = {
-  autofill: AI_AGENTS.autoFill,
-  generate: AI_AGENTS.generateTask,
-  format:   AI_AGENTS.pasteFormat,
+  autofill:  AI_AGENTS.autoFill,
+  generate:  AI_AGENTS.generateTask,
+  format:    AI_AGENTS.pasteFormat,
+  reference: AI_AGENTS.reference,
 };
 
 // Main AI assist function — powers the form-fill AI panel.

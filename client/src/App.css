@@ -2841,3 +2841,128 @@ body {
 .wed-msg-markdown ul, .wed-msg-markdown ol { padding-left: 16px; margin: 4px 0; }
 .wed-msg-markdown li { margin-bottom: 2px; }
 .wed-msg-markdown code { background: rgba(0,0,0,0.07); padding: 1px 4px; border-radius: 4px; font-size: 0.82rem; }
+
+/* ─── Wednesday Reference Badge ──────────────────────────────────────────────── */
+.wed-reference-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--purple-dark);
+  background: var(--purple-light);
+  border: 1px solid rgba(108, 99, 255, 0.25);
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+/* ─── From Reference Tab ─────────────────────────────────────────────────────── */
+.ref-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ref-source-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.ref-source-btn {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.ref-source-btn.active {
+  background: var(--card);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+}
+
+.ref-source-btn:hover:not(.active) { color: var(--text); }
+
+.ref-url-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  background: var(--input-bg);
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ref-url-input:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+}
+
+.ref-url-input::placeholder { color: var(--placeholder); }
+
+.ref-instructions-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.ref-instructions {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  background: var(--input-bg);
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ref-instructions:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+}
+
+.ref-instructions::placeholder { color: var(--placeholder); }
+
+.ref-analysis-badge {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--green);
+  background: var(--green-bg);
+  border: 1px solid rgba(26, 127, 55, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.ref-clear-file {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+
+.ref-clear-file:hover { color: var(--red); }
+

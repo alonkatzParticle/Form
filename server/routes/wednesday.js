@@ -42,7 +42,7 @@ function formatFormState(formState, boardType) {
 }
 
 // Build Wednesday's system prompt with current form state injected.
-function buildSystemPrompt(boardType, formState) {
+function buildSystemPrompt(boardType, formState, referenceContext) {
   const agent = AI_AGENTS.wednesday[boardType] ?? AI_AGENTS.wednesday.video;
   const fieldDefs = FIELD_DEFINITIONS[boardType] ?? "";
   const skillKnowledge = getSkillContent(boardType);
@@ -53,17 +53,23 @@ function buildSystemPrompt(boardType, formState) {
 
   const formStateStr = formatFormState(formState, boardType);
 
+  // Inject reference context if the user loaded a reference in the AI panel
+  const referenceSection = referenceContext
+    ? `\n\n## ACTIVE REFERENCE\nThe user loaded a media reference in the AI panel. Here is the Gemini analysis of that reference — use it when the user asks about it or wants to apply it:\n\n${referenceContext}\n`
+    : "";
+
   return agent.systemPrompt
     .replaceAll("{{FORM_STATE}}", formStateStr)
     .replaceAll("{{FIELD_DEFINITIONS}}", fieldDefs)
-    .replaceAll("{{SKILL_KNOWLEDGE}}", skillSection);
+    .replaceAll("{{SKILL_KNOWLEDGE}}", skillSection)
+    + referenceSection;
 }
 
 // POST /api/wednesday/chat
-// Body: { messages: [{role, content}], boardType, formState }
+// Body: { messages: [{role, content}], boardType, formState, referenceContext? }
 // Returns: SSE stream of text chunks
 router.post("/chat", async (req, res) => {
-  const { messages = [], boardType = "video", formState = {} } = req.body;
+  const { messages = [], boardType = "video", formState = {}, referenceContext = null } = req.body;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -72,7 +78,7 @@ router.post("/chat", async (req, res) => {
 
   try {
     const agent = AI_AGENTS.wednesday[boardType] ?? AI_AGENTS.wednesday.video;
-    const system = buildSystemPrompt(boardType, formState);
+    const system = buildSystemPrompt(boardType, formState, referenceContext);
 
     // Cap history at last 20 messages to stay within token limits
     const history = messages.slice(-20);

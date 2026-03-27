@@ -5,6 +5,8 @@
 
 import express from "express";
 import { assistWithTask, generateBrief, trimScriptToTarget } from "../services/aiService.js";
+import { analyzeReference } from "../services/geminiService.js";
+import { AI_AGENTS } from "../aiAgents.js";
 
 const router = express.Router();
 
@@ -24,6 +26,48 @@ router.post("/assist", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("AI assist error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Analyze a video or image reference with Gemini, then fill the form with Claude.
+// Body: { fileData?, mimeType?, fileUrl?, instructions, boardType, taskContext? }
+// fileData: base64-encoded file (for uploads). fileUrl: remote URL (YouTube or image/video link).
+// Returns: JSON matching the board's task shape (same as /api/ai/assist)
+router.post("/analyze-reference", async (req, res) => {
+  try {
+    const { fileData, mimeType, fileUrl, instructions, boardType, taskContext } = req.body;
+
+    if (!boardType) return res.status(400).json({ error: "boardType is required" });
+    if (!instructions?.trim()) return res.status(400).json({ error: "instructions are required" });
+    if (!fileData && !fileUrl) return res.status(400).json({ error: "Either fileData or fileUrl is required" });
+
+    // Guard against oversized uploads (20 MB limit for base64 = ~15 MB raw)
+    if (fileData && fileData.length > 20 * 1024 * 1024 * 1.37) {
+      return res.status(413).json({ error: "File is too large. Please upload files under 15 MB." });
+    }
+
+    // Step 1: Gemini analyzes the media
+    const referenceAnalysis = await analyzeReference({
+      fileData: fileData || null,
+      mimeType: mimeType || null,
+      fileUrl: fileUrl || null,
+      instructions,
+    });
+
+    // Step 2: Claude fills the form using the reference analysis + instructions
+    const input = `REFERENCE ANALYSIS (from Gemini):\n${referenceAnalysis}\n\nUSER INSTRUCTIONS:\n${instructions}`;
+    const result = await assistWithTask({
+      mode: "reference",
+      input,
+      boardType,
+      taskContext: taskContext || {},
+    });
+
+    // Attach the reference analysis so the client can share it with Wednesday
+    res.json({ ...result, _referenceAnalysis: referenceAnalysis });
+  } catch (err) {
+    console.error("Analyze-reference error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

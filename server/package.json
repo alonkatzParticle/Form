@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
+    "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^0.9.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
