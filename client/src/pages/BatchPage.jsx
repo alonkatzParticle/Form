@@ -19,7 +19,8 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
   const [count, setCount]                 = useState(3);        // how many tasks (angles mode)
   const [selectedProduct, setSelectedProduct] = useState("");   // single product (angles mode)
   const [selectedProducts, setSelectedProducts] = useState([]); // multi-product (products mode)
-  const [concept, setConcept]             = useState("");        // free-form description
+  const [concept, setConcept]             = useState("");        // free-form instruction
+  const [historyTask, setHistoryTask]     = useState(null);      // { name, product, type, brief } reference
   const [historyOpen, setHistoryOpen]     = useState(false);
 
   const [phase, setPhase]                 = useState("input");  // "input" | "review"
@@ -45,12 +46,16 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
 
   // Build structured prompt from form inputs
   function buildPrompt() {
+    const referenceSection = historyTask
+      ? `REFERENCE TASK: "${historyTask.name}"\n${historyTask.brief ? `Brief context:\n${historyTask.brief.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}` : ""}\n\n`
+      : "";
+
     if (mode === "angles") {
       const prod = selectedProduct ? `for ${selectedProduct}` : "";
-      return `Generate ${count} distinct task angles ${prod}. ${concept}`.trim();
+      return `${referenceSection}Generate ${count} distinct task angles ${prod}. ${concept}`.trim();
     } else {
       const prods = selectedProducts.join(", ");
-      return `Generate one task for each of these products: ${prods}. ${concept}`.trim();
+      return `${referenceSection}Generate one task for each of these products: ${prods}. ${concept}`.trim();
     }
   }
 
@@ -90,13 +95,31 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
   }
 
   // ── History load ──────────────────────────────────────────────────────────
-  function handleHistoryLoad(task) {
-    // Use the loaded task's concept/brief as the starting point for the batch
-    const conceptText = task.videoConcept || task.conceptIdea || "";
-    const typeHint    = task.type ? ` Type: ${task.type}.` : "";
-    if (conceptText) setConcept(conceptText + typeHint);
-    if (task.product && mode === "angles") setSelectedProduct(task.product);
+  async function handleHistoryLoad(task) {
+    // Show the chip immediately with a loading state
+    const base = {
+      name:    task.name || task.taskName || "Unnamed task",
+      product: task.product || task.productBundle || "",
+      type:    task.type || "",
+      brief:   null,
+      loading: true,
+    };
+    setHistoryTask(base);
+
+    // Pre-select product if in angles mode
+    if ((task.product || task.productBundle) && mode === "angles") {
+      setSelectedProduct(task.product || task.productBundle);
+    }
     setHistoryOpen(false);
+
+    // Fetch the full Monday brief so the AI reads the actual task content
+    try {
+      const res = await axios.get(`/api/monday/item-update?itemId=${task.id}`);
+      const briefHtml = res.data?.body || "";
+      setHistoryTask((prev) => prev ? { ...prev, brief: briefHtml, loading: false } : null);
+    } catch {
+      setHistoryTask((prev) => prev ? { ...prev, loading: false } : null);
+    }
   }
 
   // ── Task selection ────────────────────────────────────────────────────────
@@ -246,7 +269,7 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
               <div className="batch-field">
                 <div className="batch-concept-header">
                   <label className="batch-label">
-                    {mode === "angles" ? "Concept & angle guidance" : "Concept description"}
+                    {mode === "angles" ? "What do you want?" : "Describe the concept"}
                   </label>
                   <button
                     type="button"
@@ -257,12 +280,40 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
                     🕐 From History
                   </button>
                 </div>
+
+                {/* Reference chip — shown when a history task is selected */}
+                {historyTask && (
+                  <div className="batch-reference-chip">
+                    <div className="batch-reference-chip-inner">
+                      <span className="batch-reference-icon">
+                        {historyTask.loading ? <span className="batch-ref-spinner" /> : "📋"}
+                      </span>
+                      <div className="batch-reference-info">
+                        <span className="batch-reference-name">{historyTask.name}</span>
+                        <span className="batch-reference-sub">
+                          {historyTask.loading
+                            ? "Fetching brief…"
+                            : `${[historyTask.product, historyTask.type].filter(Boolean).join(" · ")}${historyTask.brief ? " · Brief ready" : ""}`}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="batch-reference-remove"
+                      onClick={() => setHistoryTask(null)}
+                      title="Remove reference"
+                    >×</button>
+                  </div>
+                )}
+
                 <textarea
                   className="batch-prompt-input"
                   placeholder={
-                    mode === "angles"
-                      ? "Describe the concept — e.g. transformation story, UGC style, pain point focus…"
-                      : "Describe the shared concept — the same idea will be adapted for each product"
+                    historyTask
+                      ? "What would you like to do differently? e.g. use a pain point angle, adapt for a younger audience…"
+                      : mode === "angles"
+                        ? "Describe the concept — e.g. transformation story, UGC style, pain point focus…"
+                        : "Describe the shared concept — the same idea will be adapted for each product"
                   }
                   value={concept}
                   onChange={(e) => setConcept(e.target.value)}

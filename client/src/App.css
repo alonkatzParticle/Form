@@ -3388,3 +3388,34 @@ body {
 /* Generate row extras */
 .batch-count-preview { color: var(--text-muted); font-size: 0.8rem; margin-right: auto; }
 .batch-mode-hint { color: var(--text-muted); font-size: 0.82rem; margin: -8px 0 12px; }
+
+/* ── Batch reference chip ─────────────────────────────────────────────────── */
+.batch-reference-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: color-mix(in srgb, var(--purple) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--purple) 30%, var(--border));
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+.batch-reference-chip-inner { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.batch-reference-icon { font-size: 1rem; flex-shrink: 0; display: flex; align-items: center; }
+.batch-reference-info { display: flex; flex-direction: column; min-width: 0; }
+.batch-reference-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.batch-reference-sub  { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+.batch-reference-remove {
+  background: none; border: none; color: var(--text-muted); font-size: 1.1rem;
+  cursor: pointer; font-family: inherit; padding: 0 4px; line-height: 1;
+  flex-shrink: 0; transition: color 0.15s;
+}
+.batch-reference-remove:hover { color: var(--text); }
+.batch-ref-spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid color-mix(in srgb, var(--purple) 30%, transparent);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: batchSpin 0.7s linear infinite;
+}
