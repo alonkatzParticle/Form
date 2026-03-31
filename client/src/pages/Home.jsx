@@ -22,6 +22,7 @@ export default function Home({ onOpenSettings }) {
   const [formTask, setFormTask]                 = useState({});
   const [chatResetKey, setChatResetKey]         = useState(0);
   const [referenceContext, setReferenceContext] = useState(null);
+  const [wednesdaySeedMessage, setWednesdaySeedMessage] = useState(null);
 
   // Fetch board config from server on mount
   useEffect(() => {
@@ -135,6 +136,10 @@ export default function Home({ onOpenSettings }) {
               onResult={setAiResult}
               taskContext={formTask}
               onReferenceContext={setReferenceContext}
+              onNeedsClarification={(msg) => {
+                setWednesdaySeedMessage(msg);
+                setWednesdayOpen(true);
+              }}
             />
             <div className="card">
               <div className="card-header">
@@ -170,6 +175,8 @@ export default function Home({ onOpenSettings }) {
             onApplyChanges={(changes) => setWednesdayResult(changes)}
             chatResetKey={chatResetKey}
             referenceContext={referenceContext}
+            seedMessage={wednesdaySeedMessage}
+            onSeedConsumed={() => setWednesdaySeedMessage(null)}
           />
         </div>
       )}

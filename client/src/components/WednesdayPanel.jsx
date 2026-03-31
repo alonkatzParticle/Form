@@ -112,7 +112,7 @@ function TypingIndicator() {
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel, formState, onApplyChanges, chatResetKey, referenceContext }) {
+export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel, formState, onApplyChanges, chatResetKey, referenceContext, seedMessage, onSeedConsumed }) {
   const [messages, setMessages]       = useState([]);
   const [input, setInput]             = useState("");
   const [streaming, setStreaming]     = useState(false);
@@ -158,6 +158,25 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     setMessages([]);
     try { localStorage.removeItem(STORAGE_KEY(boardType)); } catch {}
   }, [chatResetKey]);
+
+  // Inject a seed message from the AI panel (clarification request) as Wednesday's opening line
+  useEffect(() => {
+    if (!seedMessage) return;
+    const seedMsg = {
+      id: Date.now(),
+      role: "assistant",
+      visibleText: seedMessage,
+      changes: null,
+      changeType: null,
+      cardStatus: null,
+    };
+    setMessages((prev) => {
+      // Don't duplicate if already present
+      if (prev.some((m) => m.visibleText === seedMessage)) return prev;
+      return [seedMsg, ...prev];
+    });
+    onSeedConsumed?.();
+  }, [seedMessage]);
 
   // Detect board switch mid-conversation
   useEffect(() => {

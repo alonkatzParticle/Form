@@ -79,7 +79,7 @@ function formatFileSize(bytes) {
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function AIPanel({ boardType, onResult, taskContext = {}, onReferenceContext }) {
+export default function AIPanel({ boardType, onResult, taskContext = {}, onReferenceContext, onNeedsClarification }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("autofill");
   const [input, setInput] = useState("");
@@ -111,7 +111,14 @@ export default function AIPanel({ boardType, onResult, taskContext = {}, onRefer
       onResult(res.data);
       setInput("");
     } catch (err) {
-      setError(err.response?.data?.error || "AI request failed");
+      const status = err.response?.status;
+      const msg = err.response?.data?.error || "AI request failed";
+      // 422 = AI asked for clarification — open Wednesday with the question instead of showing an error
+      if (status === 422 && onNeedsClarification) {
+        onNeedsClarification(msg);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }

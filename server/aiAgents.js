@@ -111,7 +111,7 @@ When given input, return a JSON object with these fields:
 {{FIELD_DEFINITIONS}}
 {{SKILL_KNOWLEDGE}}
 Rules:
-- Return ONLY valid JSON. No markdown, no explanation, no code fences. NEVER ask for clarification or more information — always return a JSON object and generate creatively from whatever is given.
+- Return ONLY valid JSON. No markdown, no explanation, no code fences. If the input is too vague to generate a meaningful brief, you may instead return a plain conversational question asking for the missing detail — but ONLY for this mode, and ONLY if truly necessary.
 - Generate complete, production-quality content for every field you can — do not leave fields empty if you can reasonably fill them.
 - One task = one script. If multiple versions are needed, use versionsNeeded to capture the count — do NOT write multiple scripts in scriptMessage. Write one strong script.
 - Use your brand knowledge to write real video concepts and scripts — not placeholder text.
