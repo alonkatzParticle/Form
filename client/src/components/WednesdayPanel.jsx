@@ -126,6 +126,9 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
   const inputRef     = useRef(null);
   const prevBoardRef = useRef(boardType);
   const abortRef     = useRef(null);
+  // Track whether a seed message is incoming so the greeting effect can skip immediately
+  const seedPendingRef = useRef(!!seedMessage);
+  useEffect(() => { seedPendingRef.current = !!seedMessage; }, [seedMessage]);
 
   // Adjust panel top based on scroll — shrink up to first navbar when board tabs scroll away
   useEffect(() => {
@@ -160,7 +163,7 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     try { localStorage.removeItem(STORAGE_KEY(boardType)); } catch {}
   }, [chatResetKey]);
 
-  // Inject a seed message from the AI panel (clarification request) as Wednesday's opening line
+  // Inject a seed message from the AI panel (clarification request) as Wednesday's first message
   useEffect(() => {
     if (!seedMessage) return;
     const seedMsg = {
@@ -174,7 +177,8 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     setMessages((prev) => {
       // Don't duplicate if already present
       if (prev.some((m) => m.visibleText === seedMessage)) return prev;
-      return [seedMsg, ...prev];
+      // Append at end so it appears after any existing messages in chronological order
+      return [...prev, seedMsg];
     });
     setClarificationMode(true);
     onSeedConsumed?.();
@@ -195,11 +199,12 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamText]);
 
-  // Focus input when panel opens; greet if first open
+  // Focus input when panel opens; greet if first open and no seed message is incoming
   useEffect(() => {
     if (!isOpen) return;
     inputRef.current?.focus();
-    if (messages.length === 0) {
+    // Skip greeting if a clarification seed is about to be injected
+    if (messages.length === 0 && !seedPendingRef.current) {
       sendMessage("[GREETING]");
     }
   }, [isOpen]);
