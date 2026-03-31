@@ -225,7 +225,7 @@ Rules:
   briefWriter: {
     name: "Brief Writer",
     description: "Formats the filled form values into a polished HTML brief when the user clicks 'Review Brief'. The brief is editable before submitting and then posted as a Monday.com update.",
-    model: "claude-sonnet-4-6",
+    model: "claude-haiku-3-5",   // TEST: Haiku+Haiku pipeline — switch back to claude-sonnet-4-6 if quality insufficient
     maxTokens: 2048,
     responseFormat: "html",
 
