@@ -163,7 +163,6 @@ Rules:
     // Change the color values here to update the colors everywhere.
     // Sections that aren't present in a script are simply skipped.
     scriptSections: {
-      Hook:          { color: "#E8412A", description: "The opening line that grabs attention" },
       Problem:       { color: "#D97706", description: "The pain point or struggle the viewer relates to" },
       Solution:      { color: "#16A34A", description: "Where the product is introduced as the answer" },
       "Social Proof":{ color: "#7C3AED", description: "Customer results, statistics, or credibility" },
