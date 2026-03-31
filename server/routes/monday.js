@@ -6,7 +6,7 @@
 
 import express from "express";
 import multer from "multer";
-import { createItem, createUpdate, getExampleItems, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
+import { createItem, createUpdate, getExampleItems, getHistoryItems, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
 import { getSettings } from "../services/settingsService.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -107,6 +107,38 @@ router.get("/columns", async (req, res) => {
     res.json(columns);
   } catch (err) {
     console.error("Monday columns error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fetch the last 50 items from a board for the History drawer.
+// Query param: boardType ("video" | "design")
+router.get("/history", async (req, res) => {
+  try {
+    const { boardType } = req.query;
+    if (!boardType) return res.status(400).json({ error: "boardType is required" });
+
+    const settings = getSettings();
+    const board = settings.boards.find((b) => b.id === boardType);
+    if (!board?.boardId) return res.status(404).json({ error: "Board not found" });
+
+    const items = await getHistoryItems(board.boardId, 50);
+
+    // Map each item to a flat structure the client can use
+    const history = items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      createdAt: item.created_at,
+      columnValues: item.column_values.map((cv) => ({
+        id: cv.id,
+        text: cv.text || "",
+        value: cv.value || null,
+      })),
+    }));
+
+    res.json(history);
+  } catch (err) {
+    console.error("Monday history error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

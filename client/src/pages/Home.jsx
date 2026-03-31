@@ -7,6 +7,7 @@ import DynamicForm from "../components/forms/DynamicForm.jsx";
 import AIPanel from "../components/AIPanel.jsx";
 import BriefPreview from "./BriefPreview.jsx";
 import WednesdayPanel from "../components/WednesdayPanel.jsx";
+import HistoryDrawer from "../components/HistoryDrawer.jsx";
 
 export default function Home({ onOpenSettings }) {
   const [boards, setBoards] = useState([]);
@@ -23,6 +24,8 @@ export default function Home({ onOpenSettings }) {
   const [chatResetKey, setChatResetKey]         = useState(0);
   const [referenceContext, setReferenceContext] = useState(null);
   const [wednesdaySeedMessage, setWednesdaySeedMessage] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyResult, setHistoryResult] = useState(null);
 
   // Fetch board config from server on mount
   useEffect(() => {
@@ -147,14 +150,21 @@ export default function Home({ onOpenSettings }) {
                   <h2>{activeBoard.label}</h2>
                   <p className="card-subtitle">Fill in the details below to create a task on Monday.com</p>
                 </div>
+                <button
+                  className="history-open-btn"
+                  onClick={() => setHistoryOpen(true)}
+                  title="View task history"
+                >
+                  🕐 History
+                </button>
               </div>
               <div className="card-body">
                 <DynamicForm
                   key={`${activeBoard.id}-${formResetKey}`}
                   board={activeBoard}
                   users={users}
-                  aiResult={aiResult}
-                  onAIResultApplied={() => setAiResult(null)}
+                  aiResult={historyResult ?? aiResult}
+                  onAIResultApplied={() => { setAiResult(null); setHistoryResult(null); }}
                   wednesdayResult={wednesdayResult}
                   onWednesdayResultApplied={() => setWednesdayResult(null)}
                   onTaskChange={setFormTask}
@@ -177,6 +187,14 @@ export default function Home({ onOpenSettings }) {
             referenceContext={referenceContext}
             seedMessage={wednesdaySeedMessage}
             onSeedConsumed={() => setWednesdaySeedMessage(null)}
+          />
+
+          <HistoryDrawer
+            isOpen={historyOpen}
+            onClose={() => setHistoryOpen(false)}
+            boardType={activeBoardId}
+            boardFields={activeBoard.fields}
+            onLoad={(task) => { setHistoryResult(task); setHistoryOpen(false); }}
           />
         </div>
       )}

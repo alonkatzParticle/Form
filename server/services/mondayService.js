@@ -59,6 +59,30 @@ export async function getExampleItems(boardId, limit = 50) {
   return data.boards[0]?.items_page?.items || [];
 }
 
+// Fetch recent items for the History drawer — includes id, name, created_at, and column values.
+export async function getHistoryItems(boardId, limit = 50) {
+  const query = `
+    query GetHistory($boardId: ID!, $limit: Int!) {
+      boards(ids: [$boardId]) {
+        items_page(limit: $limit) {
+          items {
+            id
+            name
+            created_at
+            column_values {
+              id
+              text
+              value
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await mondayQuery(query, { boardId, limit });
+  return data.boards[0]?.items_page?.items || [];
+}
+
 // Fetch all users in the Monday.com account for the Requestor and Editor/Designer dropdowns.
 export async function getUsers() {
   const query = `
