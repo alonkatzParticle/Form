@@ -13,7 +13,7 @@ function StatusDot({ status }) {
 // Excludes options that don't make sense for batch product selection
 const EXCLUDE_PRODUCTS = new Set(["Multiple Products", "Not a Product Task", "Test Product"]);
 
-export default function BatchPage({ onClose, initialBoardId, boards }) {
+export default function BatchPage({ onClose, initialBoardId, boards, frequencyOrder = {} }) {
   const [boardType, setBoardType]         = useState(initialBoardId ?? boards?.[0]?.id ?? "video");
   const [mode, setMode]                   = useState("angles"); // "angles" | "products"
   const [count, setCount]                 = useState(3);        // how many tasks (angles mode)
@@ -31,7 +31,16 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
 
   const activeBoard = boards?.find((b) => b.id === boardType);
   const productField = activeBoard?.fields?.find((f) => f.key === "product" || f.key === "productBundle");
-  const productOptions = (productField?.options ?? []).filter((o) => !EXCLUDE_PRODUCTS.has(o));
+  const rawOptions = (productField?.options ?? []).filter((o) => !EXCLUDE_PRODUCTS.has(o));
+  // Sort by frequency — same logic as main form
+  const freqArray = frequencyOrder[boardType]?.[productField?.key] ?? [];
+  const productOptions = freqArray.length > 0
+    ? [...rawOptions].sort((a, b) => {
+        const ia = freqArray.indexOf(a);
+        const ib = freqArray.indexOf(b);
+        return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib);
+      })
+    : rawOptions;
   const selected = tasks.find((t) => t.id === selectedId);
 
   // Build structured prompt from form inputs

@@ -9,9 +9,13 @@ export default function App() {
   const [page, setPage] = useState("home"); // "home" | "settings" | "batch"
   const [batchBoardId, setBatchBoardId] = useState(null);
   const [boards, setBoards] = useState([]);
+  const [frequencyOrder, setFrequencyOrder] = useState({});
 
   useEffect(() => {
-    axios.get("/api/settings").then((res) => setBoards(res.data.boards ?? []));
+    axios.get("/api/settings").then((res) => {
+      setBoards(res.data.boards ?? []);
+      setFrequencyOrder(res.data.frequencyOrder ?? {});
+    });
   }, []);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
@@ -56,6 +60,7 @@ export default function App() {
           onClose={() => setPage("home")}
           initialBoardId={batchBoardId}
           boards={boards}
+          frequencyOrder={frequencyOrder}
         />
       )}
 
