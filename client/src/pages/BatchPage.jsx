@@ -148,18 +148,18 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
               Describe your batch — angles on one concept, or one concept across multiple products.
             </p>
             <div className="batch-examples">
-              <span className="batch-example" onClick={() => setPrompt("3 UGC angles for Face Cream — transformation, social proof, and pain point")}>
-                3 UGC angles for Face Cream
+              <span className="batch-example" onClick={() => setPrompt("3 angles on one concept — transformation, social proof, and pain point")}>
+                Multiple angles
               </span>
-              <span className="batch-example" onClick={() => setPrompt("Same short-form UGC script concept adapted for Face Cream, Anti-Gray Serum, and Shampoo")}>
-                1 concept × 3 products
+              <span className="batch-example" onClick={() => setPrompt("Same concept adapted for different products")}>
+                Multiple products
               </span>
             </div>
             <form onSubmit={handleGenerate}>
               <textarea
                 ref={textareaRef}
                 className="batch-prompt-input"
-                placeholder={`e.g. "3 UGC angles for Face Cream — transformation, social proof, and pain point angle"\nor "Same UGC concept adapted for Face Cream, Anti-Gray Serum, and Shampoo"`}
+                placeholder={`Describe what you need — e.g. "3 UGC angles with different emotional hooks" or "same concept adapted for 3 different products"`}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={4}
