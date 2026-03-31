@@ -2,37 +2,62 @@
 // Supports: angle variations (different hooks/scripts) and product variations.
 import { useState, useRef } from "react";
 import axios from "axios";
-
-const STATUS = { idle: "idle", loading: "loading", done: "done", submitting: "submitting", submitted: "submitted", error: "error" };
+import HistoryDrawer from "../components/HistoryDrawer.jsx";
 
 function StatusDot({ status }) {
   const icons = { idle: "○", done: "●", submitted: "✓", error: "!" };
-  const cls = { idle: "batch-dot--idle", done: "batch-dot--selected", submitted: "batch-dot--submitted", error: "batch-dot--error" };
+  const cls   = { idle: "batch-dot--idle", done: "batch-dot--selected", submitted: "batch-dot--submitted", error: "batch-dot--error" };
   return <span className={`batch-dot ${cls[status] ?? "batch-dot--idle"}`}>{icons[status] ?? "○"}</span>;
 }
 
+// Excludes options that don't make sense for batch product selection
+const EXCLUDE_PRODUCTS = new Set(["Multiple Products", "Not a Product Task", "Test Product"]);
+
 export default function BatchPage({ onClose, initialBoardId, boards }) {
-  const [boardType, setBoardType]     = useState(initialBoardId ?? boards?.[0]?.id ?? "video");
-  const [prompt, setPrompt]           = useState("");
-  const [phase, setPhase]             = useState("input"); // "input" | "review"
-  const [tasks, setTasks]             = useState([]);      // [{ id, task, brief, status }]
-  const [selectedId, setSelectedId]   = useState(null);
-  const [generating, setGenerating]   = useState(false);
-  const [genError, setGenError]       = useState(null);
-  const [editingBrief, setEditingBrief] = useState("");    // editable brief HTML
-  const textareaRef = useRef(null);
+  const [boardType, setBoardType]         = useState(initialBoardId ?? boards?.[0]?.id ?? "video");
+  const [mode, setMode]                   = useState("angles"); // "angles" | "products"
+  const [count, setCount]                 = useState(3);        // how many tasks (angles mode)
+  const [selectedProduct, setSelectedProduct] = useState("");   // single product (angles mode)
+  const [selectedProducts, setSelectedProducts] = useState([]); // multi-product (products mode)
+  const [concept, setConcept]             = useState("");        // free-form description
+  const [historyOpen, setHistoryOpen]     = useState(false);
+
+  const [phase, setPhase]                 = useState("input");  // "input" | "review"
+  const [tasks, setTasks]                 = useState([]);
+  const [selectedId, setSelectedId]       = useState(null);
+  const [generating, setGenerating]       = useState(false);
+  const [genError, setGenError]           = useState(null);
+  const [editingBrief, setEditingBrief]   = useState("");
 
   const activeBoard = boards?.find((b) => b.id === boardType);
+  const productField = activeBoard?.fields?.find((f) => f.key === "product" || f.key === "productBundle");
+  const productOptions = (productField?.options ?? []).filter((o) => !EXCLUDE_PRODUCTS.has(o));
   const selected = tasks.find((t) => t.id === selectedId);
+
+  // Build structured prompt from form inputs
+  function buildPrompt() {
+    if (mode === "angles") {
+      const prod = selectedProduct ? `for ${selectedProduct}` : "";
+      return `Generate ${count} distinct task angles ${prod}. ${concept}`.trim();
+    } else {
+      const prods = selectedProducts.join(", ");
+      return `Generate one task for each of these products: ${prods}. ${concept}`.trim();
+    }
+  }
+
+  const effectiveCount = mode === "angles" ? count : selectedProducts.length;
+  const canGenerate = concept.trim() && (
+    mode === "angles" ? true : selectedProducts.length >= 2
+  );
 
   // ── Generation ────────────────────────────────────────────────────────────
   async function handleGenerate(e) {
     e.preventDefault();
-    if (!prompt.trim()) return;
+    if (!canGenerate) return;
     setGenerating(true);
     setGenError(null);
     try {
-      const res = await axios.post("/api/ai/batch", { prompt: prompt.trim(), boardType });
+      const res = await axios.post("/api/ai/batch", { prompt: buildPrompt(), boardType });
       const raw = res.data?.tasks ?? [];
       const enriched = raw.map((t) => ({ ...t, status: "idle", editedBrief: null }));
       setTasks(enriched);
@@ -46,9 +71,27 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
     }
   }
 
+  // Toggle a product tag (products mode)
+  function toggleProduct(p) {
+    setSelectedProducts((prev) =>
+      prev.includes(p)
+        ? prev.filter((x) => x !== p)
+        : prev.length < 10 ? [...prev, p] : prev
+    );
+  }
+
+  // ── History load ──────────────────────────────────────────────────────────
+  function handleHistoryLoad(task) {
+    // Use the loaded task's concept/brief as the starting point for the batch
+    const conceptText = task.videoConcept || task.conceptIdea || "";
+    const typeHint    = task.type ? ` Type: ${task.type}.` : "";
+    if (conceptText) setConcept(conceptText + typeHint);
+    if (task.product && mode === "angles") setSelectedProduct(task.product);
+    setHistoryOpen(false);
+  }
+
   // ── Task selection ────────────────────────────────────────────────────────
   function selectTask(id) {
-    // Save any edits to the previously selected task
     if (selectedId) {
       setTasks((prev) => prev.map((t) => t.id === selectedId ? { ...t, editedBrief: editingBrief } : t));
     }
@@ -57,33 +100,17 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
     setEditingBrief(next?.editedBrief ?? next?.brief ?? "");
   }
 
-  function handleBriefChange(html) {
-    setEditingBrief(html);
-  }
-
   // ── Submit single ─────────────────────────────────────────────────────────
   async function handleSubmitOne(id) {
     const entry = tasks.find((t) => t.id === id);
     if (!entry || entry.status === "submitted") return;
-
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "submitting" } : t));
-
     const briefToSubmit = id === selectedId ? editingBrief : (entry.editedBrief ?? entry.brief);
-
     try {
-      // Create the Monday item
-      const createRes = await axios.post("/api/monday/create-item", {
-        boardType,
-        task: entry.task,
-      });
+      const createRes = await axios.post("/api/monday/create-item", { boardType, task: entry.task });
       const itemId = createRes.data?.itemId;
-
-      // Post the brief as an update
       if (itemId && briefToSubmit) {
-        await axios.post("/api/monday/create-update", {
-          itemId,
-          body: briefToSubmit,
-        });
+        await axios.post("/api/monday/create-update", { itemId, body: briefToSubmit });
       }
       setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "submitted" } : t));
     } catch (err) {
@@ -94,14 +121,11 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
 
   // ── Submit all ────────────────────────────────────────────────────────────
   async function handleSubmitAll() {
-    // Save current edits first
     if (selectedId) {
       setTasks((prev) => prev.map((t) => t.id === selectedId ? { ...t, editedBrief: editingBrief } : t));
     }
     const pending = tasks.filter((t) => t.status !== "submitted");
-    for (const t of pending) {
-      await handleSubmitOne(t.id);
-    }
+    for (const t of pending) await handleSubmitOne(t.id);
   }
 
   const submittedCount = tasks.filter((t) => t.status === "submitted").length;
@@ -110,32 +134,22 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="batch-page">
+
       {/* Header */}
       <header className="batch-header">
-        <button className="batch-back-btn" onClick={onClose} title="Back to form">← Back</button>
+        <button className="batch-back-btn" onClick={onClose}>← Back</button>
         <div className="batch-header-center">
           <span className="batch-header-icon">⚡</span>
           <span className="batch-header-title">Batch Create</span>
-          {phase === "review" && (
-            <span className="batch-header-count">{tasks.length} tasks</span>
-          )}
+          {phase === "review" && <span className="batch-header-count">{tasks.length} tasks</span>}
         </div>
-        {/* Board selector */}
         {phase === "input" && (
-          <select
-            className="batch-board-select"
-            value={boardType}
-            onChange={(e) => setBoardType(e.target.value)}
-          >
-            {boards?.map((b) => (
-              <option key={b.id} value={b.id}>{b.label}</option>
-            ))}
+          <select className="batch-board-select" value={boardType} onChange={(e) => setBoardType(e.target.value)}>
+            {boards?.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
           </select>
         )}
         {phase === "review" && pendingCount > 0 && (
-          <button className="batch-submit-all-btn" onClick={handleSubmitAll}>
-            Submit All ({pendingCount})
-          </button>
+          <button className="batch-submit-all-btn" onClick={handleSubmitAll}>Submit All ({pendingCount})</button>
         )}
       </header>
 
@@ -143,41 +157,128 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
       {phase === "input" && (
         <div className="batch-input-phase">
           <div className="batch-input-card">
-            <h2 className="batch-input-title">What do you need?</h2>
-            <p className="batch-input-hint">
-              Describe your batch — angles on one concept, or one concept across multiple products.
-            </p>
-            <div className="batch-examples">
-              <span className="batch-example" onClick={() => setPrompt("3 angles on one concept — transformation, social proof, and pain point")}>
-                Multiple angles
-              </span>
-              <span className="batch-example" onClick={() => setPrompt("Same concept adapted for different products")}>
-                Multiple products
-              </span>
+
+            {/* Mode selector */}
+            <div className="batch-mode-tabs">
+              <button
+                className={`batch-mode-tab ${mode === "angles" ? "active" : ""}`}
+                onClick={() => setMode("angles")}
+              >
+                Multiple Angles
+              </button>
+              <button
+                className={`batch-mode-tab ${mode === "products" ? "active" : ""}`}
+                onClick={() => setMode("products")}
+              >
+                Multiple Products
+              </button>
             </div>
+
             <form onSubmit={handleGenerate}>
-              <textarea
-                ref={textareaRef}
-                className="batch-prompt-input"
-                placeholder={`Describe what you need — e.g. "3 UGC angles with different emotional hooks" or "same concept adapted for 3 different products"`}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                rows={4}
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate(e); }}
-              />
+
+              {/* Angles mode: product dropdown + count */}
+              {mode === "angles" && (
+                <div className="batch-angles-row">
+                  <div className="batch-field">
+                    <label className="batch-label">Product</label>
+                    <select
+                      className="batch-select"
+                      value={selectedProduct}
+                      onChange={(e) => setSelectedProduct(e.target.value)}
+                    >
+                      <option value="">— any —</option>
+                      {productOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="batch-field batch-field--narrow">
+                    <label className="batch-label">How many? <span className="batch-label-hint">(2–10)</span></label>
+                    <input
+                      type="number"
+                      className="batch-count-input"
+                      min={2} max={10}
+                      value={count}
+                      onChange={(e) => setCount(Math.min(10, Math.max(2, Number(e.target.value))))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Products mode: tag grid */}
+              {mode === "products" && (
+                <div className="batch-field">
+                  <label className="batch-label">
+                    Select products <span className="batch-label-hint">({selectedProducts.length} selected, max 10)</span>
+                  </label>
+                  <div className="batch-product-tags">
+                    {productOptions.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        className={`batch-product-tag ${selectedProducts.includes(p) ? "active" : ""}`}
+                        onClick={() => toggleProduct(p)}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedProducts.length > 0 && (
+                    <button
+                      type="button"
+                      className="batch-clear-tags"
+                      onClick={() => setSelectedProducts([])}
+                    >
+                      Clear selection
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Concept / description */}
+              <div className="batch-field">
+                <div className="batch-concept-header">
+                  <label className="batch-label">
+                    {mode === "angles" ? "Concept & angle guidance" : "Concept description"}
+                  </label>
+                  <button
+                    type="button"
+                    className="batch-history-btn"
+                    onClick={() => setHistoryOpen(true)}
+                    title="Load a past task as reference"
+                  >
+                    🕐 From History
+                  </button>
+                </div>
+                <textarea
+                  className="batch-prompt-input"
+                  placeholder={
+                    mode === "angles"
+                      ? "Describe the concept — e.g. transformation story, UGC style, pain point focus…"
+                      : "Describe the shared concept — the same idea will be adapted for each product"
+                  }
+                  value={concept}
+                  onChange={(e) => setConcept(e.target.value)}
+                  rows={4}
+                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate(e); }}
+                />
+              </div>
+
+              {mode === "products" && selectedProducts.length < 2 && (
+                <p className="batch-mode-hint">Select at least 2 products to generate</p>
+              )}
+
               {genError && <p className="batch-error">{genError}</p>}
+
               <div className="batch-generate-row">
                 <span className="batch-shortcut">⌘↵ to generate</span>
+                {effectiveCount > 0 && canGenerate && (
+                  <span className="batch-count-preview">Will generate {effectiveCount} task{effectiveCount !== 1 ? "s" : ""}</span>
+                )}
                 <button
                   type="submit"
                   className="batch-generate-btn"
-                  disabled={generating || !prompt.trim()}
+                  disabled={generating || !canGenerate}
                 >
-                  {generating ? (
-                    <><span className="batch-spinner" /> Generating…</>
-                  ) : (
-                    "⚡ Generate Tasks"
-                  )}
+                  {generating ? <><span className="batch-spinner" /> Generating…</> : "⚡ Generate Tasks"}
                 </button>
               </div>
             </form>
@@ -185,10 +286,9 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
         </div>
       )}
 
-      {/* Review phase — split layout */}
+      {/* Review phase */}
       {phase === "review" && (
         <div className="batch-review">
-          {/* Left sidebar — task list */}
           <aside className="batch-sidebar">
             <div className="batch-sidebar-label">Generated Tasks</div>
             <ul className="batch-task-list">
@@ -208,21 +308,17 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
                 </li>
               ))}
             </ul>
-
             <div className="batch-sidebar-footer">
-              {submittedCount > 0 && (
-                <p className="batch-submitted-count">{submittedCount} of {tasks.length} submitted</p>
-              )}
+              {submittedCount > 0 && <p className="batch-submitted-count">{submittedCount} of {tasks.length} submitted</p>}
               <button
                 className="batch-new-btn"
-                onClick={() => { setPhase("input"); setTasks([]); setSelectedId(null); setPrompt(""); }}
+                onClick={() => { setPhase("input"); setTasks([]); setSelectedId(null); setConcept(""); }}
               >
                 + New Batch
               </button>
             </div>
           </aside>
 
-          {/* Right panel — brief preview + submit */}
           <main className="batch-main">
             {selected ? (
               <>
@@ -237,19 +333,17 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
                     disabled={selected.status === "submitted" || selected.status === "submitting"}
                   >
                     {selected.status === "submitted"  ? "✓ Submitted"  :
-                     selected.status === "submitting" ? "Submitting…" :
-                     selected.status === "error"      ? "⟳ Retry"     : "Submit →"}
+                     selected.status === "submitting" ? "Submitting…"  :
+                     selected.status === "error"      ? "⟳ Retry"      : "Submit →"}
                   </button>
                 </div>
-
-                {/* Editable brief */}
                 <div className="batch-brief-scroll">
                   {selected.brief ? (
                     <div
                       className="batch-brief-content"
                       contentEditable={selected.status !== "submitted"}
                       suppressContentEditableWarning
-                      onInput={(e) => handleBriefChange(e.currentTarget.innerHTML)}
+                      onInput={(e) => setEditingBrief(e.currentTarget.innerHTML)}
                       dangerouslySetInnerHTML={{ __html: editingBrief }}
                     />
                   ) : (
@@ -263,6 +357,15 @@ export default function BatchPage({ onClose, initialBoardId, boards }) {
           </main>
         </div>
       )}
+
+      {/* History drawer */}
+      <HistoryDrawer
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        boardType={boardType}
+        boardFields={activeBoard?.fields ?? []}
+        onLoad={handleHistoryLoad}
+      />
     </div>
   );
 }

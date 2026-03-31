@@ -207,7 +207,7 @@ Each task object has these fields:
 {{SKILL_KNOWLEDGE}}
 Rules:
 - Return ONLY valid JSON. No markdown, no explanation, no code fences.
-- Generate 2–5 tasks. Never fewer than 2, never more than 5.
+- Generate 2–10 tasks. Never fewer than 2, never more than 10.
 - Each task MUST be meaningfully different. For angle variations: change the hook, emotional angle, script structure. For product variations: adapt the product, concept, and script for each product.
 - Write complete, production-quality content for every task.
 - Each task gets its own hooks array (3 hooks each).

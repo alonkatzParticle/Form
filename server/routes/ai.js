@@ -129,7 +129,7 @@ router.post("/batch", async (req, res) => {
 
     // Step 1: Generate all task objects in one Sonnet call
     const batchResult = await assistWithTask({ mode: "batch", input: prompt, boardType });
-    const tasks = Array.isArray(batchResult?.tasks) ? batchResult.tasks.slice(0, 5) : [];
+    const tasks = Array.isArray(batchResult?.tasks) ? batchResult.tasks.slice(0, 10) : [];
 
     if (tasks.length === 0) {
       return res.status(422).json({ error: "AI did not return any tasks. Try a more specific prompt." });

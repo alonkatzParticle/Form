@@ -3337,3 +3337,54 @@ body {
 .batch-brief-content:focus { border-color: var(--purple); }
 .batch-no-brief { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 40px; }
 .batch-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.9rem; }
+
+/* ── Batch Page — new input controls ──────────────────────────────────────── */
+/* Mode tabs */
+.batch-mode-tabs { display: flex; background: var(--hover-bg); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 24px; }
+.batch-mode-tab { flex: 1; background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; padding: 7px; border-radius: calc(var(--radius-sm) - 2px); cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; }
+.batch-mode-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* Form fields */
+.batch-angles-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+.batch-field { margin-bottom: 16px; }
+.batch-field--narrow { flex-shrink: 0; width: 128px; }
+.batch-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.batch-label-hint { font-weight: 400; color: var(--text-muted); }
+.batch-select {
+  width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  border-radius: var(--radius-sm); padding: 9px 12px; font-size: 0.9rem; font-family: inherit; cursor: pointer; outline: none; transition: border-color 0.15s;
+}
+.batch-select:focus { border-color: var(--purple); }
+.batch-count-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+  border-radius: var(--radius-sm); padding: 9px 12px; font-size: 0.95rem; font-family: inherit;
+  outline: none; transition: border-color 0.15s; text-align: center;
+}
+.batch-count-input:focus { border-color: var(--purple); }
+
+/* Product tag grid */
+.batch-product-tags { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow-y: auto; padding: 4px 0; }
+.batch-product-tag {
+  background: var(--hover-bg); border: 1.5px solid var(--border); color: var(--text-muted);
+  border-radius: 20px; font-size: 0.78rem; padding: 5px 12px; cursor: pointer; font-family: inherit;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.batch-product-tag:hover { border-color: var(--purple); color: var(--purple); }
+.batch-product-tag.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+.batch-clear-tags { background: none; border: none; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-family: inherit; margin-top: 6px; padding: 2px 0; text-decoration: underline; }
+.batch-clear-tags:hover { color: var(--text); }
+
+/* Concept header with history button */
+.batch-concept-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.batch-history-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-muted);
+  border-radius: var(--radius-sm); font-size: 0.75rem; padding: 4px 10px;
+  cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.batch-history-btn:hover { border-color: var(--purple); color: var(--purple); }
+
+/* Generate row extras */
+.batch-count-preview { color: var(--text-muted); font-size: 0.8rem; margin-right: auto; }
+.batch-mode-hint { color: var(--text-muted); font-size: 0.82rem; margin: -8px 0 12px; }
