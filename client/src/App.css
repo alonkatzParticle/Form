@@ -2966,3 +2966,79 @@ body {
 
 .ref-clear-file:hover { color: var(--red); }
 
+/* ─── Hooks Input ────────────────────────────────────────────────────────────── */
+.hooks-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hook-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hook-number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.hook-text-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  background: var(--input-bg);
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.hook-text-input:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+}
+
+.hook-text-input::placeholder { color: var(--placeholder); }
+
+.hook-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.hook-remove-btn:hover {
+  color: var(--red);
+  background: var(--red-bg);
+}
+
+.hook-add-btn {
+  background: none;
+  border: none;
+  color: var(--purple);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+  font-family: inherit;
+  transition: color 0.15s;
+  width: fit-content;
+}
+
+.hook-add-btn:hover { color: var(--purple-dark); text-decoration: underline; }
+

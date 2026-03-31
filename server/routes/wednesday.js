@@ -30,11 +30,23 @@ function formatFormState(formState, boardType) {
         val === undefined ||
         val === "" ||
         (Array.isArray(val) && val.length === 0);
-      const display = isEmpty
-        ? "[empty]"
-        : Array.isArray(val)
-        ? val.join(", ")
-        : String(val);
+
+      let display;
+      if (isEmpty) {
+        display = "[empty]";
+      } else if (f.type === "hooks" && Array.isArray(val)) {
+        // Render hooks as a numbered list so Wednesday can reference them by number
+        const filled = val.filter(Boolean);
+        if (filled.length === 0) {
+          display = "[empty]";
+        } else {
+          display = "\n" + filled.map((h, i) => `    ${i + 1}. ${h}`).join("\n");
+        }
+      } else if (Array.isArray(val)) {
+        display = val.join(", ");
+      } else {
+        display = String(val);
+      }
       return `- ${f.label}: ${display}`;
     });
 

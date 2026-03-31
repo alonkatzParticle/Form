@@ -183,9 +183,17 @@
           "key": "visuals",
           "label": "Visuals",
           "type": "textarea",
-          "hint": "Optional — visual language and ideas for each section of the video",
+          "hint": "Optional \u2014 visual language and ideas for each section of the video",
           "placeholder": "AI will suggest visuals aligned to the script sections\u2026",
           "rows": 4
+        },
+        {
+          "key": "hooks",
+          "label": "Hook Variations",
+          "type": "hooks",
+          "hint": "Write alternative opening lines to A/B test. Each hook is the first line the viewer hears.",
+          "mondayColumnId": "short_text_mkn8n4bx",
+          "mondayValueType": "short_text"
         },
         {
           "key": "scriptMessage",
@@ -263,9 +271,15 @@
       "updateTemplate": "<h3><u>Task Brief</u></h3><br><p><b>Product:</b> {{product}}</p><p><b>Type:</b> {{type}}</p><p><b>Platform:</b> {{platform}}</p><p><b>Requestor:</b> {{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"> </span>{{deadline}}</p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{versionsNeeded}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizesNeeded}}</p><p><br></p><h3>Video Concept</h3><p>{{videoConcept}}</p><br><p><b>Hook:</b> {{hook}}</p><p><br></p><p><b>Script / Message:</b>&nbsp;</p><p>{{scriptMessage}}</p><p><br></p><p><b>Dropbox:</b> {{dropboxLink}}</p><p><br></p><p><br></p>",
       "autoName": {
         "segments": [
-          { "field": "product" },
-          { "field": "platform" },
-          { "field": "taskName" }
+          {
+            "field": "product"
+          },
+          {
+            "field": "platform"
+          },
+          {
+            "field": "taskName"
+          }
         ]
       }
     },
@@ -515,9 +529,15 @@
       "updateTemplate": "<h2><u>Task Brief</u></h2><p><br></p><p><b>Product:</b>&nbsp;{{productBundle}}</p><p><b>Platform:</b>&nbsp;{{platform}}</p><p><b>Requestor:</b>&nbsp;{{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">&nbsp;{{deadline}}</span></p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{amountOfVersions}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizes}}&nbsp;{{otherSizes}}</p><p><br></p><h3><span style=\"font-size: 1rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Concept</span></h3><p>{{conceptIdea}}</p><p></p><p><br></p><p><b>Dropbox:</b>&nbsp;{{dropbox}}</p><p><br></p><p><br></p>",
       "autoName": {
         "segments": [
-          { "field": "productBundle" },
-          { "field": "platform" },
-          { "field": "taskName" }
+          {
+            "field": "productBundle"
+          },
+          {
+            "field": "platform"
+          },
+          {
+            "field": "taskName"
+          }
         ]
       }
     }

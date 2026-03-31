@@ -6,12 +6,15 @@
 import { useState, useRef } from "react";
 import axios from "axios";
 
+// Set to true to re-enable the From Reference tab when ready
+const SHOW_REFERENCE_TAB = false;
+
 const MODES = [
   { id: "autofill",   label: "Auto-fill",      hint: "Describe your task roughly — AI will fill in the form fields." },
   { id: "generate",   label: "Generate Brief",  hint: "Give a one-liner idea — AI will write a complete brief." },
   { id: "format",     label: "Paste & Format",  hint: "Paste an existing rough brief — AI will reformat it." },
-  { id: "reference",  label: "From Reference",  hint: "Upload a video/image or paste a URL — AI will use it to fill the form." },
-];
+  { id: "reference",  label: "From Reference",  hint: "Upload a video/image or paste a URL — AI will use it to fill the form.", hidden: !SHOW_REFERENCE_TAB },
+].filter((m) => !m.hidden);
 
 // ── File drop zone (for the reference tab) ────────────────────────────────────
 function ReferenceDropZone({ file, onFile }) {

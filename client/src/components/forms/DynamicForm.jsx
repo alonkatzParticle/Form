@@ -63,6 +63,10 @@ function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = null) {
     const val = task[key];
     if (val === null || val === undefined || val === "") return null;
     if (Array.isArray(val) && val.length === 0) return null;
+    // hooks: render as numbered list HTML
+    if (field.type === "hooks") {
+      return val.filter(Boolean).map((h, i) => `<p><b>${i + 1}.</b> ${h}</p>`).join("");
+    }
     if (field.type === "people") {
       return val
         .map((id) => users.find((u) => String(u.id) === String(id))?.name ?? id)
@@ -186,9 +190,8 @@ function toMondayValue(field, value) {
 
   switch (type) {
     case "item_name": return null;
-    case "file":      return null; // uploaded separately after item creation
+    case "file":      return null;
     case "status": {
-      // Only send if the value is a valid option — prevents AI-generated typos from crashing Monday
       if (field.options && !field.options.includes(value)) return null;
       return { label: value };
     }
@@ -196,7 +199,14 @@ function toMondayValue(field, value) {
     case "date":      return { date: value };
     case "number":    return String(value);
     case "long_text": return { text: value };
-    case "short_text": return value;
+    // hooks: send only the first hook to Monday's short_text column
+    case "short_text": {
+      if (field.type === "hooks") {
+        const first = Array.isArray(value) ? value.filter(Boolean)[0] : null;
+        return first || null;
+      }
+      return value;
+    }
     case "link":      return { url: value, text: field.linkText || "Link" };
     case "people":    return { personsAndTeams: value.map((id) => ({ id: parseInt(id), kind: "person" })) };
     default:          return null;
@@ -213,6 +223,7 @@ function defaultMondayType(fieldType) {
     text:        "long_text",
     url:         "link",
     people:      "people",
+    hooks:       "short_text",
   };
   return map[fieldType] ?? null;
 }
@@ -236,7 +247,7 @@ function buildColumnValues(fields, task) {
 function initTask(fields) {
   const task = {};
   for (const field of fields) {
-    if (field.type === "multiselect" || field.type === "people") {
+    if (field.type === "multiselect" || field.type === "people" || field.type === "hooks") {
       task[field.key] = [];
     } else if (field.type === "number") {
       task[field.key] = null;
@@ -616,9 +627,75 @@ function renderInput(field, task, setField, users, frequencyOrder = {}) {
         />
       );
 
+    case "hooks":
+      return (
+        <HooksInput
+          value={Array.isArray(value) ? value : []}
+          onChange={(v) => setField(field.key, v)}
+        />
+      );
+
     default:
       return null;
   }
+}
+
+// ─── Hooks input component ────────────────────────────────────────────────────
+// Renders one text input per hook, with add/remove controls.
+// Starts with 1 empty row; "Add another hook" reveals the next (max 5).
+
+const MAX_HOOKS = 5;
+
+function HooksInput({ value, onChange }) {
+  // Ensure we always have at least one slot to type into
+  const hooks = value.length > 0 ? value : [""];
+
+  function setHook(idx, text) {
+    const next = [...hooks];
+    next[idx] = text;
+    onChange(next);
+  }
+
+  function addHook() {
+    if (hooks.length < MAX_HOOKS) onChange([...hooks, ""]);
+  }
+
+  function removeHook(idx) {
+    const next = hooks.filter((_, i) => i !== idx);
+    onChange(next.length > 0 ? next : [""]);
+  }
+
+  return (
+    <div className="hooks-input">
+      {hooks.map((hook, idx) => (
+        <div key={idx} className="hook-row">
+          <span className="hook-number">{idx + 1}.</span>
+          <input
+            type="text"
+            className="hook-text-input"
+            value={hook}
+            onChange={(e) => setHook(idx, e.target.value)}
+            placeholder={`Hook ${idx + 1} — opening line…`}
+          />
+          {hooks.length > 1 && (
+            <button
+              type="button"
+              className="hook-remove-btn"
+              onClick={() => removeHook(idx)}
+              aria-label="Remove hook"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+      {hooks.length < MAX_HOOKS && (
+        <button type="button" className="hook-add-btn" onClick={addHook}>
+          + Add another hook
+        </button>
+      )}
+    </div>
+  );
 }
 
 // ─── File input component ─────────────────────────────────────────────────────
@@ -728,7 +805,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     const sanitized = { ...result };
     for (const field of board.fields) {
       // Arrays must stay arrays
-      if (field.type === "multiselect" || field.type === "people") {
+      if (field.type === "multiselect" || field.type === "people" || field.type === "hooks") {
         if (!Array.isArray(sanitized[field.key])) {
           sanitized[field.key] = prev[field.key];
         }
@@ -737,7 +814,6 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
       if (field.options && sanitized[field.key] !== undefined) {
         const raw = sanitized[field.key];
         if (raw && typeof raw === "string" && !field.options.includes(raw)) {
-          // Try stripping "Particle " prefix (AI often adds the brand name)
           const stripped = raw.replace(/^Particle\s+/i, "");
           sanitized[field.key] = field.options.includes(stripped) ? stripped : "";
         }

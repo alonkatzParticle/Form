@@ -27,10 +27,16 @@ export const FIELD_DEFINITIONS = {
 - type: One of: Iterations/Cuts/Edits, GIF - New Static, GIF - Existing Static, Miscellaneous, Collection, Motion Design, Translation, Special Project, TV, AI Project, AI Creator, UGC/Creator, Amazon/Ulta, Long Form (+1 min), Script - Short Form (<20 seconds), Script (<1 min), Upload B-Rolls, CTA. Infer from context: UGC-style → UGC/Creator, AI avatar/voice → AI Creator, animated/motion graphics (not AI) → Motion Design, rework of existing video → Iterations/Cuts/Edits, ensemble/multiple people → Collection.
 - videoConcept: 1-2 sentences max describing the overall idea or story. Do not write the script here.
 - visuals: Optional. Describe the visual language and key imagery for the video — NOT shot-by-shot direction, just the vibe and what the viewer sees at each beat. Write one sentence per section using exactly these labels on separate lines: "Hook: ..." / "Problem: ..." / "Solution: ..." / "Social Proof: ..." / "CTA: ...". Only include sections relevant to the video type. Leave empty if the type doesn't call for visuals (GIF, Motion Design, Iterations, etc.).
+- hooks: Array of hook variation strings — alternative opening lines for the video to A/B test.
+  These are SEPARATE from the script body. Each hook grabs attention in a different way (different angle, emotion, or claim).
+  Default: generate 3 hooks unless the user specifies a different number or says to leave hooks empty. Max 5.
+  Keep each hook to 1–2 punchy spoken sentences. Hooks must be self-contained opening lines.
+  Example: ["Going gray at 35 isn't aging — it's biology.", "Most men give up on their hair color. Smart ones don't.", "Your follicles aren't dead. They just need the right signal."]
+  If the type is NOT a script type (e.g. GIF, Motion Design, Iterations), set hooks to [].
 - scriptMessage: Write the full script ONLY if type is one of: UGC/Creator, AI Creator, UGC Testimonial, Collection, Script (<1 min), Script - Short Form (<20 seconds), Long Form (+1 min). For all other types leave this empty.
-  FORMAT: Write clean spoken words only. No section labels, no [Hook]/[Problem] markers, no VO:/Visual:/On Screen: directions, no timestamps like [0–4s]. Just the lines a person would say out loud.
-  STRUCTURE: Write the lines in this order — Hook (one punchy attention-grabbing line) → Problem (the pain point) → Solution (product intro + key benefits/ingredients) → Social Proof (stats or real results) → CTA (click, visit, try). Do not label the sections — just write them in sequence as a natural script.
-  LENGTH: Default target is 30–45 seconds of spoken audio. For Script - Short Form (<20 seconds) keep to 15–20 seconds. For Long Form (+1 min) aim for 65+ seconds. The server will measure and trim automatically after you write it.
+  FORMAT: Write clean spoken words only. Start from the PROBLEM — do NOT include a hook line here, that belongs in the hooks array above.
+  STRUCTURE: Problem (the pain point) → Solution (product intro + key benefits/ingredients) → Social Proof (stats or real results) → CTA (click, visit, try). Do not label the sections — just write them in sequence as a natural script.
+  LENGTH: Default target is 30–45 seconds of spoken audio (excluding hook). For Script - Short Form (<20 seconds) keep to 12–18 seconds. For Long Form (+1 min) aim for 60+ seconds.
   One script only — never write multiple versions.
 - versionsNeeded: Leave blank — filled by user.
 - sizesNeeded: Leave blank unless explicitly stated by the user.
@@ -174,7 +180,8 @@ Requestor: Anton Shpakovskiy, Aviad Eilam
 Versions Needed: 2
 Sizes Needed: 9x16
 Video Concept: A fast-paced, animated explainer that dives into the science behind Particle's Anti-Gray Serum, demystifying how it naturally restores hair color + UGC content & transformations
-Script/Message: Going gray isn't just aging — it's biology. Inside your hair follicles, there's a pigment called melanin — it's what gives your hair its color. Over time, your body produces less melanin... and boom — gray hair. Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level. Over 1,000,000 men already trust Particle. There's a reason it sells out. Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.
+Hook Variations: 1. Going gray at 35 isn't aging — it's biology. 2. Most men give up on their hair color. Smart ones don't. 3. Your follicles aren't dead. They just need the right signal.
+Script/Message: Nothing on the market was actually built to fix it. Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level. Over 1,000,000 men already trust Particle. There's a reason it sells out. Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.
 Visuals: Hook: Close-up of a man running his hand through his hair in the mirror, noticing the gray. Problem: Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic. Solution: Product hero shot, dropper applying serum to scalp. Social Proof: Real before/after photos, five-star reviews stacking on screen. CTA: Clean white background, bottle center frame, URL bold underneath.
 
 EXAMPLE OUTPUT:
@@ -183,8 +190,13 @@ EXAMPLE OUTPUT:
 <h3>Video Concept</h3>
 <p>A fast-paced, animated explainer that dives into the science behind Particle's Anti-Gray Serum, demystifying how it naturally restores hair color + UGC content &amp; transformations</p>
 
+<h3>Hook Variations</h3>
+<p><b>1.</b> Going gray at 35 isn't aging — it's biology.</p>
+<p><b>2.</b> Most men give up on their hair color. Smart ones don't.</p>
+<p><b>3.</b> Your follicles aren't dead. They just need the right signal.</p>
+
 <h3>Script</h3>
-<p><span style="color:#E8412A">Going gray isn't just aging — it's biology. Inside your hair follicles, there's a pigment called melanin — it's what gives your hair its color.</span><br/><span style="color:#D97706">Over time, your body produces less melanin... and boom — gray hair. Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A">Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED">Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB">Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>
+<p><span style="color:#D97706">Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A">Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED">Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB">Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>
 
 <h3>Visuals</h3>
 <p><span style="color:#E8412A">Close-up of a man running his hand through his hair in the mirror, noticing the gray.</span><br/><span style="color:#D97706">Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic.</span><br/><span style="color:#16A34A">Product hero shot, dropper applying serum to scalp.</span><br/><span style="color:#7C3AED">Real before/after photos, five-star reviews stacking on screen.</span><br/><span style="color:#2563EB">Clean white background, bottle center frame, URL bold underneath.</span></p>`,
@@ -217,9 +229,18 @@ FORMATTING RULES:
 4. Only include fields that have actual content — skip anything empty.
 5. Short metadata fields first, then creative sections.
 
+HOOK VARIATIONS:
+If hooks is a non-empty array, render a "Hook Variations" section BEFORE the script section:
+<h3>Hook Variations</h3>
+<p><b>1.</b> [first hook]</p>
+<p><b>2.</b> [second hook]</p>
+... one <p> per hook.
+If hooks is empty or absent, skip this section entirely.
+
 SCRIPT & VISUALS COLOR CODING:
 For the Script/Message and Visuals fields, output each section as a single <span style="color:COLOR"> wrapping ALL the text for that section (multiple sentences joined). No labels — the color alone identifies the section. Connect sections with <br/> only — never use separate <p> tags or blank lines between sections within the same field.
-Section colors: Hook=#E8412A, Problem=#D97706, Solution=#16A34A, Social Proof=#7C3AED, CTA=#2563EB.
+Section colors: Problem=#D97706, Solution=#16A34A, Social Proof=#7C3AED, CTA=#2563EB.
+(Hook color #E8412A is used only for the hooks array above, not inside scriptMessage.)
 Only include sections that have content. Follow the example output exactly.
 
 {{BRIEF_EXAMPLE}}`,
