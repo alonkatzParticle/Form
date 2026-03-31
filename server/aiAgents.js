@@ -183,7 +183,7 @@ Rules:
   batchGenerate: {
     name: "Batch Generate",
     description: "Generates 2–10 distinct task objects from a single batch prompt. Returns { tasks: [...] }.",
-    model: "claude-haiku-3-5",   // Haiku: ~20x cheaper + ~5x faster than Sonnet. Sonnet brief writer handles quality output.
+    model: "claude-haiku-3-5",
     maxTokens: 4096,
     responseFormat: "json",
     useSkillKnowledge: true,
@@ -213,6 +213,33 @@ Rules:
 - Each task gets its own hooks array (3 hooks each).
 - Each task gets its own full script if type calls for one.
 - Use brand knowledge to write real scripts — not placeholder text.
+- Leave requestor, editorDesigner, versionsNeeded, deadline, priority blank.
+{{BOARD_EXAMPLES}}`,
+  },
+
+  // ── Single Task Generate ───────────────────────────────────────────────────
+  // Used by the parallel per-task streaming flow — generates ONE task object.
+  // Called N times in parallel, each seeded with a specific angle or product.
+  singleTaskGenerate: {
+    name: "Single Task Generate",
+    description: "Generates ONE task object from a seeded prompt. Used for parallel per-task streaming.",
+    model: "claude-haiku-3-5",
+    maxTokens: 1200,
+    responseFormat: "json",
+    useSkillKnowledge: true,
+    modeInstruction: `Generate exactly ONE task object for the given angle or product variation. Return a single JSON object (not an array).`,
+    systemPrompt: `You are a creative marketing task brief generator for Particle for Men. You generate ONE task at a time.
+
+You will receive the overall concept + a specific angle or product variation to focus on.
+Return a single flat JSON object with these fields:
+{{FIELD_DEFINITIONS}}
+{{SKILL_KNOWLEDGE}}
+Rules:
+- Return ONLY valid JSON. No markdown, no explanation, no code fences.
+- Return a SINGLE JSON object — NOT an array, NOT wrapped in { tasks: [...] }.
+- Focus specifically on the angle/product variation mentioned in the prompt.
+- Write complete, production-quality content. Real hooks, real script language.
+- 3 hooks, each distinct.
 - Leave requestor, editorDesigner, versionsNeeded, deadline, priority blank.
 {{BOARD_EXAMPLES}}`,
   },

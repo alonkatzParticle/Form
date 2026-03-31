@@ -159,13 +159,13 @@ router.post("/batch", async (req, res) => {
   }
 });
 
-// Streaming batch — generates tasks + briefs and emits each via SSE as it completes.
-// Body: { prompt, boardType }
-// SSE events: { type:"status"|"start"|"task"|"done"|"error", ... }
+// Streaming batch — N parallel individual Haiku calls, one per task.
+// Each task is seeded with a specific angle type or product — streams as they complete.
+// Body: { concept, boardType, mode, count, selectedProduct, selectedProducts }
 router.post("/batch-stream", async (req, res) => {
-  const { prompt, boardType } = req.body;
-  if (!prompt || !boardType) {
-    return res.status(400).json({ error: "prompt and boardType are required" });
+  const { concept, boardType, mode, count, selectedProduct, selectedProducts } = req.body;
+  if (!concept || !boardType) {
+    return res.status(400).json({ error: "concept and boardType are required" });
   }
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -177,40 +177,59 @@ router.post("/batch-stream", async (req, res) => {
     if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  try {
-    // Step 1: Generate all task objects in one call
-    emit({ type: "status", message: "Generating tasks…" });
-    const batchResult = await assistWithTask({ mode: "batch", input: prompt, boardType });
-    const tasks = Array.isArray(batchResult?.tasks) ? batchResult.tasks.slice(0, 10) : [];
+  // Angle seeds — ensures variety across parallel calls
+  const ANGLE_TYPES = [
+    "emotional transformation (before/after journey)",
+    "social proof and testimonials",
+    "pain point / problem-first",
+    "benefit-first / solution reveal",
+    "humor and relatable scenario",
+    "urgency and scarcity",
+    "science and ingredient authority",
+    "lifestyle aspiration",
+    "comparison (before vs after product)",
+    "curiosity hook / open loop",
+  ];
 
-    if (tasks.length === 0) {
-      emit({ type: "error", message: "AI did not return any tasks. Try a more specific prompt." });
-      return res.end();
-    }
-
-    emit({ type: "start", total: tasks.length });
-
-    // Step 2: Generate briefs in parallel, emit each as it completes
-    await Promise.all(
-      tasks.map(async (task, i) => {
-        try {
-          const formValues = Object.entries(task)
-            .filter(([, v]) => v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0))
-            .map(([k, v]) => ({ label: k, value: Array.isArray(v) ? v.join(", ") : String(v) }));
-          const brief = await generateBrief({ formValues, boardType });
-          emit({ type: "task", index: i, id: `batch-${i}-${Date.now()}`, task, brief });
-        } catch {
-          emit({ type: "task", index: i, id: `batch-${i}-${Date.now()}`, task, brief: null });
-        }
-      })
-    );
-
-    emit({ type: "done" });
-  } catch (err) {
-    emit({ type: "error", message: err.message });
-  } finally {
-    res.end();
+  let seeds;
+  if (mode === "products" && Array.isArray(selectedProducts) && selectedProducts.length > 0) {
+    seeds = selectedProducts.map((product) => ({ product, angleType: null }));
+  } else {
+    const n = Math.min(Math.max(Number(count) || 3, 2), 10);
+    seeds = Array.from({ length: n }, (_, i) => ({
+      product: selectedProduct || null,
+      angleType: ANGLE_TYPES[i % ANGLE_TYPES.length],
+    }));
   }
+
+  emit({ type: "start", total: seeds.length });
+
+  await Promise.all(
+    seeds.map(async (seed, i) => {
+      try {
+        const productLine = seed.product  ? `Product: ${seed.product}.`       : "";
+        const angleLine   = seed.angleType ? `Angle to use: ${seed.angleType}.` : "";
+        const taskPrompt  = [concept, productLine, angleLine].filter(Boolean).join("\n");
+
+        const taskResult = await assistWithTask({ mode: "singleTaskGenerate", input: taskPrompt, boardType });
+        // singleTaskGenerate returns a plain object; guard against wrapped format
+        const task = taskResult?.tasks?.[0] ?? taskResult;
+
+        const formValues = Object.entries(task)
+          .filter(([, v]) => v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0))
+          .map(([k, v]) => ({ label: k, value: Array.isArray(v) ? v.join(", ") : String(v) }));
+        const brief = await generateBrief({ formValues, boardType });
+
+        emit({ type: "task", index: i, id: `batch-${i}-${Date.now()}`, task, brief });
+      } catch (err) {
+        console.error(`[Batch] Task ${i} failed:`, err.message);
+        emit({ type: "task", index: i, id: `batch-${i}-${Date.now()}`, task: null, brief: null });
+      }
+    })
+  );
+
+  emit({ type: "done" });
+  res.end();
 });
 
 export default router;

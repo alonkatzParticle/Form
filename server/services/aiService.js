@@ -176,12 +176,13 @@ export async function trimScriptToTarget(script, targetRange) {
 }
 
 const MODE_TO_AGENT = {
-  autofill:    AI_AGENTS.autoFill,
-  generate:    AI_AGENTS.generateTask,
-  format:      AI_AGENTS.pasteFormat,
-  reference:   AI_AGENTS.reference,
-  historyLoad: AI_AGENTS.historyLoad,
-  batch:       AI_AGENTS.batchGenerate,
+  autofill:           AI_AGENTS.autoFill,
+  generate:           AI_AGENTS.generateTask,
+  format:             AI_AGENTS.pasteFormat,
+  reference:          AI_AGENTS.reference,
+  historyLoad:        AI_AGENTS.historyLoad,
+  batch:              AI_AGENTS.batchGenerate,
+  singleTaskGenerate: AI_AGENTS.singleTaskGenerate,
 };
 
 // Retry an async fn up to maxAttempts on overloaded / rate-limit errors.

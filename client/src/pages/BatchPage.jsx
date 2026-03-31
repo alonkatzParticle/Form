@@ -86,7 +86,14 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
       const res = await fetch("/api/ai/batch-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: buildPrompt(), boardType }),
+        body: JSON.stringify({
+          concept,
+          boardType,
+          mode,
+          count,
+          selectedProduct,
+          selectedProducts,
+        }),
       });
 
       const reader = res.body.getReader();
