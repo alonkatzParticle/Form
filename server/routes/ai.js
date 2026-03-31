@@ -26,7 +26,7 @@ router.post("/assist", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("AI assist error:", err.message);
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 });
 

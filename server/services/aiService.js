@@ -208,9 +208,13 @@ export async function assistWithTask({ mode, input, boardType, taskContext = {} 
   try {
     result = JSON.parse(text);
   } catch {
-    throw new Error(`AI returned invalid JSON: ${text}`);
+    // AI responded conversationally instead of with JSON — surface as a user-facing error
+    // Extract the readable part (strip any code fences that survived)
+    const readable = text.replace(/```[\s\S]*?```/g, "").trim();
+    const err = new Error(readable || "AI could not generate a brief from this input. Please add more detail.");
+    err.statusCode = 422;
+    throw err;
   }
-
 
   return result;
 }

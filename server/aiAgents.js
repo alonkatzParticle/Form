@@ -84,7 +84,7 @@ When given input, return a JSON object with these fields:
 {{FIELD_DEFINITIONS}}
 {{SKILL_KNOWLEDGE}}
 Rules:
-- Return ONLY valid JSON. No markdown, no explanation, no code fences.
+- Return ONLY valid JSON. No markdown, no explanation, no code fences. NEVER ask for clarification or more information — always return a JSON object with whatever you can infer.
 - If a field cannot be determined from the input, use "" for strings, null for dates/numbers, and [] for arrays.
 - One task = one script. If multiple versions are needed, use versionsNeeded to capture the count — do NOT write multiple scripts in scriptMessage.
 - Only fill fields that are clearly implied by the user's description. Do not invent details.
@@ -111,7 +111,7 @@ When given input, return a JSON object with these fields:
 {{FIELD_DEFINITIONS}}
 {{SKILL_KNOWLEDGE}}
 Rules:
-- Return ONLY valid JSON. No markdown, no explanation, no code fences.
+- Return ONLY valid JSON. No markdown, no explanation, no code fences. NEVER ask for clarification or more information — always return a JSON object and generate creatively from whatever is given.
 - Generate complete, production-quality content for every field you can — do not leave fields empty if you can reasonably fill them.
 - One task = one script. If multiple versions are needed, use versionsNeeded to capture the count — do NOT write multiple scripts in scriptMessage. Write one strong script.
 - Use your brand knowledge to write real video concepts and scripts — not placeholder text.
