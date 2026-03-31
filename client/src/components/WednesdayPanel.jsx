@@ -118,6 +118,7 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
   const [streaming, setStreaming]     = useState(false);
   const [streamText, setStreamText]   = useState("");
   const [lastChanges, setLastChanges] = useState(null); // for undo
+  const [clarificationMode, setClarificationMode] = useState(false);
 
   const [panelTop, setPanelTop] = useState(124);
 
@@ -175,6 +176,7 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
       if (prev.some((m) => m.visibleText === seedMessage)) return prev;
       return [seedMsg, ...prev];
     });
+    setClarificationMode(true);
     onSeedConsumed?.();
   }, [seedMessage]);
 
@@ -221,6 +223,8 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     const isInternal = userContent.startsWith("[");
     if (!isInternal) {
       addMessage({ role: "user", visibleText: userContent });
+      // Once the user replies, clarification mode is no longer needed
+      setClarificationMode(false);
     }
 
     // Build history for API (only role + content, strip UI fields)
@@ -249,6 +253,7 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
           boardType,
           formState,
           referenceContext: referenceContext || null,
+          clarificationMode,
         }),
         signal: abortRef.current.signal,
       });

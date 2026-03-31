@@ -53,8 +53,7 @@ function formatFormState(formState, boardType) {
   return lines.join("\n");
 }
 
-// Build Wednesday's system prompt with current form state injected.
-function buildSystemPrompt(boardType, formState, referenceContext) {
+function buildSystemPrompt(boardType, formState, referenceContext, clarificationMode) {
   const agent = AI_AGENTS.wednesday[boardType] ?? AI_AGENTS.wednesday.video;
   const fieldDefs = FIELD_DEFINITIONS[boardType] ?? "";
   const skillKnowledge = getSkillContent(boardType);
@@ -70,18 +69,24 @@ function buildSystemPrompt(boardType, formState, referenceContext) {
     ? `\n\n## ACTIVE REFERENCE\nThe user loaded a media reference in the AI panel. Here is the Gemini analysis of that reference — use it when the user asks about it or wants to apply it:\n\n${referenceContext}\n`
     : "";
 
+  // Inject clarification-mode instructions when opened from an AI panel "Generate Brief" failure
+  const clarificationSection = clarificationMode
+    ? `\n\n## CLARIFICATION MODE\nYou were opened automatically because the user's "Generate Brief" input was too vague for the AI to generate a good brief. Your job right now is to help them be more specific.\nAsk targeted follow-up questions — one or two at a time — to understand: the product, the video type/format, the target emotion or pain point, and any creative angle they have in mind.\nOnce you feel you have enough to generate a strong brief, explicitly tell the user: **"I think we have enough — go back to the AI panel and try Generate Brief again with this in your prompt: [give them a refined one-liner they can copy]."**\nDo NOT try to fill the form directly in this mode. Your only goal is to help them craft a better input for the AI panel.\n`
+    : "";
+
   return agent.systemPrompt
     .replaceAll("{{FORM_STATE}}", formStateStr)
     .replaceAll("{{FIELD_DEFINITIONS}}", fieldDefs)
     .replaceAll("{{SKILL_KNOWLEDGE}}", skillSection)
-    + referenceSection;
+    + referenceSection
+    + clarificationSection;
 }
 
 // POST /api/wednesday/chat
 // Body: { messages: [{role, content}], boardType, formState, referenceContext? }
 // Returns: SSE stream of text chunks
 router.post("/chat", async (req, res) => {
-  const { messages = [], boardType = "video", formState = {}, referenceContext = null } = req.body;
+  const { messages = [], boardType = "video", formState = {}, referenceContext = null, clarificationMode = false } = req.body;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -90,7 +95,7 @@ router.post("/chat", async (req, res) => {
 
   try {
     const agent = AI_AGENTS.wednesday[boardType] ?? AI_AGENTS.wednesday.video;
-    const system = buildSystemPrompt(boardType, formState, referenceContext);
+    const system = buildSystemPrompt(boardType, formState, referenceContext, clarificationMode);
 
     // Cap history at last 20 messages to stay within token limits
     const history = messages.slice(-20);
