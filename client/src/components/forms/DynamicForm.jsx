@@ -904,6 +904,11 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
         let display;
         if (f.type === "people") {
           display = val.map((id) => users.find((u) => String(u.id) === String(id))?.name ?? id).join(", ");
+        } else if (f.type === "hooks" && Array.isArray(val)) {
+          // Format as numbered list so the brief AI can render them correctly
+          const filled = val.filter(Boolean);
+          if (filled.length === 0) return null;
+          display = filled.map((h, i) => `${i + 1}. ${h}`).join("\n");
         } else if (Array.isArray(val)) {
           display = val.join(", ");
         } else {

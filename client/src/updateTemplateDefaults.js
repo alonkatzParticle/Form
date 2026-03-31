@@ -18,7 +18,7 @@ export const DEFAULT_UPDATE_TEMPLATES = {
     "<p>{{videoConcept}}</p>",
     "<br>",
     "<h3>Hook Variations</h3>",
-    "<p>{{hooks}}</p>",
+    "{{hooks}}",
     "<p><b>Script / Message:</b> {{scriptMessage}}</p>",
     "<p><b>Sizes Needed:</b> {{sizesNeeded}}</p>",
     "<p><b>Dropbox:</b> {{dropboxLink}}</p>",
