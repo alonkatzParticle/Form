@@ -62,12 +62,12 @@ export async function generateBrief({ formValues, boardType }) {
     SCRIPT_SECTIONS: scriptSectionsDef,
   });
 
-  const message = await getClient().messages.create({
+  const message = await withRetry(() => getClient().messages.create({
     model: agent.model,
     max_tokens: agent.maxTokens,
     system,
     messages: [{ role: "user", content: `Board type: ${boardType}\n\nFilled values:\n${fieldList}` }],
-  });
+  }));
 
   let html = message.content[0].text.trim();
   html = html.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/, "").trim();
@@ -145,12 +145,12 @@ export async function trimScriptToTarget(script, targetRange) {
       ? `This script is ${currentSecs} seconds long. Cut it down to ${targetMid} seconds — that means removing about ${delta} seconds of spoken content.${isLarge ? " This is a significant cut. Remove entire sentences and whole sections. Be aggressive — do not just trim individual words." : " Remove the least important sentences."}`
       : `This script is ${currentSecs} seconds long. Expand it to ${targetMid} seconds — that means adding about ${delta} seconds of spoken content. Expand existing sections with more detail.`;
 
-    const msg = await getClient().messages.create({
+    const msg = await withRetry(() => getClient().messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: `You are editing a video ad script for Particle for Men. ${instruction} Keep the Hook→Problem→Solution→Social Proof→CTA flow. Write clean spoken words only — no section labels, no directions. Return ONLY the revised script, nothing else.`,
       messages: [{ role: "user", content: current }],
-    });
+    }));
     return msg.content[0].text.trim();
   }
 
@@ -184,17 +184,33 @@ const MODE_TO_AGENT = {
   batch:       AI_AGENTS.batchGenerate,
 };
 
+// Retry an async fn up to maxAttempts on overloaded / rate-limit errors.
+async function withRetry(fn, maxAttempts = 4, baseDelayMs = 2000) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const retryable = err?.status === 529 || err?.status === 429 ||
+        err?.error?.type === "overloaded_error" || err?.error?.type === "rate_limit_error";
+      if (!retryable || attempt === maxAttempts) throw err;
+      const delay = baseDelayMs * Math.pow(2, attempt - 1); // 2s, 4s, 8s
+      console.warn(`[AI] Attempt ${attempt} failed (${err.error?.type ?? err.status}). Retrying in ${delay}ms…`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+}
+
 // Main AI assist function — powers the form-fill AI panel.
 // mode: "autofill" | "generate" | "format" | "historyLoad" | "batch"
 export async function assistWithTask({ mode, input, boardType, taskContext = {} }) {
   const agent = MODE_TO_AGENT[mode] ?? AI_AGENTS.autoFill;
 
-  const message = await getClient().messages.create({
+  const message = await withRetry(() => getClient().messages.create({
     model: agent.model,
     max_tokens: agent.maxTokens,
     system: buildSystemPrompt(agent, boardType),
     messages: [{ role: "user", content: `${agent.modeInstruction}\n\nInput:\n${input}` }],
-  });
+  }));
 
   let text = message.content[0].text.trim();
   // Strip markdown code fences

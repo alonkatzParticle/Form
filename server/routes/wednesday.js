@@ -106,12 +106,28 @@ router.post("/chat", async (req, res) => {
     // Cap history at last 20 messages to stay within token limits
     const history = messages.slice(-20);
 
-    const stream = await getClient().messages.stream({
-      model: agent.model,
-      max_tokens: agent.maxTokens,
-      system,
-      messages: history,
-    });
+    // Retry on overload — streaming doesn't support mid-stream retry, but we can retry before stream starts
+    let stream;
+    let attempts = 0;
+    while (true) {
+      attempts++;
+      try {
+        stream = await getClient().messages.stream({
+          model: agent.model,
+          max_tokens: agent.maxTokens,
+          system,
+          messages: history,
+        });
+        break;
+      } catch (err) {
+        const retryable = err?.status === 529 || err?.status === 429 ||
+          err?.error?.type === "overloaded_error" || err?.error?.type === "rate_limit_error";
+        if (!retryable || attempts >= 3) throw err;
+        const delay = 2000 * Math.pow(2, attempts - 1);
+        console.warn(`[Wednesday] Overloaded, retrying in ${delay}ms…`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
 
     for await (const chunk of stream) {
       if (
