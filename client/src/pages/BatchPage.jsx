@@ -64,22 +64,90 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
     mode === "angles" ? true : selectedProducts.length >= 2
   );
 
-  // ── Generation ────────────────────────────────────────────────────────────
+  // ── Generation (SSE streaming) ────────────────────────────────────────────
   async function handleGenerate(e) {
     e.preventDefault();
     if (!canGenerate) return;
-    setGenerating(true);
     setGenError(null);
+
+    // Immediately show review page with N skeleton slots
+    const skeletons = Array.from({ length: effectiveCount }, (_, i) => ({
+      id: `skeleton-${i}`, task: null, brief: null, status: "generating", editedBrief: null,
+    }));
+    setTasks(skeletons);
+    setSelectedId(null);
+    setEditingBrief("");
+    setPhase("review");
+    setGenerating(true);
+
+    const autoSelected = { current: false };
+
     try {
-      const res = await axios.post("/api/ai/batch", { prompt: buildPrompt(), boardType });
-      const raw = res.data?.tasks ?? [];
-      const enriched = raw.map((t) => ({ ...t, status: "idle", editedBrief: null }));
-      setTasks(enriched);
-      setSelectedId(enriched[0]?.id ?? null);
-      setEditingBrief(enriched[0]?.brief ?? "");
-      setPhase("review");
+      const res = await fetch("/api/ai/batch-stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: buildPrompt(), boardType }),
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); // keep incomplete last line
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+
+            if (event.type === "start") {
+              // Replace skeletons with the real count if AI returned different number
+              setTasks((prev) => {
+                const realCount = event.total;
+                if (realCount === prev.length) return prev;
+                return Array.from({ length: realCount }, (_, i) =>
+                  prev[i] ?? { id: `skeleton-${i}`, task: null, brief: null, status: "generating", editedBrief: null }
+                );
+              });
+            }
+
+            if (event.type === "task") {
+              const ready = { id: event.id, task: event.task, brief: event.brief, status: "idle", editedBrief: null };
+              setTasks((prev) => {
+                const next = [...prev];
+                // Replace skeleton at index, or append if index is out of range
+                if (event.index < next.length) {
+                  next[event.index] = ready;
+                } else {
+                  next.push(ready);
+                }
+                return next;
+              });
+              // Auto-select first completed task
+              if (!autoSelected.current) {
+                autoSelected.current = true;
+                setSelectedId(event.id);
+                setEditingBrief(event.brief ?? "");
+              }
+            }
+
+            if (event.type === "error") {
+              setGenError(event.message);
+              setPhase("input");
+              setTasks([]);
+            }
+          } catch { /* malformed event, skip */ }
+        }
+      }
     } catch (err) {
-      setGenError(err.response?.data?.error || err.message || "Generation failed.");
+      setGenError(err.message || "Generation failed.");
+      setPhase("input");
+      setTasks([]);
     } finally {
       setGenerating(false);
     }
@@ -180,8 +248,11 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
             {boards?.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
           </select>
         )}
-        {phase === "review" && pendingCount > 0 && (
+        {phase === "review" && pendingCount > 0 && !generating && (
           <button className="batch-submit-all-btn" onClick={handleSubmitAll}>Submit All ({pendingCount})</button>
+        )}
+        {phase === "review" && generating && (
+          <span className="batch-header-generating">⏳ Generating…</span>
         )}
       </header>
 
@@ -350,18 +421,28 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
       {phase === "review" && (
         <div className="batch-review">
           <aside className="batch-sidebar">
-            <div className="batch-sidebar-label">Generated Tasks</div>
+            <div className="batch-sidebar-label">
+              {generating
+                ? `${tasks.filter(t => t.status !== "generating").length} of ${tasks.length} ready…`
+                : "Generated Tasks"}
+            </div>
             <ul className="batch-task-list">
-              {tasks.map((t) => (
+              {tasks.map((t, i) => (
                 <li
                   key={t.id}
-                  className={`batch-task-item ${selectedId === t.id ? "batch-task-item--active" : ""} batch-task-item--${t.status}`}
-                  onClick={() => selectTask(t.id)}
+                  className={`batch-task-item ${selectedId === t.id ? "batch-task-item--active" : ""} batch-task-item--${t.status} ${t.status === "generating" ? "batch-task-item--skeleton" : ""}`}
+                  onClick={() => t.status !== "generating" && selectTask(t.id)}
                 >
-                  <StatusDot status={selectedId === t.id && t.status === "idle" ? "done" : t.status} />
+                  {t.status === "generating"
+                    ? <span className="batch-dot"><span className="batch-ref-spinner" /></span>
+                    : <StatusDot status={selectedId === t.id && t.status === "idle" ? "done" : t.status} />}
                   <div className="batch-task-meta">
-                    <span className="batch-task-name">{t.task?.taskName || t.task?.conceptIdea || `Task ${tasks.indexOf(t) + 1}`}</span>
-                    <span className="batch-task-sub">{[t.task?.product, t.task?.type].filter(Boolean).join(" · ")}</span>
+                    {t.status === "generating"
+                      ? <span className="batch-task-name batch-skeleton-text">Generating…</span>
+                      : <>
+                          <span className="batch-task-name">{t.task?.taskName || t.task?.conceptIdea || `Task ${i + 1}`}</span>
+                          <span className="batch-task-sub">{[t.task?.product, t.task?.type].filter(Boolean).join(" · ")}</span>
+                        </>}
                   </div>
                   {t.status === "submitted" && <span className="batch-status-badge batch-status-badge--ok">✓</span>}
                   {t.status === "error"     && <span className="batch-status-badge batch-status-badge--err">!</span>}
@@ -372,7 +453,7 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
               {submittedCount > 0 && <p className="batch-submitted-count">{submittedCount} of {tasks.length} submitted</p>}
               <button
                 className="batch-new-btn"
-                onClick={() => { setPhase("input"); setTasks([]); setSelectedId(null); setConcept(""); }}
+                onClick={() => { setPhase("input"); setTasks([]); setSelectedId(null); setConcept(""); setHistoryTask(null); }}
               >
                 + New Batch
               </button>
@@ -380,7 +461,12 @@ export default function BatchPage({ onClose, initialBoardId, boards, frequencyOr
           </aside>
 
           <main className="batch-main">
-            {selected ? (
+            {!selectedId && generating ? (
+              <div className="batch-empty-state batch-generating-state">
+                <span className="batch-gen-spinner" />
+                <p>Generating your tasks — first one will appear shortly…</p>
+              </div>
+            ) : selected ? (
               <>
                 <div className="batch-main-header">
                   <div>

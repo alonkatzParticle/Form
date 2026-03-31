@@ -3419,3 +3419,10 @@ body {
   border-radius: 50%;
   animation: batchSpin 0.7s linear infinite;
 }
+
+/* ── Batch skeleton / generating states ─────────────────────────────────── */
+.batch-task-item--skeleton { opacity: 0.5; cursor: default !important; }
+.batch-skeleton-text { color: var(--text-muted); font-style: italic; }
+.batch-generating-state { flex-direction: column; gap: 12px; color: var(--text-muted); font-size: 0.9rem; }
+.batch-gen-spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid color-mix(in srgb, var(--purple) 20%, transparent); border-top-color: var(--purple); border-radius: 50%; animation: batchSpin 0.8s linear infinite; }
+.batch-header-generating { font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }

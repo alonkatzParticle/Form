@@ -182,9 +182,9 @@ Rules:
   //   • Product variations — same concept/format, adapted per product
   batchGenerate: {
     name: "Batch Generate",
-    description: "Generates 2–5 distinct task objects from a single batch prompt. Returns { tasks: [...] }.",
-    model: "claude-sonnet-4-6",
-    maxTokens: 8192,
+    description: "Generates 2–10 distinct task objects from a single batch prompt. Returns { tasks: [...] }.",
+    model: "claude-haiku-3-5",   // Haiku: ~20x cheaper + ~5x faster than Sonnet. Sonnet brief writer handles quality output.
+    maxTokens: 4096,
     responseFormat: "json",
     useSkillKnowledge: true,
     modeInstruction: `Generate multiple distinct task briefs from the user's batch request. Return a JSON object with a "tasks" array containing 2–5 task objects. Each task must be meaningfully different from the others.`,

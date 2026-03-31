@@ -159,4 +159,58 @@ router.post("/batch", async (req, res) => {
   }
 });
 
+// Streaming batch — generates tasks + briefs and emits each via SSE as it completes.
+// Body: { prompt, boardType }
+// SSE events: { type:"status"|"start"|"task"|"done"|"error", ... }
+router.post("/batch-stream", async (req, res) => {
+  const { prompt, boardType } = req.body;
+  if (!prompt || !boardType) {
+    return res.status(400).json({ error: "prompt and boardType are required" });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const emit = (data) => {
+    if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    // Step 1: Generate all task objects in one call
+    emit({ type: "status", message: "Generating tasks…" });
+    const batchResult = await assistWithTask({ mode: "batch", input: prompt, boardType });
+    const tasks = Array.isArray(batchResult?.tasks) ? batchResult.tasks.slice(0, 10) : [];
+
+    if (tasks.length === 0) {
+      emit({ type: "error", message: "AI did not return any tasks. Try a more specific prompt." });
+      return res.end();
+    }
+
+    emit({ type: "start", total: tasks.length });
+
+    // Step 2: Generate briefs in parallel, emit each as it completes
+    await Promise.all(
+      tasks.map(async (task, i) => {
+        try {
+          const formValues = Object.entries(task)
+            .filter(([, v]) => v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0))
+            .map(([k, v]) => ({ label: k, value: Array.isArray(v) ? v.join(", ") : String(v) }));
+          const brief = await generateBrief({ formValues, boardType });
+          emit({ type: "task", index: i, id: `batch-${i}-${Date.now()}`, task, brief });
+        } catch {
+          emit({ type: "task", index: i, id: `batch-${i}-${Date.now()}`, task, brief: null });
+        }
+      })
+    );
+
+    emit({ type: "done" });
+  } catch (err) {
+    emit({ type: "error", message: err.message });
+  } finally {
+    res.end();
+  }
+});
+
 export default router;
