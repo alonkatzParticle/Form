@@ -59,12 +59,13 @@ function formatDate(iso) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function HistoryDrawer({ isOpen, onClose, boardType, boardFields, onLoad }) {
+export default function HistoryDrawer({ isOpen, onClose, boardType, boardFields, onLoad, onUseAsReference }) {
   const [items, setItems]       = useState([]);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState(null);
   const [search, setSearch]     = useState("");
-  const [loadingId, setLoadingId] = useState(null);
+  const [loadingId, setLoadingId]       = useState(null);
+  const [referenceId, setReferenceId]   = useState(null);
   const searchRef               = useRef(null);
   const hasFetched              = useRef(false);
 
@@ -182,13 +183,28 @@ export default function HistoryDrawer({ isOpen, onClose, boardType, boardFields,
                 <span className="history-entry-name">{item.name}</span>
                 <span className="history-entry-date">{formatDate(item.createdAt)}</span>
               </div>
-              <button
-                className="history-load-btn"
-                onClick={() => handleLoad(item)}
-                disabled={loadingId === item.id}
-              >
-                {loadingId === item.id ? "Loading…" : "Load"}
-              </button>
+              <div className="history-entry-actions">
+                {onUseAsReference && (
+                  <button
+                    className="history-ref-btn"
+                    onClick={() => {
+                      setReferenceId(item.id);
+                      onUseAsReference(item).finally(() => setReferenceId(null));
+                    }}
+                    disabled={referenceId === item.id || loadingId === item.id}
+                    title="Load as reference for Wednesday"
+                  >
+                    {referenceId === item.id ? "…" : "✦ Remix"}
+                  </button>
+                )}
+                <button
+                  className="history-load-btn"
+                  onClick={() => handleLoad(item)}
+                  disabled={loadingId === item.id || referenceId === item.id}
+                >
+                  {loadingId === item.id ? "Loading…" : "Load"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

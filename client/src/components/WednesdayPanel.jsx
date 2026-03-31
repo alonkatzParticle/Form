@@ -112,14 +112,16 @@ function TypingIndicator() {
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel, formState, onApplyChanges, chatResetKey, referenceContext, seedMessage, onSeedConsumed }) {
+export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel, formState, onApplyChanges, chatResetKey, referenceContext, seedMessage, onSeedConsumed, taskReference, onClearTaskReference }) {
   const [messages, setMessages]       = useState([]);
   const [input, setInput]             = useState("");
   const [streaming, setStreaming]     = useState(false);
   const [streamText, setStreamText]   = useState("");
   const [lastChanges, setLastChanges] = useState(null); // for undo
   const [clarificationMode, setClarificationMode] = useState(false);
-  const clarificationRef = useRef(false); // ref so saveMessages can check synchronously
+  const clarificationRef = useRef(false);
+  const taskReferenceRef = useRef(taskReference);
+  useEffect(() => { taskReferenceRef.current = taskReference; }, [taskReference]);
 
   const [panelTop, setPanelTop] = useState(124);
 
@@ -268,6 +270,7 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
           formState,
           referenceContext: referenceContext || null,
           clarificationMode,
+          taskReference: taskReferenceRef.current || null,
         }),
         signal: abortRef.current.signal,
       });

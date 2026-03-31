@@ -3214,6 +3214,32 @@ body {
 .history-load-btn:hover { background: var(--purple-dark); }
 .history-load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Actions group — Load + Remix buttons side by side */
+.history-entry-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Remix (Use as Reference) button */
+.history-ref-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--purple);
+  color: var(--purple);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+.history-ref-btn:hover { background: var(--purple); color: #fff; }
+.history-ref-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* History button in card header */
 .history-open-btn {
   background: none;

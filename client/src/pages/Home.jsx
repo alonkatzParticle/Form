@@ -26,8 +26,46 @@ export default function Home({ onOpenSettings }) {
   const [wednesdaySeedMessage, setWednesdaySeedMessage] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyResult, setHistoryResult] = useState(null);
+  const [taskReference, setTaskReference] = useState(null); // { name, brief } for Wednesday remix
 
-  // Fetch board config from server on mount
+  // Load an existing Monday task as reference:
+  // 1. Fetch its brief HTML
+  // 2. Run through Haiku to fill the form
+  // 3. Open Wednesday with the task context + seed greeting
+  async function handleUseAsReference(item) {
+    try {
+      // Fetch the Monday brief
+      const updateRes = await axios.get(`/api/monday/item-update?itemId=${item.id}`);
+      const briefHtml = updateRes.data?.body || "";
+
+      // Fill the form via Haiku if we have a brief
+      if (briefHtml) {
+        try {
+          const aiRes = await axios.post("/api/ai/assist", {
+            mode: "historyLoad",
+            boardType: activeBoardId,
+            input: briefHtml,
+          });
+          const aiTask = aiRes.data?.task ?? aiRes.data ?? null;
+          if (aiTask) setHistoryResult(aiTask);
+        } catch (e) {
+          console.warn("[Reference] AI fill failed:", e.message);
+        }
+      }
+
+      // Set task reference context for Wednesday
+      setTaskReference({ name: item.name, brief: briefHtml });
+
+      // Open Wednesday with a greeting about the reference
+      const shortName = item.name.length > 50 ? item.name.slice(0, 47) + "…" : item.name;
+      setWednesdaySeedMessage(`I’ve loaded **${shortName}** as your starting point and pre-filled the form. What would you like to do differently?`);
+      setWednesdayOpen(true);
+      setHistoryOpen(false);
+    } catch (err) {
+      console.error("[Reference] Failed to load reference task:", err.message);
+    }
+  }
+
   useEffect(() => {
     axios
       .get("/api/settings")
@@ -187,6 +225,8 @@ export default function Home({ onOpenSettings }) {
             referenceContext={referenceContext}
             seedMessage={wednesdaySeedMessage}
             onSeedConsumed={() => setWednesdaySeedMessage(null)}
+            taskReference={taskReference}
+            onClearTaskReference={() => setTaskReference(null)}
           />
 
           <HistoryDrawer
@@ -195,6 +235,7 @@ export default function Home({ onOpenSettings }) {
             boardType={activeBoardId}
             boardFields={activeBoard.fields}
             onLoad={(task) => { setHistoryResult(task); setHistoryOpen(false); }}
+            onUseAsReference={handleUseAsReference}
           />
         </div>
       )}

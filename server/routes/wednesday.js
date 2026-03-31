@@ -53,7 +53,7 @@ function formatFormState(formState, boardType) {
   return lines.join("\n");
 }
 
-function buildSystemPrompt(boardType, formState, referenceContext, clarificationMode) {
+function buildSystemPrompt(boardType, formState, referenceContext, clarificationMode, taskReference) {
   const agent = AI_AGENTS.wednesday[boardType] ?? AI_AGENTS.wednesday.video;
   const fieldDefs = FIELD_DEFINITIONS[boardType] ?? "";
   const skillKnowledge = getSkillContent(boardType);
@@ -64,9 +64,14 @@ function buildSystemPrompt(boardType, formState, referenceContext, clarification
 
   const formStateStr = formatFormState(formState, boardType);
 
-  // Inject reference context if the user loaded a reference in the AI panel
+  // Inject reference context if the user loaded a media reference in the AI panel
   const referenceSection = referenceContext
     ? `\n\n## ACTIVE REFERENCE\nThe user loaded a media reference in the AI panel. Here is the Gemini analysis of that reference — use it when the user asks about it or wants to apply it:\n\n${referenceContext}\n`
+    : "";
+
+  // Inject task reference when the user loaded an existing Monday task as a starting point
+  const taskReferenceSection = taskReference
+    ? `\n\n## TASK REFERENCE\nThe user loaded an existing Monday task as a reference. The form has already been pre-filled with that task's content. The user wants to create something similar but different — your job is to understand what they want to change and apply those changes to the form.\n\nReference task name: **${taskReference.name}**\n\nReference task brief (HTML):\n${taskReference.brief}\n\nImportant:\n- The form is already filled. Listen to what the user wants to change.\n- Apply changes using your standard JSON change blocks.\n- Feel free to ask clarifying questions if their request is vague.\n`
     : "";
 
   // Inject clarification-mode instructions when opened from an AI panel "Generate Brief" failure
@@ -79,6 +84,7 @@ function buildSystemPrompt(boardType, formState, referenceContext, clarification
     .replaceAll("{{FIELD_DEFINITIONS}}", fieldDefs)
     .replaceAll("{{SKILL_KNOWLEDGE}}", skillSection)
     + referenceSection
+    + taskReferenceSection
     + clarificationSection;
 }
 
@@ -86,7 +92,7 @@ function buildSystemPrompt(boardType, formState, referenceContext, clarification
 // Body: { messages: [{role, content}], boardType, formState, referenceContext? }
 // Returns: SSE stream of text chunks
 router.post("/chat", async (req, res) => {
-  const { messages = [], boardType = "video", formState = {}, referenceContext = null, clarificationMode = false } = req.body;
+  const { messages = [], boardType = "video", formState = {}, referenceContext = null, clarificationMode = false, taskReference = null } = req.body;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -95,7 +101,7 @@ router.post("/chat", async (req, res) => {
 
   try {
     const agent = AI_AGENTS.wednesday[boardType] ?? AI_AGENTS.wednesday.video;
-    const system = buildSystemPrompt(boardType, formState, referenceContext, clarificationMode);
+    const system = buildSystemPrompt(boardType, formState, referenceContext, clarificationMode, taskReference);
 
     // Cap history at last 20 messages to stay within token limits
     const history = messages.slice(-20);
