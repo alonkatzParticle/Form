@@ -183,7 +183,7 @@ Rules:
   batchGenerate: {
     name: "Batch Generate",
     description: "Generates 2–10 distinct task objects from a single batch prompt. Returns { tasks: [...] }.",
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5",
     maxTokens: 4096,
     responseFormat: "json",
     useSkillKnowledge: true,
@@ -223,7 +223,7 @@ Rules:
   singleTaskGenerate: {
     name: "Single Task Generate",
     description: "Generates ONE task object from a seeded prompt. Used for parallel per-task streaming.",
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5",
     maxTokens: 1200,
     responseFormat: "json",
     useSkillKnowledge: true,
@@ -252,7 +252,7 @@ Rules:
   briefWriter: {
     name: "Brief Writer",
     description: "Formats the filled form values into a polished HTML brief when the user clicks 'Review Brief'. The brief is editable before submitting and then posted as a Monday.com update.",
-    model: "claude-haiku-3-5",   // TEST: Haiku+Haiku pipeline — switch back to claude-sonnet-4-6 if quality insufficient
+    model: "claude-haiku-4-5",   // TEST: Haiku+Haiku pipeline — switch back to claude-sonnet-4-6 if quality insufficient
     maxTokens: 2048,
     responseFormat: "html",
 
