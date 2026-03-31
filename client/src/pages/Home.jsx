@@ -9,7 +9,7 @@ import BriefPreview from "./BriefPreview.jsx";
 import WednesdayPanel from "../components/WednesdayPanel.jsx";
 import HistoryDrawer from "../components/HistoryDrawer.jsx";
 
-export default function Home({ onOpenSettings }) {
+export default function Home({ onOpenSettings, onOpenBatch }) {
   const [boards, setBoards] = useState([]);
   const [activeBoardId, setActiveBoardId] = useState(null);
   const [frequencyOrder, setFrequencyOrder] = useState({});
@@ -188,13 +188,22 @@ export default function Home({ onOpenSettings }) {
                   <h2>{activeBoard.label}</h2>
                   <p className="card-subtitle">Fill in the details below to create a task on Monday.com</p>
                 </div>
-                <button
-                  className="history-open-btn"
-                  onClick={() => setHistoryOpen(true)}
-                  title="View task history"
-                >
-                  🕐 History
-                </button>
+              <div className="card-header-actions">
+                  <button
+                    className="batch-open-btn"
+                    onClick={() => onOpenBatch?.(activeBoardId)}
+                    title="Create multiple tasks at once"
+                  >
+                    ⚡ Batch
+                  </button>
+                  <button
+                    className="history-open-btn"
+                    onClick={() => setHistoryOpen(true)}
+                    title="View task history"
+                  >
+                    🕐 History
+                  </button>
+              </div>
               </div>
               <div className="card-body">
                 <DynamicForm

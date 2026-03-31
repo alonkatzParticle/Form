@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import Home from "./pages/Home.jsx";
 import Settings from "./pages/Settings.jsx";
+import BatchPage from "./pages/BatchPage.jsx";
 import "./App.css";
 
 export default function App() {
-  const [page, setPage] = useState("home"); // "home" | "settings"
+  const [page, setPage] = useState("home"); // "home" | "settings" | "batch"
+  const [batchBoardId, setBatchBoardId] = useState(null);
+  const [boards, setBoards] = useState([]);
+
+  useEffect(() => {
+    axios.get("/api/settings").then((res) => setBoards(res.data.boards ?? []));
+  }, []);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState(null);
@@ -36,10 +43,20 @@ export default function App() {
   return (
     <>
       {page === "home" && (
-        <Home onOpenSettings={() => setShowPasswordModal(true)} />
+        <Home
+          onOpenSettings={() => setShowPasswordModal(true)}
+          onOpenBatch={(boardId) => { setBatchBoardId(boardId); setPage("batch"); }}
+        />
       )}
       {page === "settings" && (
         <Settings onClose={() => setPage("home")} />
+      )}
+      {page === "batch" && (
+        <BatchPage
+          onClose={() => setPage("home")}
+          initialBoardId={batchBoardId}
+          boards={boards}
+        />
       )}
 
       {showPasswordModal && (

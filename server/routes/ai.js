@@ -117,4 +117,46 @@ router.post("/trim-script", async (req, res) => {
   }
 });
 
+// Generate a batch of 2–5 distinct task objects + their briefs in one call.
+// Body: { prompt, boardType }
+// Returns: { tasks: [{ id, task, brief }] }
+router.post("/batch", async (req, res) => {
+  try {
+    const { prompt, boardType } = req.body;
+    if (!prompt || !boardType) {
+      return res.status(400).json({ error: "prompt and boardType are required" });
+    }
+
+    // Step 1: Generate all task objects in one Sonnet call
+    const batchResult = await assistWithTask({ mode: "batch", input: prompt, boardType });
+    const tasks = Array.isArray(batchResult?.tasks) ? batchResult.tasks.slice(0, 5) : [];
+
+    if (tasks.length === 0) {
+      return res.status(422).json({ error: "AI did not return any tasks. Try a more specific prompt." });
+    }
+
+    // Step 2: Generate briefs for all tasks in parallel
+    const withBriefs = await Promise.all(
+      tasks.map(async (task, i) => {
+        try {
+          // Build display-ready form values for the brief writer
+          const formValues = Object.entries(task)
+            .filter(([, v]) => v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0))
+            .map(([k, v]) => ({ label: k, value: Array.isArray(v) ? v.join(", ") : String(v) }));
+
+          const brief = await generateBrief({ formValues, boardType });
+          return { id: `batch-${i}-${Date.now()}`, task, brief };
+        } catch {
+          return { id: `batch-${i}-${Date.now()}`, task, brief: null };
+        }
+      })
+    );
+
+    res.json({ tasks: withBriefs });
+  } catch (err) {
+    console.error("Batch generate error:", err.message);
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
 export default router;

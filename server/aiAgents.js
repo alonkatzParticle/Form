@@ -174,6 +174,50 @@ Rules:
   },
 
 
+  // ── Batch Generate ──────────────────────────────────────────────────────────
+  // Fires when the user submits a prompt on the /batch page.
+  // Returns an ARRAY of up to 5 task objects wrapped in { tasks: [...] }.
+  // Two modes (AI infers from prompt):
+  //   • Angle variations — same product, different hooks/concepts/scripts
+  //   • Product variations — same concept/format, adapted per product
+  batchGenerate: {
+    name: "Batch Generate",
+    description: "Generates 2–5 distinct task objects from a single batch prompt. Returns { tasks: [...] }.",
+    model: "claude-sonnet-4-6",
+    maxTokens: 8192,
+    responseFormat: "json",
+    useSkillKnowledge: true,
+    modeInstruction: `Generate multiple distinct task briefs from the user's batch request. Return a JSON object with a "tasks" array containing 2–5 task objects. Each task must be meaningfully different from the others.`,
+    systemPrompt: `You are a creative marketing task brief generator for Particle for Men. You create multiple distinct task briefs in one shot.
+
+The user will describe a batch request — either:
+- Multiple ANGLES on one concept (vary the hook, emotion, script angle, while keeping product/format the same)
+- Multiple PRODUCTS for one concept (keep the format/angle the same, adapt for each product)
+
+Return a JSON object in this exact shape:
+{
+  "tasks": [
+    { ...task fields... },
+    { ...task fields... }
+  ]
+}
+
+Each task object has these fields:
+{{FIELD_DEFINITIONS}}
+{{SKILL_KNOWLEDGE}}
+Rules:
+- Return ONLY valid JSON. No markdown, no explanation, no code fences.
+- Generate 2–5 tasks. Never fewer than 2, never more than 5.
+- Each task MUST be meaningfully different. For angle variations: change the hook, emotional angle, script structure. For product variations: adapt the product, concept, and script for each product.
+- Write complete, production-quality content for every task.
+- Each task gets its own hooks array (3 hooks each).
+- Each task gets its own full script if type calls for one.
+- Use brand knowledge to write real scripts — not placeholder text.
+- Leave requestor, editorDesigner, versionsNeeded, deadline, priority blank.
+{{BOARD_EXAMPLES}}`,
+  },
+
+
   // ── Brief Writer ───────────────────────────────────────────────────────────
   // Fires when the user clicks "Review Brief →" on the form.
   // Takes the filled form values and formats them into a clean HTML brief

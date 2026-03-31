@@ -181,10 +181,11 @@ const MODE_TO_AGENT = {
   format:      AI_AGENTS.pasteFormat,
   reference:   AI_AGENTS.reference,
   historyLoad: AI_AGENTS.historyLoad,
+  batch:       AI_AGENTS.batchGenerate,
 };
 
 // Main AI assist function — powers the form-fill AI panel.
-// mode: "autofill" | "generate" | "format"
+// mode: "autofill" | "generate" | "format" | "historyLoad" | "batch"
 export async function assistWithTask({ mode, input, boardType, taskContext = {} }) {
   const agent = MODE_TO_AGENT[mode] ?? AI_AGENTS.autoFill;
 
