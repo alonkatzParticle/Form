@@ -6,7 +6,7 @@
 
 import express from "express";
 import multer from "multer";
-import { createItem, createUpdate, getExampleItems, getHistoryItems, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
+import { createItem, createUpdate, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
 import { getSettings } from "../services/settingsService.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -107,6 +107,20 @@ router.get("/columns", async (req, res) => {
     res.json(columns);
   } catch (err) {
     console.error("Monday columns error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fetch the first update (brief HTML) for a Monday task item.
+// Query param: itemId
+router.get("/item-update", async (req, res) => {
+  try {
+    const { itemId } = req.query;
+    if (!itemId) return res.status(400).json({ error: "itemId is required" });
+    const body = await getItemFirstUpdate(itemId);
+    res.json({ body: body || null });
+  } catch (err) {
+    console.error("Monday item-update error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

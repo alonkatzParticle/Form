@@ -95,12 +95,43 @@ export default function HistoryDrawer({ isOpen, onClose, boardType, boardFields,
     item.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  function handleLoad(item) {
+  async function handleLoad(item) {
     setLoadingId(item.id);
-    const task = mapItemToTask(item, boardFields);
-    onLoad(task);
-    onClose();
-    setLoadingId(null);
+    try {
+      // Step 1: Get column-value mapped fields as a fast base
+      const baseTask = mapItemToTask(item, boardFields);
+
+      // Step 2: Fetch the Monday brief (first update) for this item
+      let aiTask = null;
+      try {
+        const updateRes = await axios.get(`/api/monday/item-update?itemId=${item.id}`);
+        const briefHtml = updateRes.data?.body;
+
+        if (briefHtml) {
+          // Step 3: Ask Haiku to extract all fields from the brief
+          const aiRes = await axios.post("/api/ai/assist", {
+            mode: "historyLoad",
+            boardType,
+            input: briefHtml,
+          });
+          aiTask = aiRes.data?.task ?? aiRes.data ?? null;
+        }
+      } catch (err) {
+        console.warn("[HistoryDrawer] AI extraction failed, falling back to column values:", err.message);
+      }
+
+      // Step 4: Merge — AI result takes priority, base fills any gaps
+      const merged = { ...baseTask, ...(aiTask || {}) };
+
+      // Preserve people fields from base (AI can't resolve IDs)
+      if (baseTask.requestor?.length)       merged.requestor      = baseTask.requestor;
+      if (baseTask.editorDesigner?.length)  merged.editorDesigner = baseTask.editorDesigner;
+
+      onLoad(merged);
+      onClose();
+    } finally {
+      setLoadingId(null);
+    }
   }
 
   return (

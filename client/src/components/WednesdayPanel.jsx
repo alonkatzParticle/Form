@@ -119,6 +119,7 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
   const [streamText, setStreamText]   = useState("");
   const [lastChanges, setLastChanges] = useState(null); // for undo
   const [clarificationMode, setClarificationMode] = useState(false);
+  const clarificationRef = useRef(false); // ref so saveMessages can check synchronously
 
   const [panelTop, setPanelTop] = useState(124);
 
@@ -146,11 +147,15 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Load chat history from localStorage when board changes
+  // Load chat history from localStorage when board changes — strip any stale seed messages
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY(boardType));
     if (saved) {
-      try { setMessages(JSON.parse(saved)); } catch { setMessages([]); }
+      try {
+        const parsed = JSON.parse(saved);
+        // Filter out any seed messages that may have been saved from a prior session
+        setMessages(parsed.filter((m) => !m._isSeed));
+      } catch { setMessages([]); }
     } else {
       setMessages([]);
     }
@@ -173,13 +178,13 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
       changes: null,
       changeType: null,
       cardStatus: null,
+      _isSeed: true, // never persisted to localStorage
     };
     setMessages((prev) => {
-      // Don't duplicate if already present
       if (prev.some((m) => m.visibleText === seedMessage)) return prev;
-      // Append at end so it appears after any existing messages in chronological order
       return [...prev, seedMsg];
     });
+    clarificationRef.current = true;
     setClarificationMode(true);
     onSeedConsumed?.();
   }, [seedMessage]);
@@ -209,9 +214,12 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     }
   }, [isOpen]);
 
-  // Persist messages to localStorage
+  // Persist messages to localStorage — skip during clarification mode (transient)
   function saveMessages(msgs) {
-    try { localStorage.setItem(STORAGE_KEY(boardType), JSON.stringify(msgs)); } catch {}
+    if (clarificationRef.current) return; // synchronous ref check avoids closure timing issues
+    try {
+      localStorage.setItem(STORAGE_KEY(boardType), JSON.stringify(msgs.filter((m) => !m._isSeed)));
+    } catch {}
   }
 
   function addMessage(msg) {
@@ -228,7 +236,8 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
     const isInternal = userContent.startsWith("[");
     if (!isInternal) {
       addMessage({ role: "user", visibleText: userContent });
-      // Once the user replies, clarification mode is no longer needed
+      // Once the user replies, exit clarification mode
+      clarificationRef.current = false;
       setClarificationMode(false);
     }
 

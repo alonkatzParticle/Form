@@ -121,7 +121,7 @@ Rules:
   },
 
 
-  // ── Paste & Format ─────────────────────────────────────────────────────────
+  // ── Paste & Format ────────────────────────────────────────────────────────
   // Triggered when the user selects "Paste & Format" in the AI panel and pastes
   // an existing brief or rough notes. Restructures the pasted content into the
   // correct form fields without changing the meaning or adding new content.
@@ -145,6 +145,32 @@ Rules:
 - One task = one script. If the pasted content has multiple scripts, put only the first one in scriptMessage.
 - If a field cannot be found in the pasted content, use "" for strings, null for dates/numbers, and [] for arrays.
 {{BOARD_EXAMPLES}}`,
+  },
+
+
+  // ── History Load ────────────────────────────────────────────────
+  // Triggered when loading a task from the History drawer.
+  // Given an HTML brief from a Monday update + base column values, extracts
+  // all fields precisely. Uses Haiku — this is pure extraction, no creativity needed.
+  historyLoad: {
+    name: "History Load",
+    description: "Extracts form fields from an existing Monday task brief. Fast Haiku-based extraction.",
+    model: "claude-haiku-4-5",
+    maxTokens: 1024,
+    responseFormat: "json",
+    useSkillKnowledge: false,
+    modeInstruction: `Extract all form fields from this existing task brief. Include ALL hook variations as a hooks array. Do not invent or improve anything.`,
+    systemPrompt: `You are extracting fields from an existing Monday.com task brief for Particle for Men.
+
+Return a JSON object with these fields:
+{{FIELD_DEFINITIONS}}
+Rules:
+- Return ONLY valid JSON. No markdown, no explanation, no code fences.
+- Extract ONLY what is explicitly present in the brief. Do not add, rewrite, or improve anything.
+- For hooks: return ALL numbered variations as an array of strings.
+- For scriptMessage: extract the full script text, stripping HTML tags.
+- If a field is absent, use "" for strings, null for numbers/dates, [] for arrays.
+- Omit requestor and editorDesigner entirely (cannot resolve names to IDs).`,
   },
 
 

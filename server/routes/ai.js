@@ -18,8 +18,8 @@ router.post("/assist", async (req, res) => {
       return res.status(400).json({ error: "mode, input, and boardType are required" });
     }
 
-    if (!["autofill", "generate", "format"].includes(mode)) {
-      return res.status(400).json({ error: "mode must be autofill, generate, or format" });
+    if (!["autofill", "generate", "format", "historyLoad"].includes(mode)) {
+      return res.status(400).json({ error: "mode must be autofill, generate, format, or historyLoad" });
     }
 
     const result = await assistWithTask({ mode, input, boardType, taskContext: taskContext || {} });

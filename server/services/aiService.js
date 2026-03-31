@@ -176,10 +176,11 @@ export async function trimScriptToTarget(script, targetRange) {
 }
 
 const MODE_TO_AGENT = {
-  autofill:  AI_AGENTS.autoFill,
-  generate:  AI_AGENTS.generateTask,
-  format:    AI_AGENTS.pasteFormat,
-  reference: AI_AGENTS.reference,
+  autofill:    AI_AGENTS.autoFill,
+  generate:    AI_AGENTS.generateTask,
+  format:      AI_AGENTS.pasteFormat,
+  reference:   AI_AGENTS.reference,
+  historyLoad: AI_AGENTS.historyLoad,
 };
 
 // Main AI assist function — powers the form-fill AI panel.

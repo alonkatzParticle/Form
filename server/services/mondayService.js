@@ -83,6 +83,22 @@ export async function getHistoryItems(boardId, limit = 50) {
   return data.boards[0]?.items_page?.items || [];
 }
 
+// Fetch the most recent update (comment/brief) for a Monday item.
+// Returns the body HTML of the first update, or null if none exist.
+export async function getItemFirstUpdate(itemId) {
+  const query = `
+    query GetUpdates($itemId: ID!) {
+      items(ids: [$itemId]) {
+        updates(limit: 1) {
+          body
+        }
+      }
+    }
+  `;
+  const data = await mondayQuery(query, { itemId: String(itemId) });
+  return data.items?.[0]?.updates?.[0]?.body ?? null;
+}
+
 // Fetch all users in the Monday.com account for the Requestor and Editor/Designer dropdowns.
 export async function getUsers() {
   const query = `
