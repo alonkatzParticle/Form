@@ -6,10 +6,11 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import InlineDurationEstimator from "../InlineDurationEstimator.jsx";
 import { DEFAULT_UPDATE_TEMPLATES } from "../../updateTemplateDefaults.js";
+import { estimateDuration, formatDurationRange } from "../../utils/durationEstimate.js";
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
 
-function Field({ label, required, hint, children }) {
+export function Field({ label, required, hint, children }) {
   return (
     <div className="field">
       <label>
@@ -24,8 +25,9 @@ function Field({ label, required, hint, children }) {
 
 // ─── Value visibility check ───────────────────────────────────────────────────
 
-function isVisible(field, task) {
-  if (field.hidden) return false;
+export function isVisible(field, task) {
+  if (field.hidden) return false;  // hidden fields never render — but still submit to Monday
+  if (!field.show_if) return true;
   if (!field.showWhen) return true;
   const val = task[field.showWhen.field];
   if (Array.isArray(val)) return val.includes(field.showWhen.includes);
@@ -34,7 +36,7 @@ function isVisible(field, task) {
 
 // ─── Auto name builder ────────────────────────────────────────────────────────
 
-function buildAutoName(board, task) {
+export function buildAutoName(board, task) {
   if (!board.autoName) return task.taskName || "";
   return board.autoName.segments
     .map((seg) => {
@@ -176,6 +178,83 @@ function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = null) {
   return scratch.innerHTML;
 }
 
+// ─── AI Brief Generator Utility ───────────────────────────────────────────────
+
+export async function generateBriefHtml(board, task, users) {
+  const formValues = board.fields
+    .filter((f) => isVisible(f, task) && f.type !== "file" && f.mondayValueType !== "item_name")
+    .map((f) => {
+      const val = task[f.key];
+      if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.length === 0)) return null;
+      let display;
+      if (f.type === "people") {
+        display = val.map((id) => users.find((u) => String(u.id) === String(id))?.name ?? id).join(", ");
+      } else if (f.type === "hooks" && Array.isArray(val)) {
+        const filled = val.filter(Boolean);
+        if (filled.length === 0) return null;
+        display = filled.map((h, i) => `${i + 1}. ${h}`).join("\n");
+      } else if (Array.isArray(val)) {
+        display = val.join(", ");
+      } else {
+        display = String(val);
+      }
+      return { label: f.label, value: display };
+    })
+    .filter(Boolean);
+
+  // ── Duration Estimation (syllable-based) ──
+  // ELEVENLABS_DISABLED: ElevenLabs call commented out — restore when credits are available.
+  // To re-enable: uncomment the axios block below and remove the estimateDuration() call.
+  const scriptField = board.fields.find((f) => f.durationEstimator);
+  const currentScript = scriptField ? task[scriptField.key] : null;
+
+  // ELEVENLABS_DISABLED — uncomment to restore TTS-based estimation:
+  // let finalEstimate = task._elevenLabsEstimate;
+  // if (currentScript && currentScript.trim().length > 0) {
+  //   if (!finalEstimate || task._estimatedScript !== currentScript) {
+  //     try {
+  //       const { data } = await axios.post("/api/elevenlabs/duration", { script: currentScript });
+  //       finalEstimate = data.estimatedSeconds + 3;
+  //     } catch { finalEstimate = null; }
+  //   }
+  // }
+
+  // Syllable-based math estimation (always runs, instant, no API needed)
+  const finalEstimate = estimateDuration(currentScript);
+
+  // Push the estimate into formValues so the AI brief receives it
+  if (finalEstimate && !isNaN(finalEstimate)) {
+    const s = parseInt(finalEstimate, 10);
+    formValues.push({
+      label: "Estimated Duration",
+      value: `${Math.max(0, s - 2)}\u2013${s + 2} seconds`
+    });
+  }
+
+  // Safety net: inject duration directly into HTML even if AI skips the field
+  function injectDurationIntoHtml(html, estimateSeconds) {
+    if (!estimateSeconds || isNaN(estimateSeconds)) return html;
+    const s = parseInt(estimateSeconds, 10);
+    const durationText = `${Math.max(0, s - 2)}\u2013${s + 2} sec`;
+    if (html.includes("Duration")) return html; // already present in any form — skip injection
+    const idx = html.indexOf("</p>");
+    if (idx === -1) return html + `<p><b>Est. Duration:</b> ${durationText}</p>`;
+    return html.slice(0, idx) + ` &nbsp;|&nbsp; <b>Est. Duration:</b> ${durationText}` + html.slice(idx);
+  }
+
+  try {
+    const { data } = await axios.post("/api/ai/brief", { formValues, boardType: board.id });
+    const html = injectDurationIntoHtml(data.html, finalEstimate);
+    return { html, finalEstimate };
+  } catch {
+    const html = injectDurationIntoHtml(
+      buildUpdateBody(board.fields, task, users, board.updateTemplate ?? DEFAULT_UPDATE_TEMPLATES[board.id] ?? null),
+      finalEstimate
+    );
+    return { html, finalEstimate };
+  }
+}
+
 // ─── Monday value serializer ──────────────────────────────────────────────────
 
 function toMondayValue(field, value) {
@@ -230,15 +309,23 @@ function defaultMondayType(fieldType) {
 
 // ─── Column value builder ─────────────────────────────────────────────────────
 
-function buildColumnValues(fields, task) {
+export function buildColumnValues(fields, task) {
   const vals = {};
+  
+  // Inject the duration estimate cleanly so it maps to the hidden Monday column 
+  const buildTask = { ...task };
+  if (buildTask._elevenLabsEstimate && !isNaN(buildTask._elevenLabsEstimate)) {
+    buildTask.targetDuration = Math.round(buildTask._elevenLabsEstimate);
+  }
+
   for (const field of fields) {
     if (!field.mondayColumnId) continue;
-    const mondayVal = toMondayValue(field, task[field.key]);
+    const mondayVal = toMondayValue(field, buildTask[field.key]);
     if (mondayVal !== null && mondayVal !== undefined) {
       vals[field.mondayColumnId] = mondayVal;
     }
   }
+  
   return vals;
 }
 
@@ -348,10 +435,12 @@ function CustomSelect({ options, value, onChange, placeholder = "Select…" }) {
 
 // ─── Custom multi-select dropdown ────────────────────────────────────────────
 
-function CustomMultiSelect({ options, value, onChange }) {
+function CustomMultiSelect({ options, value = [], onChange }) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+
+  const safeValue = Array.isArray(value) ? value : [];
 
   const filtered = options.filter((o) =>
     o.toLowerCase().includes(search.toLowerCase())
@@ -369,13 +458,13 @@ function CustomMultiSelect({ options, value, onChange }) {
   }, []);
 
   function toggle(option) {
-    onChange(value.includes(option) ? value.filter((v) => v !== option) : [...value, option]);
+    onChange(safeValue.includes(option) ? safeValue.filter((v) => v !== option) : [...safeValue, option]);
   }
 
   return (
     <div className="people-search" ref={containerRef}>
       <div className="people-search-box" onClick={() => setIsOpen(true)}>
-        {value.map((o) => (
+        {safeValue.map((o) => (
           <span key={o} className="people-tag">
             {o}
             <button
@@ -387,7 +476,7 @@ function CustomMultiSelect({ options, value, onChange }) {
         ))}
         <input
           className="people-input"
-          placeholder={value.length ? "" : "Select options…"}
+          placeholder={safeValue.length ? "" : "Select options…"}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onFocus={() => setIsOpen(true)}
@@ -401,10 +490,10 @@ function CustomMultiSelect({ options, value, onChange }) {
             filtered.map((o) => (
               <div
                 key={o}
-                className={`people-option${value.includes(o) ? " selected" : ""}`}
+                className={`people-option${safeValue.includes(o) ? " selected" : ""}`}
                 onMouseDown={(e) => { e.preventDefault(); toggle(o); }}
               >
-                <span className="people-option-check">{value.includes(o) ? "✓" : ""}</span>
+                <span className="people-option-check">{safeValue.includes(o) ? "✓" : ""}</span>
                 {o}
               </div>
             ))
@@ -417,10 +506,12 @@ function CustomMultiSelect({ options, value, onChange }) {
 
 // ─── Searchable people multi-select ──────────────────────────────────────────
 
-function PeopleSearchSelect({ field, value, users, onChange }) {
+function PeopleSearchSelect({ field, value = [], users, onChange }) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+
+  const safeValue = Array.isArray(value) ? value : [];
 
   const displayUsers = field.allowedPeople
     ? users.filter((u) =>
@@ -434,10 +525,10 @@ function PeopleSearchSelect({ field, value, users, onChange }) {
     u.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const selectedUsers = users.filter((u) => value.includes(u.id));
+  const selectedUsers = users.filter((u) => safeValue.includes(u.id));
 
   function toggle(id) {
-    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+    onChange(safeValue.includes(id) ? safeValue.filter((v) => v !== id) : [...safeValue, id]);
     setSearch("");
   }
 
@@ -514,8 +605,11 @@ function sortUsersByFrequency(users, freqArray) {
 
 // ─── Single field renderer ────────────────────────────────────────────────────
 
-function renderInput(field, task, setField, users, frequencyOrder = {}) {
-  const value = task[field.key];
+export function renderInput(field, task, setField, users, frequencyOrder = {}) {
+  let value = task[field.key];
+  if (value === undefined && ["multiselect", "people", "file", "hooks"].includes(field.type)) {
+    value = [];
+  }
 
   switch (field.type) {
     case "text":
@@ -778,15 +872,27 @@ function FileInput({ value, onChange }) {
 export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview }) {
   const DRAFT_KEY = `task_draft_${board.id}`;
 
-  const [task, setTask] = useState(() => initTask(board.fields));
+  // On mount: immediately restore from localStorage draft if one exists.
+  // This ensures a page refresh re-populates the form automatically.
+  const [task, setTask] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`task_draft_${board.id}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Merge saved values onto blank defaults so any new fields added since saving
+        // still get their proper defaults rather than being undefined.
+        return { ...initTask(board.fields), ...parsed };
+      }
+    } catch {}
+    return initTask(board.fields);
+  });
   const [generatingBrief, setGeneratingBrief] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [aiDuration, setAiDuration] = useState(null);
 
-  // Draft recovery — check localStorage on mount
-  const [hasDraft, setHasDraft] = useState(() => {
-    try { return !!localStorage.getItem(`task_draft_${board.id}`); } catch { return false; }
-  });
+  // Draft banner: shown only if a draft exists BUT the form initialised with empty defaults
+  // (i.e. the saved JSON failed to parse). In normal operation the form auto-restores above.
+  const [hasDraft, setHasDraft] = useState(false);
 
   // Re-init form state when the board changes (tab switch)
   // Uses a ref to track board.id so we can skip the initial mount run
@@ -794,9 +900,16 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   useEffect(() => {
     if (prevBoardId.current === board.id) return;
     prevBoardId.current = board.id;
+    // Try restoring a draft for the newly selected board, else start fresh
+    try {
+      const saved = localStorage.getItem(`task_draft_${board.id}`);
+      if (saved) {
+        setTask({ ...initTask(board.fields), ...JSON.parse(saved) });
+        return;
+      }
+    } catch {}
     setTask(initTask(board.fields));
     setSubmitError(null);
-    try { setHasDraft(!!localStorage.getItem(`task_draft_${board.id}`)); } catch {}
   }, [board.id]);
 
   // Sanitize AI/Wednesday result — ensure multiselect and people fields always stay arrays.
@@ -893,39 +1006,19 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     }
     setSubmitError(null);
     const itemName = buildAutoName(board, task);
-    const columnValues = buildColumnValues(board.fields, task);
-
-    // Build display-ready values for AI brief generation (skip files and item_name fields)
-    const formValues = board.fields
-      .filter((f) => isVisible(f, task) && f.type !== "file" && f.mondayValueType !== "item_name")
-      .map((f) => {
-        const val = task[f.key];
-        if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.length === 0)) return null;
-        let display;
-        if (f.type === "people") {
-          display = val.map((id) => users.find((u) => String(u.id) === String(id))?.name ?? id).join(", ");
-        } else if (f.type === "hooks" && Array.isArray(val)) {
-          // Format as numbered list so the brief AI can render them correctly
-          const filled = val.filter(Boolean);
-          if (filled.length === 0) return null;
-          display = filled.map((h, i) => `${i + 1}. ${h}`).join("\n");
-        } else if (Array.isArray(val)) {
-          display = val.join(", ");
-        } else {
-          display = String(val);
-        }
-        return { label: f.label, value: display };
-      })
-      .filter(Boolean);
 
     setGeneratingBrief(true);
     try {
-      const { data } = await axios.post("/api/ai/brief", { formValues, boardType: board.id });
-      onReview({ task, itemName, columnValues, briefHtml: data.html });
-    } catch {
-      // Fall back to template-based brief if AI fails
-      const briefHtml = buildUpdateBody(board.fields, task, users, board.updateTemplate ?? DEFAULT_UPDATE_TEMPLATES[board.id] ?? null);
-      onReview({ task, itemName, columnValues, briefHtml });
+      // generateBriefHtml now returns { html, finalEstimate } — estimate is computed inside
+      const { html: briefHtml, finalEstimate } = await generateBriefHtml(board, task, users);
+      
+      // Build column values AFTER we have the estimate so targetDuration is populated
+      const taskWithEstimate = finalEstimate
+        ? { ...task, _elevenLabsEstimate: finalEstimate }
+        : task;
+      const columnValues = buildColumnValues(board.fields, taskWithEstimate);
+
+      onReview({ task: taskWithEstimate, itemName, columnValues, briefHtml });
     } finally {
       setGeneratingBrief(false);
     }
@@ -933,7 +1026,19 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
 
   // ─── Layout pass ─────────────────────────────────────────────────────────────
   const visibleFields = board.fields.filter((f) => isVisible(f, task));
-  const renderGroups = visibleFields.map((f) => ({ type: "single", field: f }));
+  const renderGroups = visibleFields.reduce((acc, f) => {
+    if (f.half) {
+      const last = acc[acc.length - 1];
+      if (last && last.type === "row" && last.fields.length === 1) {
+        last.fields.push(f);
+        return acc;
+      }
+      acc.push({ type: "row", fields: [f] });
+      return acc;
+    }
+    acc.push({ type: "single", field: f });
+    return acc;
+  }, []);
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -970,6 +1075,10 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
                 targetDuration={task.targetDuration}
                 onTargetChange={(val) => setField("targetDuration", val)}
                 onScriptChange={(val) => setField(group.field.key, val)}
+                onEstimateChange={(val, scr) => {
+                  setField("_elevenLabsEstimate", val);
+                  setField("_estimatedScript", scr);
+                }}
                 videoType={task.type || ""}
               />
             )}

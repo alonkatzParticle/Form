@@ -281,7 +281,7 @@ Script/Message: Nothing on the market was actually built to fix it. Particle's A
 Visuals: Hook: Close-up of a man running his hand through his hair in the mirror, noticing the gray. Problem: Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic. Solution: Product hero shot, dropper applying serum to scalp. Social Proof: Real before/after photos, five-star reviews stacking on screen. CTA: Clean white background, bottle center frame, URL bold underneath.
 
 EXAMPLE OUTPUT:
-<p><b>Product:</b> Anti-Gray Serum &nbsp;|&nbsp; <b>Type:</b> Script (&lt;1 min) &nbsp;|&nbsp; <b>Priority:</b> Medium &nbsp;|&nbsp; <b>Versions:</b> 2 &nbsp;|&nbsp; <b>Sizes:</b> 9x16 &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy, Aviad Eilam</p>
+<p><b>Product:</b> Anti-Gray Serum &nbsp;|&nbsp; <b>Type:</b> Script (&lt;1 min) &nbsp;|&nbsp; <b>Priority:</b> Medium &nbsp;|&nbsp; <b>Est. Duration:</b> 28–32 seconds &nbsp;|&nbsp; <b>Versions:</b> 2 &nbsp;|&nbsp; <b>Sizes:</b> 9x16 &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy, Aviad Eilam</p>
 
 <h3>Video Concept</h3>
 <p>A fast-paced, animated explainer that dives into the science behind Particle's Anti-Gray Serum, demystifying how it naturally restores hair color + UGC content &amp; transformations</p>
@@ -324,6 +324,7 @@ FORMATTING RULES:
 3. Preserve line breaks in scripts and multi-line content using <br/> tags.
 4. Only include fields that have actual content — skip anything empty.
 5. Short metadata fields first, then creative sections.
+6. If "Estimated Duration" is present in the input, include it in the metadata line as <b>Est. Duration:</b> [value].
 
 HOOK VARIATIONS:
 If hooks is a non-empty array, render a "Hook Variations" section BEFORE the script section:

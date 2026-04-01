@@ -48,7 +48,7 @@ function buildSystemPrompt(agent, boardType) {
 
 // Generates a formatted HTML brief from resolved form values.
 // formValues: [{ label, value }] — only non-empty, display-ready values.
-export async function generateBrief({ formValues, boardType }) {
+export async function generateBrief({ formValues, boardType, estimatedDurationText = null }) {
   const agent = AI_AGENTS.briefWriter;
   const fieldList = formValues.map(({ label, value }) => `${label}: ${value}`).join("\n");
   const example = agent.examples[boardType] ?? agent.examples.video;
@@ -105,6 +105,16 @@ export async function generateBrief({ formValues, boardType }) {
         return `<span style="color:${color};">${cleaned}</span><br/>`;
       }
     );
+  }
+
+  // Directly inject the duration into the metadata line — don't rely on AI to include it
+  if (estimatedDurationText) {
+    const alreadyHas = html.includes("Duration");
+    if (!alreadyHas) {
+      html = html.replace(/(<p[^>]*>)([\/s\S]*?)(<\/p>)/, (match, open, content, close) =>
+        `${open}${content} &nbsp;|&nbsp; <b>Est. Duration:</b> ${estimatedDurationText}${close}`
+      );
+    }
   }
 
   return html;

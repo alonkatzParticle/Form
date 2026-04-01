@@ -2,8 +2,8 @@
 // Shows: Estimate Duration button | Set video duration input (when script has content)
 //        Change duration of Script button (when script + target are both set)
 //        Preview card with Apply/Cancel when trim result is ready
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState, useEffect, useRef } from "react";
+import { estimateDuration } from "../utils/durationEstimate.js";
 
 export default function InlineDurationEstimator({
   script = "",
@@ -11,6 +11,7 @@ export default function InlineDurationEstimator({
   targetDuration = null,
   onTargetChange,
   onScriptChange,
+  onEstimateChange,
   videoType = "",
 }) {
   const [result, setResult]         = useState(null);
@@ -20,37 +21,57 @@ export default function InlineDurationEstimator({
   const [trimPreview, setTrimPreview] = useState(null); // { script, estimatedSeconds }
   const [trimError, setTrimError]   = useState(null);
 
-  const hasScript = script.trim().length > 0;
+  const [lastEstimatedScript, setLastEstimatedScript] = useState("");
 
-  // Clear result when script content changes (runs first)
+  const hasScript = script.trim().length > 0;
+  const isStale = hasScript && script !== lastEstimatedScript;
+
+  // Use a ref so useEffect can call the latest onEstimateChange without it being a dependency
+  const onEstimateChangeRef = useRef(onEstimateChange);
+  useEffect(() => { onEstimateChangeRef.current = onEstimateChange; });
+
+  // Clear result when script is wiped entirely
   useEffect(() => {
-    setResult(null);
-    setError(null);
-    setTrimPreview(null);
-    setTrimError(null);
-  }, [script]);
+    if (!hasScript) {
+      setResult(null);
+      setError(null);
+      setTrimPreview(null);
+      setTrimError(null);
+      setLastEstimatedScript("");
+      onEstimateChangeRef.current?.(null, "");
+    }
+  }, [hasScript]); // ← only hasScript, not onEstimateChange (which changes every render)
 
   // When AI has already estimated duration server-side, pre-fill the result (runs after clear)
   useEffect(() => {
     if (autoResult !== null) {
       setResult(autoResult);
       setError(null);
+      setLastEstimatedScript(script || "");
     }
-  }, [autoResult]);
+  }, [autoResult]); // ← script removed: only re-run when autoResult changes, not on every keystroke
 
-  async function handleEstimate() {
+
+  function handleEstimate() {
     if (!hasScript) return;
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    try {
-      const res = await axios.post("/api/elevenlabs/duration", { script });
-      setResult(res.data.estimatedSeconds);
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to estimate duration");
-    } finally {
-      setLoading(false);
-    }
+    // ELEVENLABS_DISABLED — restore when credits available:
+    // setLoading(true);
+    // try {
+    //   const res = await axios.post("/api/elevenlabs/duration", { script });
+    //   const adjustedSeconds = res.data.estimatedSeconds + 3;
+    //   setResult(adjustedSeconds);
+    //   setLastEstimatedScript(script);
+    //   onEstimateChange?.(adjustedSeconds, script);
+    // } catch (err) {
+    //   setError(err.response?.data?.error || "Failed to estimate duration");
+    //   onEstimateChange?.(null, script);
+    // } finally { setLoading(false); }
+
+    // Syllable-based instant estimation
+    const seconds = estimateDuration(script);
+    setResult(seconds);
+    setLastEstimatedScript(script);
+    onEstimateChange?.(seconds, script);
   }
 
   async function handleTrim() {
@@ -106,14 +127,25 @@ export default function InlineDurationEstimator({
 
       {/* ── Row 1: buttons + target input ── */}
       <div className="inline-duration-row">
-        <button
-          type="button"
-          className="btn-estimate"
-          onClick={handleEstimate}
-          disabled={loading || !hasScript}
-        >
-          {loading ? "Estimating…" : "Estimate Duration"}
-        </button>
+        {isStale ? (
+          <button
+            type="button"
+            className="btn-estimate"
+            onClick={handleEstimate}
+            disabled={loading}
+          >
+            {loading ? "Estimating…" : "Estimate Duration"}
+          </button>
+        ) : result !== null ? (
+          <div className="duration-result" style={{ margin: 0 }}>
+            Estimated: <strong>{formatDuration(result)}</strong>
+            {onTarget !== null && (
+              <span className={`duration-status ${onTarget ? "duration-status--ok" : "duration-status--off"}`}>
+                {onTarget ? "✓ on target" : `target ${targetDuration}s`}
+              </span>
+            )}
+          </div>
+        ) : null}
 
         {hasScript && (
           <>
@@ -145,17 +177,7 @@ export default function InlineDurationEstimator({
         )}
       </div>
 
-      {/* ── Estimate result ── */}
-      {result !== null && (
-        <div className="duration-result">
-          Estimated: <strong>{formatDuration(result)}</strong>
-          {onTarget !== null && (
-            <span className={`duration-status ${onTarget ? "duration-status--ok" : "duration-status--off"}`}>
-              {onTarget ? "✓ on target" : `target ${targetDuration}s`}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Removed duplicated local result block below since it is now in the row */}
 
       {error && <div className="msg-error">{error}</div>}
       {trimError && <div className="msg-error">{trimError}</div>}

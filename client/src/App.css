@@ -32,8 +32,118 @@ body {
 }
 
 /* ─── Page layout ────────────────────────────────────────────────────────────── */
+.app-layout {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────────── */
+.app-sidebar {
+  width: 240px;
+  background: #ffffff;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.sidebar-header {
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(219, 234, 254, 0.4);
+}
+
+.sidebar-logo-full {
+  width: 100%;
+  max-width: 164px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebar-nav {
+  padding: 20px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-link, .sidebar-btn-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  user-select: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sidebar-link:hover, .sidebar-btn-link:hover {
+  background: var(--border-subtle);
+  color: var(--text);
+}
+
+.sidebar-link.active {
+  background: var(--purple-light);
+  color: var(--purple-dark);
+  font-weight: 600;
+}
+
+.sidebar-icon {
+  margin-right: 12px;
+  font-size: 1.1rem;
+  opacity: 0.8;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-link.active .sidebar-icon {
+  opacity: 1;
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  background: var(--purple);
+  color: white;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .home {
-  min-height: 100vh;
+  min-height: 100%;
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────────── */
@@ -2497,9 +2607,7 @@ body {
 
 /* ─── Wednesday Panel ───────────────────────────────────────────────────────── */
 
-.layout--wednesday {
-  /* no layout changes — Wednesday is fixed to the viewport */
-}
+/* no layout changes — Wednesday is fixed to the viewport */
 
 .layout-main {
   display: contents; /* transparent wrapper — children behave as if layout-main doesn't exist */
@@ -3271,7 +3379,7 @@ body {
 .batch-open-btn:hover { background: var(--purple-dark); }
 
 /* ── Batch Page ──────────────────────────────────────────────────────────── */
-.batch-page { display: flex; flex-direction: column; height: 100vh; background: var(--bg); color: var(--text); font-family: var(--font); }
+.batch-page { display: flex; flex-direction: column; height: 100vh; background: #ffffff; color: var(--text); font-family: var(--font); }
 .batch-header { display: flex; align-items: center; gap: 12px; padding: 0 24px; height: 60px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .batch-back-btn { background: none; border: none; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; font-family: inherit; padding: 6px 10px; border-radius: var(--radius-sm); transition: color 0.15s, background 0.15s; }
 .batch-back-btn:hover { color: var(--text); background: var(--hover-bg); }
@@ -3304,11 +3412,15 @@ body {
 
 /* Review phase */
 .batch-review { flex: 1; display: flex; overflow: hidden; }
-.batch-sidebar { width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-.batch-sidebar-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 16px 16px 8px; }
-.batch-task-list { list-style: none; margin: 0; padding: 0 8px; flex: 1; overflow-y: auto; }
-.batch-task-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s; margin-bottom: 2px; }
+.batch-sidebar { width: 300px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.batch-sidebar-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 24px 16px 12px; }
+.batch-task-list { list-style: none; margin: 0; padding: 0 12px; flex: 1; overflow-y: auto; }
+.batch-task-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s; margin-bottom: 4px; }
 .batch-task-item:hover, .batch-task-item--active { background: var(--hover-bg); }
+.batch-task-discard { background: transparent; border: 1px solid transparent; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; padding: 2px 6px; border-radius: var(--radius-sm); line-height: 1; transition: color 0.15s, background 0.15s, border-color 0.15s; flex-shrink: 0; opacity: 0; }
+.batch-task-item:hover .batch-task-discard { opacity: 1; }
+.batch-task-item--active .batch-task-discard { opacity: 1; }
+.batch-task-discard:hover { color: var(--red); background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); }
 .batch-task-item--submitted { opacity: 0.65; }
 .batch-task-meta { flex: 1; min-width: 0; }
 .batch-task-name { display: block; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -3340,9 +3452,10 @@ body {
 
 /* ── Batch Page — new input controls ──────────────────────────────────────── */
 /* Mode tabs */
-.batch-mode-tabs { display: flex; background: var(--hover-bg); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 24px; }
-.batch-mode-tab { flex: 1; background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; padding: 7px; border-radius: calc(var(--radius-sm) - 2px); cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; }
-.batch-mode-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.batch-mode-tabs { display: flex; background: transparent; gap: 8px; margin-bottom: 24px; }
+.batch-mode-tab { flex: 1; background: #fff; border: 1px solid var(--border); color: var(--text-muted); font-size: 0.9rem; font-weight: 500; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; transition: all 0.2s ease; outline: none; }
+.batch-mode-tab:hover:not(.active) { border-color: var(--placeholder); color: var(--text); }
+.batch-mode-tab.active { background: #f5f3ff; color: var(--purple); border-color: #c4b5fd; font-weight: 600; box-shadow: 0 2px 8px rgba(108, 99, 255, 0.15); }
 
 /* Form fields */
 .batch-angles-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px; }

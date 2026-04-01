@@ -207,9 +207,10 @@
         },
         {
           "key": "targetDuration",
-          "label": "Target Duration (seconds)",
+          "label": "Estimated Video Duration",
           "type": "number",
-          "hidden": true
+          "hidden": true,
+          "mondayColumnId": "numeric_mm209bwg"
         },
         {
           "key": "versionsNeeded",
