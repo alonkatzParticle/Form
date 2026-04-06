@@ -1,8 +1,7 @@
 // UserProfile — slide-in panel for setting the user's Monday API key.
-// The key is stored in localStorage and injected by the axios interceptor in main.jsx.
-// No server storage needed — key lives client-side and survives refreshes.
+// Stored in localStorage, injected via axios interceptor in main.jsx.
 import { useState, useEffect } from "react";
-import { X, Key, CheckCircle, Trash2 } from "lucide-react";
+import { X, Key, Check, Trash2, ExternalLink } from "lucide-react";
 
 const STORAGE_KEY = "user_monday_api_key";
 
@@ -11,12 +10,10 @@ export default function UserProfile({ isOpen, onClose }) {
   const [saved, setSaved] = useState(false);
   const [hasKey, setHasKey] = useState(false);
 
-  // Load existing key status on open
   useEffect(() => {
     if (isOpen) {
-      const existing = localStorage.getItem(STORAGE_KEY);
-      setHasKey(!!existing);
-      setInput(""); // don't pre-fill for security
+      setHasKey(!!localStorage.getItem(STORAGE_KEY));
+      setInput("");
       setSaved(false);
     }
   }, [isOpen]);
@@ -41,112 +38,166 @@ export default function UserProfile({ isOpen, onClose }) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 200 }}
         onClick={onClose}
+        style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.5)",
+          zIndex: 300,
+          backdropFilter: "blur(2px)",
+        }}
       />
 
-      {/* Panel */}
       <div style={{
-        position: "fixed", top: 0, right: 0, bottom: 0, width: 380,
-        background: "var(--surface)", borderLeft: "1px solid var(--border)",
-        zIndex: 201, display: "flex", flexDirection: "column",
-        boxShadow: "-4px 0 24px rgba(0,0,0,0.3)"
+        position: "fixed", top: 0, right: 0, bottom: 0, width: 360,
+        background: "var(--bg, #0f1117)",
+        borderLeft: "1px solid var(--border, rgba(255,255,255,0.08))",
+        zIndex: 301,
+        display: "flex", flexDirection: "column",
+        boxShadow: "-8px 0 40px rgba(0,0,0,0.4)",
       }}>
+
         {/* Header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "20px 24px", borderBottom: "1px solid var(--border)"
+          padding: "18px 20px",
+          borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Key size={18} style={{ color: "var(--purple)" }} />
-            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: "var(--text)" }}>
+            <Key size={16} style={{ color: "var(--purple, #7c6af7)" }} />
+            <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text, #e8e8f0)" }}>
               Your Profile
-            </h2>
+            </span>
           </div>
           <button
             onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4 }}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-muted, #888)", padding: 6, borderRadius: 6,
+              display: "flex", alignItems: "center",
+              transition: "color 0.15s",
+            }}
+            onMouseOver={e => e.currentTarget.style.color = "var(--text, #e8e8f0)"}
+            onMouseOut={e => e.currentTarget.style.color = "var(--text-muted, #888)"}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: "28px 24px", flex: 1, overflowY: "auto" }}>
+        <div style={{ padding: "24px 20px", flex: 1, overflowY: "auto" }}>
 
-          {/* Status badge */}
+          {/* Section label */}
+          <div style={{
+            fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em",
+            color: "var(--text-muted, #888)", textTransform: "uppercase",
+            marginBottom: 10,
+          }}>
+            Monday API Key
+          </div>
+
+          {/* Status */}
           {hasKey && (
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
-              background: "rgba(99, 217, 158, 0.12)", border: "1px solid rgba(99,217,158,0.3)",
-              borderRadius: "var(--radius-sm)", padding: "10px 14px", marginBottom: 24
+              padding: "9px 12px", borderRadius: 8, marginBottom: 16,
+              background: "rgba(99,217,158,0.08)",
+              border: "1px solid rgba(99,217,158,0.2)",
             }}>
-              <CheckCircle size={15} style={{ color: "var(--success, #63d99e)", flexShrink: 0 }} />
-              <span style={{ fontSize: "0.85rem", color: "var(--text)" }}>
-                API key saved — tasks will be created under your Monday identity
+              <Check size={13} style={{ color: "#63d99e", flexShrink: 0 }} />
+              <span style={{ fontSize: "0.82rem", color: "var(--text, #e8e8f0)" }}>
+                API key saved — tasks created under your account
               </span>
             </div>
           )}
 
-          <label style={{
-            display: "block", fontSize: "0.78rem", fontWeight: 600,
-            color: "var(--text-muted)", textTransform: "uppercase",
-            letterSpacing: "0.05em", marginBottom: 8
+          <p style={{
+            fontSize: "0.82rem", color: "var(--text-muted, #888)",
+            marginBottom: 14, lineHeight: 1.6,
           }}>
-            Monday API Key
-          </label>
-          <p style={{ fontSize: "0.83rem", color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
-            Tasks and updates you submit will be created using your Monday account.
-            Find your key in Monday → Profile → Developer → API Token v2.
+            Tasks you submit will be created using your Monday identity.{" "}
+            <a
+              href="https://monday.com/settings/developer"
+              target="_blank" rel="noreferrer"
+              style={{ color: "var(--purple, #7c6af7)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
+            >
+              Get your token <ExternalLink size={11} />
+            </a>
           </p>
 
+          {/* Input */}
           <input
             type="password"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            placeholder={hasKey ? "Enter new key to replace…" : "Paste your Monday API token…"}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSave()}
+            placeholder={hasKey ? "Enter new key to replace…" : "Paste your API token…"}
             style={{
-              width: "100%", padding: "10px 14px", borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--border)", background: "var(--bg)",
-              color: "var(--text)", fontSize: "0.9rem", boxSizing: "border-box",
-              outline: "none", marginBottom: 12,
-              fontFamily: "monospace"
+              width: "100%", boxSizing: "border-box",
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: "1px solid var(--border, rgba(255,255,255,0.08))",
+              background: "var(--surface, #1a1d2e)",
+              color: "var(--text, #e8e8f0)",
+              fontSize: "0.88rem",
+              outline: "none",
+              marginBottom: 10,
+              fontFamily: "inherit",
             }}
+            onFocus={e => e.target.style.borderColor = "var(--purple, #7c6af7)"}
+            onBlur={e => e.target.style.borderColor = "var(--border, rgba(255,255,255,0.08))"}
           />
 
+          {/* Actions */}
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={handleSave}
               disabled={!input.trim()}
               style={{
-                flex: 1, padding: "10px 0", borderRadius: "var(--radius-sm)",
-                background: saved ? "var(--success, #63d99e)" : "var(--purple)",
-                color: "#fff", border: "none", cursor: input.trim() ? "pointer" : "not-allowed",
-                fontWeight: 600, fontSize: "0.88rem", opacity: input.trim() ? 1 : 0.5,
-                transition: "background 0.2s"
+                flex: 1, padding: "9px 0", borderRadius: 8,
+                background: saved ? "rgba(99,217,158,0.15)" : "var(--purple, #7c6af7)",
+                border: saved ? "1px solid rgba(99,217,158,0.3)" : "none",
+                color: saved ? "#63d99e" : "#fff",
+                fontWeight: 600, fontSize: "0.85rem",
+                cursor: input.trim() ? "pointer" : "not-allowed",
+                opacity: input.trim() ? 1 : 0.4,
+                transition: "all 0.2s",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               }}
             >
-              {saved ? "✓ Saved!" : "Save Key"}
+              {saved ? <><Check size={13} /> Saved!</> : "Save Key"}
             </button>
+
             {hasKey && (
               <button
                 onClick={handleClear}
-                title="Remove saved key"
                 style={{
-                  padding: "10px 14px", borderRadius: "var(--radius-sm)",
-                  background: "transparent", border: "1px solid var(--border)",
-                  color: "var(--text-muted)", cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 6, fontSize: "0.85rem"
+                  padding: "9px 14px", borderRadius: 8,
+                  background: "transparent",
+                  border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                  color: "var(--text-muted, #888)",
+                  cursor: "pointer", fontSize: "0.82rem",
+                  display: "flex", alignItems: "center", gap: 5,
+                  transition: "border-color 0.15s, color 0.15s",
                 }}
+                onMouseOver={e => { e.currentTarget.style.borderColor = "rgba(255,80,80,0.4)"; e.currentTarget.style.color = "#ff6b6b"; }}
+                onMouseOut={e => { e.currentTarget.style.borderColor = "var(--border, rgba(255,255,255,0.08))"; e.currentTarget.style.color = "var(--text-muted, #888)"; }}
               >
-                <Trash2 size={14} />
-                Clear
+                <Trash2 size={13} /> Clear
               </button>
             )}
           </div>
+
+          {/* Fallback note */}
+          <p style={{
+            fontSize: "0.75rem", color: "var(--text-muted, #888)",
+            marginTop: 20, lineHeight: 1.5,
+            padding: "10px 12px", borderRadius: 8,
+            background: "var(--surface, #1a1d2e)",
+            border: "1px solid var(--border, rgba(255,255,255,0.08))",
+          }}>
+            If no key is saved, the shared workspace key is used as fallback.
+          </p>
         </div>
       </div>
     </>

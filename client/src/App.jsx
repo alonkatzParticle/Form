@@ -71,6 +71,8 @@ export default function App() {
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState(null);
   const [checking, setChecking] = useState(false);
+  // Tracks whether the user has authenticated for Settings in this session
+  const [isSettingsAuth, setIsSettingsAuth] = useState(false);
 
   // If someone directly types /settings without logging in, we intercept
   // Optional: but for now, we just show password modal if they click settings
@@ -83,6 +85,7 @@ export default function App() {
       await axios.post("/api/settings/auth", { password: passwordInput });
       setShowPasswordModal(false);
       setPasswordInput("");
+      setIsSettingsAuth(true);
       navigate("/settings");
     } catch {
       setPasswordError("Incorrect password");
@@ -96,6 +99,14 @@ export default function App() {
     setPasswordInput("");
     setPasswordError(null);
   }
+
+  // Block direct URL access to /settings without authentication
+  useEffect(() => {
+    if (isSettings && !isSettingsAuth) {
+      navigate("/");
+      setShowPasswordModal(true);
+    }
+  }, [isSettings, isSettingsAuth, navigate]);
 
   if (!boardsLoaded) {
     if (isBatch) {
@@ -126,7 +137,12 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar pendingCount={pendingTasks.length} onHistoryClick={() => setHistoryOpen(true)} onProfileClick={() => setProfileOpen(true)} />
+      <Sidebar
+        pendingCount={pendingTasks.length}
+        onHistoryClick={() => setHistoryOpen(true)}
+        onProfileClick={() => setProfileOpen(true)}
+        onSettingsClick={() => setShowPasswordModal(true)}
+      />
       
       <div className="app-content">
         <div style={{ display: isHome ? "block" : "none" }}>

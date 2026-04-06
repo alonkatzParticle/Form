@@ -4,7 +4,7 @@ import { PenLine, Zap, Upload, History, Settings, ClipboardList, UserCircle } fr
 import { useState, useEffect } from "react";
 import LogoSvg from "/logo.svg";
 
-export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick }) {
+export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick, onSettingsClick }) {
   const pathname = usePathname();
   const navigate = useNavigate();
   const [hasApiKey, setHasApiKey] = useState(!!localStorage.getItem("user_monday_api_key"));
@@ -56,7 +56,7 @@ export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick }
           <History size={16} className="sidebar-icon" />
           History
         </button>
-        <button onClick={() => navigate("/settings")} className={`sidebar-btn-link sidebar-link ${isSettings ? "active" : ""}`}>
+        <button onClick={onSettingsClick} className="sidebar-btn-link sidebar-link">
           <Settings size={16} className="sidebar-icon" />
           Settings
         </button>
