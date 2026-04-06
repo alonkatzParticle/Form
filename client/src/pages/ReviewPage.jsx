@@ -325,8 +325,9 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
 
       return itemUrl;
     } catch (err) {
-      console.error("[Review] Submit error:", err.message);
-      setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "error" } : t));
+      const msg = err.response?.data?.error || err.message || "Submission failed";
+      console.error("[Review] Submit error:", msg);
+      setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "error", errorMsg: msg } : t));
       return null;
     }
   }

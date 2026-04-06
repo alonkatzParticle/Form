@@ -261,8 +261,9 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       setTasks((prev) => prev.filter((t) => t.id !== id));
       setSuccessState({ url: itemUrl });
     } catch (err) {
-      console.error("[Pending] Submit error:", err.message);
-      setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "error" } : t));
+      const msg = err.response?.data?.error || err.message || "Submission failed";
+      console.error("[Pending] Submit error:", msg);
+      setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "error", errorMsg: msg } : t));
     }
   }
 
@@ -419,6 +420,20 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                   </button>
                 </div>
               </div>
+              {selected.status === "error" && selected.errorMsg && (
+                <div style={{
+                  margin: "0 0 12px",
+                  padding: "10px 14px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(255,80,80,0.08)",
+                  border: "1px solid rgba(255,80,80,0.25)",
+                  fontSize: "0.82rem",
+                  color: "#ff8080",
+                  lineHeight: 1.5,
+                }}>
+                  <strong>Submission failed:</strong> {selected.errorMsg}
+                </div>
+              )}
 
               <div className="batch-split-view" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                 <div className="batch-split-left" style={{ flex: 1, overflowY: "auto", borderRight: "1px solid var(--border)" }}>
