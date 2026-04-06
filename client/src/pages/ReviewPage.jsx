@@ -485,6 +485,21 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                 </div>
               </div>
 
+              {selected.status === "error" && selected.errorMsg && (
+                <div style={{
+                  margin: "0 0 12px",
+                  padding: "10px 14px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(255,80,80,0.08)",
+                  border: "1px solid rgba(255,80,80,0.25)",
+                  fontSize: "0.82rem",
+                  color: "#ff8080",
+                  lineHeight: 1.5,
+                }}>
+                  <strong>Submission failed:</strong> {selected.errorMsg}
+                </div>
+              )}
+
               <div className="batch-split-view" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                 <div className="batch-split-left" style={{ flex: 1, overflowY: "auto", borderRight: "1px solid var(--border)" }}>
                   {selected.task && selected.status !== "submitting" && (

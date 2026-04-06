@@ -9,16 +9,18 @@ const KEY_STORAGE  = "user_monday_api_key";
 const NAME_STORAGE = "user_monday_name";
 
 export default function UserProfile({ isOpen, onClose }) {
-  const [input,     setInput]     = useState("");
-  const [saved,     setSaved]     = useState(false);
-  const [resolving, setResolving] = useState(false);
-  const [hasKey,    setHasKey]    = useState(false);
-  const [userName,  setUserName]  = useState("");
+  const [input,        setInput]        = useState("");
+  const [saved,        setSaved]        = useState(false);
+  const [resolving,    setResolving]    = useState(false);
+  const [hasKey,       setHasKey]       = useState(false);
+  const [userName,     setUserName]     = useState("");
+  const [boardWarning, setBoardWarning] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setHasKey(!!localStorage.getItem(KEY_STORAGE));
       setUserName(localStorage.getItem(NAME_STORAGE) || "");
+      setBoardWarning("");
       setInput("");
       setSaved(false);
     }
@@ -41,10 +43,19 @@ export default function UserProfile({ isOpen, onClose }) {
       const name = data.name || data.email || "Unknown";
       localStorage.setItem(NAME_STORAGE, name);
       setUserName(name);
+
+      // Check board access — try fetching settings (lightweight call, uses the key via interceptor)
+      try {
+        await axios.get("/api/settings");
+        setBoardWarning(""); // settings load fine — board access likely OK
+      } catch {
+        setBoardWarning("Could not verify board access. Ask an admin to check your Monday board permissions.");
+      }
     } catch {
-      // Key saved but couldn't resolve name — not a blocker
+      // Key saved but couldn't resolve identity — warn the user
       localStorage.removeItem(NAME_STORAGE);
       setUserName("");
+      setBoardWarning("Could not verify this API key. Make sure it's a valid Monday API v2 token.");
     } finally {
       setResolving(false);
       setSaved(true);
@@ -57,6 +68,7 @@ export default function UserProfile({ isOpen, onClose }) {
     localStorage.removeItem(NAME_STORAGE);
     setHasKey(false);
     setUserName("");
+    setBoardWarning("");
     setInput("");
   }
 
@@ -98,11 +110,18 @@ export default function UserProfile({ isOpen, onClose }) {
 
           {/* Resolved identity */}
           {hasKey && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 8, marginBottom: 16, background: "rgba(99,217,158,0.08)", border: "1px solid rgba(99,217,158,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 8, marginBottom: boardWarning ? 8 : 16, background: "rgba(99,217,158,0.08)", border: "1px solid rgba(99,217,158,0.2)" }}>
               <Check size={13} style={{ color: "#63d99e", flexShrink: 0 }} />
               <span style={{ fontSize: "0.82rem", color: TEXT }}>
                 {userName ? <>Signed in as <strong>{userName}</strong></> : "API key saved"}
               </span>
+            </div>
+          )}
+
+          {/* Board access warning */}
+          {boardWarning && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "9px 12px", borderRadius: 8, marginBottom: 16, background: "rgba(255,180,0,0.08)", border: "1px solid rgba(255,180,0,0.25)" }}>
+              <span style={{ fontSize: "0.82rem", color: "#ffb800", lineHeight: 1.5 }}>⚠️ {boardWarning}</span>
             </div>
           )}
 
