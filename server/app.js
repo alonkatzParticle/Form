@@ -18,6 +18,7 @@ import settingsRoutes from "./routes/settings.js";
 import autoRenameRoutes from "./routes/autoRename.js";
 import wednesdayRoutes from "./routes/wednesday.js";
 import adminRoutes from "./routes/admin.js";
+import ticketsRoutes from "./routes/tickets.js";
 import { startRecentTasksRefresh } from "./services/recentTasksService.js";
 import { ensureTable } from "./services/dbCacheService.js";
 import { loadFrequencyIntoMemory } from "./services/frequencyService.js";
@@ -45,6 +46,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/auto-rename", autoRenameRoutes);
 app.use("/api/wednesday", wednesdayRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/tickets", ticketsRoutes);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 

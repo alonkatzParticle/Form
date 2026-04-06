@@ -3,12 +3,14 @@
 
 const MONDAY_API_URL = "https://api.monday.com/v2";
 
-async function mondayQuery(query, variables = {}) {
+// apiKey: per-user key from request header, falls back to shared env key
+async function mondayQuery(query, variables = {}, apiKey = null) {
+  const key = apiKey || process.env.MONDAY_API_KEY;
   const res = await fetch(MONDAY_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: process.env.MONDAY_API_KEY,
+      Authorization: key,
     },
     body: JSON.stringify({ query, variables }),
   });
@@ -19,7 +21,7 @@ async function mondayQuery(query, variables = {}) {
 
 // Create a new item on a Monday board.
 // columnValues is an object mapping Monday column IDs to their values.
-export async function createItem(boardId, itemName, columnValues) {
+export async function createItem(boardId, itemName, columnValues, apiKey = null) {
   const query = `
     mutation CreateItem($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
       create_item(board_id: $boardId, item_name: $itemName, column_values: $columnValues) {
@@ -29,12 +31,11 @@ export async function createItem(boardId, itemName, columnValues) {
       }
     }
   `;
-  // Monday expects columnValues as a JSON string
   return mondayQuery(query, {
     boardId,
     itemName,
     columnValues: JSON.stringify(columnValues),
-  });
+  }, apiKey);
 }
 
 // Fetch the most recent items from a board for use as AI examples.
@@ -116,7 +117,7 @@ export async function getUsers() {
 }
 
 // Post a text update (comment) on an existing Monday item.
-export async function createUpdate(itemId, body) {
+export async function createUpdate(itemId, body, apiKey = null) {
   const query = `
     mutation CreateUpdate($itemId: ID!, $body: String!) {
       create_update(item_id: $itemId, body: $body) {
@@ -124,7 +125,7 @@ export async function createUpdate(itemId, body) {
       }
     }
   `;
-  return mondayQuery(query, { itemId: String(itemId), body });
+  return mondayQuery(query, { itemId: String(itemId), body }, apiKey);
 }
 
 // Upload a file to a Monday file column on an existing item.

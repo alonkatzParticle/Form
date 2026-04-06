@@ -21,15 +21,16 @@ router.post("/create-item", async (req, res) => {
     if (!boardId || !itemName) {
       return res.status(400).json({ error: "boardId and itemName are required" });
     }
-    const result = await createItem(boardId, itemName, columnValues || {});
+    // Use per-user key if provided, otherwise falls back to env MONDAY_API_KEY
+    const apiKey = req.headers["x-monday-api-key"] || null;
+    const result = await createItem(boardId, itemName, columnValues || {}, apiKey);
     const itemId = result?.create_item?.id;
     const url = result?.create_item?.url ?? null;
     if (itemId && updateBody) {
-      await createUpdate(itemId, updateBody).catch((err) =>
+      await createUpdate(itemId, updateBody, apiKey).catch((err) =>
         console.warn("Update post failed (item still created):", err.message)
       );
     }
-    // Return a normalized shape so clients don't need to know GraphQL internals
     res.json({ itemId, url, create_item: result?.create_item });
   } catch (err) {
     console.error("Monday create-item error:", err.message);
@@ -71,7 +72,8 @@ router.post("/create-update", async (req, res) => {
     if (!itemId || !body) {
       return res.status(400).json({ error: "itemId and body are required" });
     }
-    const result = await createUpdate(itemId, body);
+    const apiKey = req.headers["x-monday-api-key"] || null;
+    const result = await createUpdate(itemId, body, apiKey);
     res.json(result);
   } catch (err) {
     console.error("Create update error:", err.message);

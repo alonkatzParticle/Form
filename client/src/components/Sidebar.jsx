@@ -1,11 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { usePathname } from "../hooks/usePathname.js";
-import { PenLine, Zap, Upload, History, Settings, ClipboardList } from "lucide-react";
+import { PenLine, Zap, Upload, History, Settings, ClipboardList, UserCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 import LogoSvg from "/logo.svg";
 
-export default function Sidebar({ pendingCount, onHistoryClick }) {
+export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick }) {
   const pathname = usePathname();
   const navigate = useNavigate();
+  const [hasApiKey, setHasApiKey] = useState(!!localStorage.getItem("user_monday_api_key"));
+
+  // Re-check key status whenever panel closes (profile saves/clears)
+  useEffect(() => {
+    function syncKey() { setHasApiKey(!!localStorage.getItem("user_monday_api_key")); }
+    window.addEventListener("focus", syncKey);
+    return () => window.removeEventListener("focus", syncKey);
+  }, []);
+
 
   const isHome = pathname === "/";
   const isBatch = pathname === "/batch";
@@ -49,6 +59,18 @@ export default function Sidebar({ pendingCount, onHistoryClick }) {
         <button onClick={() => navigate("/settings")} className={`sidebar-btn-link sidebar-link ${isSettings ? "active" : ""}`}>
           <Settings size={16} className="sidebar-icon" />
           Settings
+        </button>
+        <button onClick={onProfileClick} className="sidebar-btn-link" title="Your API Key">
+          <span style={{ position: "relative", display: "inline-flex" }}>
+            <UserCircle size={16} className="sidebar-icon" />
+            {hasApiKey && (
+              <span style={{
+                position: "absolute", top: -2, right: -2, width: 6, height: 6,
+                borderRadius: "50%", background: "#63d99e", border: "1px solid var(--surface)"
+              }} />
+            )}
+          </span>
+          Profile
         </button>
       </div>
     </aside>

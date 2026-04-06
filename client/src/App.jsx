@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Home from "./pages/Home.jsx";
@@ -9,6 +9,7 @@ import ReviewPage from "./pages/ReviewPage.jsx";
 import PastTicketsPage from "./pages/PastTicketsPage.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import HistoryDrawer from "./components/HistoryDrawer.jsx";
+import UserProfile from "./components/UserProfile.jsx";
 import { usePersistedState } from "./hooks/usePersistedState.js";
 import { usePathname } from "./hooks/usePathname.js";
 import "./App.css";
@@ -27,10 +28,29 @@ export default function App() {
   const [boards, setBoards] = usePersistedState("app_boards", []);
   const [frequencyOrder, setFrequencyOrder] = usePersistedState("app_freqOrder", {});
   const [pendingTasks, setPendingTasks] = usePersistedState("app_pending_tasks", []);
+  // localStorage is the instant cache; background sync merges shared DB tickets on load
   const [submittedTasks, setSubmittedTasks] = usePersistedState("app_submitted_tasks", []);
-  
-  // App-level history drawer state
+
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  // Background sync: pull shared tickets from server and merge (dedupe by id)
+  useEffect(() => {
+    axios.get("/api/tickets").then(({ data }) => {
+      if (!Array.isArray(data)) return;
+      setSubmittedTasks(prev => {
+        const existingIds = new Set(prev.map(t => t.id));
+        const newOnes = data.filter(t => !existingIds.has(t.id));
+        return newOnes.length ? [...newOnes, ...prev].sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0)) : prev;
+      });
+    }).catch(() => {}); // silently ignore if DB not configured
+  }, [setSubmittedTasks]);
+
+  const handleTaskSubmitted = useCallback((submittedTask) => {
+    const entry = { ...submittedTask, submittedAt: Date.now() };
+    setSubmittedTasks(prev => [entry, ...prev]);
+    axios.post("/api/tickets", entry).catch(() => {}); // fire-and-forget to shared DB
+  }, [setSubmittedTasks]);
 
   // If we already have boards loaded from cache, we skip the loading screen instantly!
   const [boardsLoaded, setBoardsLoaded] = useState(boards.length > 0);
@@ -106,7 +126,7 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar pendingCount={pendingTasks.length} onHistoryClick={() => setHistoryOpen(true)} />
+      <Sidebar pendingCount={pendingTasks.length} onHistoryClick={() => setHistoryOpen(true)} onProfileClick={() => setProfileOpen(true)} />
       
       <div className="app-content">
         <div style={{ display: isHome ? "block" : "none" }}>
@@ -138,9 +158,7 @@ export default function App() {
             setTasks={setPendingTasks}
             boards={boards}
             frequencyOrder={frequencyOrder}
-            onTaskSubmitted={(submittedTask) => {
-              setSubmittedTasks(prev => [{ ...submittedTask, submittedAt: Date.now() }, ...prev]);
-            }}
+            onTaskSubmitted={handleTaskSubmitted}
           />
         </div>
 
@@ -150,9 +168,7 @@ export default function App() {
             setTasks={setPendingTasks}
             boards={boards}
             frequencyOrder={frequencyOrder}
-            onTaskSubmitted={(submittedTask) => {
-              setSubmittedTasks(prev => [{ ...submittedTask, submittedAt: Date.now() }, ...prev]);
-            }}
+            onTaskSubmitted={handleTaskSubmitted}
           />
         </div>
 
@@ -160,6 +176,11 @@ export default function App() {
           <PastTicketsPage
             submittedTasks={submittedTasks}
             boards={boards}
+            onRequeue={(ticket) => {
+              const requeuedTask = { ...ticket, id: `task-${Date.now()}`, mondayUrl: null, submittedAt: null };
+              setPendingTasks(prev => [requeuedTask, ...prev]);
+              navigate("/pending");
+            }}
           />
         </div>
       </div>
@@ -167,11 +188,12 @@ export default function App() {
       <HistoryDrawer
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        boardType={boards[0]?.id} // Defaults to first board for history, could be dynamic
+        boardType={boards[0]?.id}
         boardFields={boards[0]?.fields ?? []}
-        // Minimal load handler for History. In a robust system, this could create a new draft.
-        onLoad={() => {}} 
+        onLoad={() => {}}
       />
+
+      <UserProfile isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
 
       {showPasswordModal && (
         <div className="modal-overlay" onClick={handleModalClose}>

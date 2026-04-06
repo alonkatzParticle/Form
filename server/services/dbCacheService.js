@@ -23,6 +23,14 @@ export async function ensureTable() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+  // Shared past-tickets history visible to all users
+  await sql`
+    CREATE TABLE IF NOT EXISTS submitted_tickets (
+      id           TEXT PRIMARY KEY,
+      data         JSONB NOT NULL,
+      submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
 }
 
 // Returns { value, updatedAt } if the entry exists, otherwise null.
@@ -66,4 +74,51 @@ export async function setCacheEntry(key, value) {
 
 export function isDbAvailable() {
   return !!process.env.DATABASE_URL;
+}
+
+// ─── Submitted Tickets (shared across all users) ──────────────────────────────
+
+export async function getTickets() {
+  const sql = getDb();
+  if (!sql) return [];
+  try {
+    const rows = await sql`
+      SELECT data FROM submitted_tickets
+      ORDER BY submitted_at DESC
+      LIMIT 200
+    `;
+    return rows.map(r => r.data);
+  } catch (err) {
+    console.warn("[db] getTickets failed:", err.message);
+    return [];
+  }
+}
+
+export async function addTicket(ticket) {
+  const sql = getDb();
+  if (!sql) return;
+  try {
+    await sql`
+      INSERT INTO submitted_tickets (id, data, submitted_at)
+      VALUES (
+        ${ticket.id},
+        ${JSON.stringify(ticket)},
+        ${ticket.submittedAt ? new Date(ticket.submittedAt) : new Date()}
+      )
+      ON CONFLICT (id) DO UPDATE
+        SET data = EXCLUDED.data
+    `;
+  } catch (err) {
+    console.warn("[db] addTicket failed:", err.message);
+  }
+}
+
+export async function removeTicket(id) {
+  const sql = getDb();
+  if (!sql) return;
+  try {
+    await sql`DELETE FROM submitted_tickets WHERE id = ${id}`;
+  } catch (err) {
+    console.warn("[db] removeTicket failed:", err.message);
+  }
 }

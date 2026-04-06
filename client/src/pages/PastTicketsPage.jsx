@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { isVisible, buildAutoName } from "../components/forms/DynamicForm.jsx";
 import { useMonday } from "../hooks/useMonday.js";
-import { ExternalLink, Clock, Inbox } from "lucide-react";
+import { ExternalLink, Clock, Inbox, RotateCcw } from "lucide-react";
 
 function formatTimeAgo(ts) {
   if (!ts) return "";
@@ -51,7 +51,7 @@ function ReadOnlyField({ label, value }) {
   );
 }
 
-export default function PastTicketsPage({ submittedTasks, boards }) {
+export default function PastTicketsPage({ submittedTasks, boards, onRequeue }) {
   const [selectedId, setSelectedId] = useState(submittedTasks?.[0]?.id ?? null);
   
   const selected = submittedTasks?.find(t => t.id === selectedId);
@@ -173,6 +173,25 @@ export default function PastTicketsPage({ submittedTasks, boards }) {
                       <ExternalLink size={14} />
                       Open in Monday
                     </a>
+                  )}
+                  {onRequeue && (
+                    <button
+                      onClick={() => onRequeue(selected)}
+                      title="Send back to Pending Queue"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "10px 18px", borderRadius: "var(--radius-sm)",
+                        background: "transparent", border: "1px solid var(--border)",
+                        color: "var(--text)", cursor: "pointer",
+                        fontWeight: 600, fontSize: "0.88rem", flexShrink: 0,
+                        transition: "background 0.15s"
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = "var(--surface-hover, rgba(255,255,255,0.06))"}
+                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <RotateCcw size={14} />
+                      Re-queue
+                    </button>
                   )}
                 </div>
 
