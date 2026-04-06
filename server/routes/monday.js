@@ -23,17 +23,20 @@ router.post("/create-item", async (req, res) => {
     }
     const result = await createItem(boardId, itemName, columnValues || {});
     const itemId = result?.create_item?.id;
+    const url = result?.create_item?.url ?? null;
     if (itemId && updateBody) {
       await createUpdate(itemId, updateBody).catch((err) =>
         console.warn("Update post failed (item still created):", err.message)
       );
     }
-    res.json(result);
+    // Return a normalized shape so clients don't need to know GraphQL internals
+    res.json({ itemId, url, create_item: result?.create_item });
   } catch (err) {
     console.error("Monday create-item error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Fetch team members for the Requestor / Editor/Designer dropdowns.
 router.get("/users", async (_req, res) => {
