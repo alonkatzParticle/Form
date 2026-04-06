@@ -116,6 +116,14 @@ export async function getUsers() {
   return data.users || [];
 }
 
+// Resolve the identity of the owner of a given API key.
+export async function getMe(apiKey) {
+  const query = `query { me { id name email } }`;
+  const data = await mondayQuery(query, {}, apiKey);
+  return data?.me ?? null;
+}
+
+
 // Post a text update (comment) on an existing Monday item.
 export async function createUpdate(itemId, body, apiKey = null) {
   const query = `

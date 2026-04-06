@@ -6,7 +6,7 @@
 
 import express from "express";
 import multer from "multer";
-import { createItem, createUpdate, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
+import { createItem, createUpdate, getMe, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
 import { getSettings } from "../services/settingsService.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -38,6 +38,20 @@ router.post("/create-item", async (req, res) => {
   }
 });
 
+
+// Resolve the Monday identity for the API key in the request header.
+// Used by the client to store the user's name alongside their key.
+router.get("/me", async (req, res) => {
+  try {
+    const apiKey = req.headers["x-monday-api-key"] || null;
+    const me = await getMe(apiKey);
+    if (!me) return res.status(404).json({ error: "Could not resolve user" });
+    res.json(me);
+  } catch (err) {
+    console.error("Monday /me error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Fetch team members for the Requestor / Editor/Designer dropdowns.
 router.get("/users", async (_req, res) => {

@@ -47,7 +47,11 @@ export default function App() {
   }, [setSubmittedTasks]);
 
   const handleTaskSubmitted = useCallback((submittedTask) => {
-    const entry = { ...submittedTask, submittedAt: Date.now() };
+    const entry = {
+      ...submittedTask,
+      submittedAt: Date.now(),
+      createdBy: localStorage.getItem("user_monday_name") || null,
+    };
     setSubmittedTasks(prev => [entry, ...prev]);
     axios.post("/api/tickets", entry).catch(() => {}); // fire-and-forget to shared DB
   }, [setSubmittedTasks]);

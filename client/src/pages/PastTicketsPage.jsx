@@ -153,6 +153,9 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue }) {
                     </h2>
                     <p className="batch-main-sub" style={{ paddingLeft: 0, margin: 0 }}>
                       Submitted {formatTimeAgo(selected.submittedAt ?? selected.createdAt)} · {activeBoard?.label ?? ""}
+                      {selected.createdBy && (
+                        <> · <span style={{ color: "var(--purple, #7c6af7)", fontWeight: 500 }}>by {selected.createdBy}</span></>
+                      )}
                     </p>
                   </div>
                   {selected.mondayUrl && (
