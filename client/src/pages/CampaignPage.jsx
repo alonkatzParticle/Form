@@ -19,6 +19,7 @@ function ProductMultiSelect({ options, selected, onChange }) {
   const [search, setSearch] = useState("");
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const btnRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const filtered = options.filter((o) =>
     o.toLowerCase().includes(search.toLowerCase())
@@ -41,11 +42,13 @@ function ProductMultiSelect({ options, selected, onChange }) {
     setSearch("");
   }
 
-  // Close on outside click
+  // Close on outside click — but NOT when clicking inside the dropdown itself
   useEffect(() => {
     if (!open) return;
     function handleClick(e) {
-      if (!btnRef.current?.contains(e.target)) setOpen(false);
+      const inBtn = btnRef.current?.contains(e.target);
+      const inDropdown = dropdownRef.current?.contains(e.target);
+      if (!inBtn && !inDropdown) setOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -91,6 +94,7 @@ function ProductMultiSelect({ options, selected, onChange }) {
       {/* Fixed-position dropdown — avoids overflow clipping from scrollable parent */}
       {open && (
         <div
+          ref={dropdownRef}
           style={{
             position: "fixed",
             top: pos.top,
