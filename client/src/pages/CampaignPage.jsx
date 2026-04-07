@@ -174,7 +174,9 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
     // Generate one task per product
     const tasks = selectedProducts.map((product) => {
       const taskData = { ...formTask, product };
-      const itemName = taskData.manualName || buildAutoName(activeBoard, taskData) || `${campaignName} — ${product}`;
+      const platform = taskData.platform || "";
+      const autoName = [product, platform, campaignName.trim()].filter(Boolean).join(" | ");
+      const itemName = taskData.manualName || autoName;
       return {
         id: `campaign-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         task: { ...taskData, manualName: itemName },
