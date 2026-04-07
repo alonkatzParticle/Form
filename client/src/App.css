@@ -3441,8 +3441,8 @@ body {
 .batch-main-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .batch-main-title { font-size: 1rem; font-weight: 700; margin: 0 0 2px; }
 .batch-main-sub { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
-.batch-submit-one-btn { background: var(--purple); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; padding: 8px 16px; cursor: pointer; font-family: inherit; transition: background 0.15s, opacity 0.15s; white-space: nowrap; flex-shrink: 0; }
-.batch-submit-one-btn:hover:not(:disabled) { background: var(--purple-dark); }
+.batch-submit-one-btn { background: #22c55e; color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; padding: 8px 16px; cursor: pointer; font-family: inherit; transition: background 0.15s, opacity 0.15s; white-space: nowrap; flex-shrink: 0; }
+.batch-submit-one-btn:hover:not(:disabled) { background: #16a34a; }
 .batch-submit-one-btn:disabled { opacity: 0.6; cursor: default; }
 .batch-brief-scroll { flex: 1; overflow-y: auto; padding: 24px; }
 .batch-brief-content { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px; outline: none; line-height: 1.7; font-size: 0.92rem; min-height: 200px; }

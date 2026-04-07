@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { usePathname } from "../hooks/usePathname.js";
-import { PenLine, Zap, Upload, History, Settings, ClipboardList, UserCircle } from "lucide-react";
+import { PenLine, Zap, Upload, History, Settings, ClipboardList, UserCircle, Megaphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import LogoSvg from "/logo.svg";
 
@@ -22,6 +22,7 @@ export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick, 
   const isPending = pathname === "/pending";
   const isSettings = pathname === "/settings";
   const isPastTickets = pathname === "/past-tickets";
+  const isCampaign = pathname === "/campaign";
 
   return (
     <aside className="app-sidebar">
@@ -38,6 +39,11 @@ export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick, 
         <button onClick={() => navigate("/batch")} className={`sidebar-btn-link sidebar-link ${isBatch ? "active" : ""}`}>
           <Zap size={16} className="sidebar-icon" />
           Batch Create
+        </button>
+
+        <button onClick={() => navigate("/campaign")} className={`sidebar-btn-link sidebar-link ${isCampaign ? "active" : ""}`}>
+          <Megaphone size={16} className="sidebar-icon" />
+          Campaign
         </button>
 
         <button onClick={() => navigate("/pending")} className={`sidebar-btn-link sidebar-link ${isPending ? "active" : ""}`}>

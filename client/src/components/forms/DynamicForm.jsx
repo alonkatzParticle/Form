@@ -25,8 +25,9 @@ export function Field({ label, required, hint, children }) {
 
 // ─── Value visibility check ───────────────────────────────────────────────────
 
-export function isVisible(field, task) {
+export function isVisible(field, task, hiddenKeys = []) {
   if (field.hidden) return false;  // hidden fields never render — but still submit to Monday
+  if (hiddenKeys.includes(field.key)) return false;
   if (!field.show_if) return true;
   if (!field.showWhen) return true;
   const val = task[field.showWhen.field];
@@ -869,7 +870,7 @@ function FileInput({ value, onChange }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview }) {
+export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview, hiddenFieldKeys = [] }) {
   const DRAFT_KEY = `task_draft_${board.id}`;
 
   // On mount: immediately restore from localStorage draft if one exists.
@@ -994,7 +995,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   async function handleReview(e) {
     e.preventDefault();
     const missingField = board.fields
-      .filter((f) => f.required && isVisible(f, task))
+      .filter((f) => f.required && isVisible(f, task, hiddenFieldKeys))
       .find((f) => {
         const val = task[f.key];
         if (Array.isArray(val)) return val.length === 0;
@@ -1025,7 +1026,7 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   }
 
   // ─── Layout pass ─────────────────────────────────────────────────────────────
-  const visibleFields = board.fields.filter((f) => isVisible(f, task));
+  const visibleFields = board.fields.filter((f) => isVisible(f, task, hiddenFieldKeys));
   const renderGroups = visibleFields.reduce((acc, f) => {
     if (f.half) {
       const last = acc[acc.length - 1];

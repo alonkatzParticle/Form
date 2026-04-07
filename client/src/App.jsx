@@ -7,6 +7,7 @@ import BatchPage from "./pages/BatchPage.jsx";
 import PendingPage from "./pages/PendingPage.jsx";
 import ReviewPage from "./pages/ReviewPage.jsx";
 import PastTicketsPage from "./pages/PastTicketsPage.jsx";
+import CampaignPage from "./pages/CampaignPage.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import HistoryDrawer from "./components/HistoryDrawer.jsx";
 import UserProfile from "./components/UserProfile.jsx";
@@ -24,6 +25,7 @@ export default function App() {
   const isPending = pathname === "/pending";
   const isReview = pathname === "/review";
   const isPastTickets = pathname === "/past-tickets";
+  const isCampaign = pathname === "/campaign";
 
   const [boards, setBoards] = usePersistedState("app_boards", []);
   const [frequencyOrder, setFrequencyOrder] = usePersistedState("app_freqOrder", {});
@@ -200,6 +202,16 @@ export default function App() {
               const requeuedTask = { ...ticket, id: `task-${Date.now()}`, mondayUrl: null, submittedAt: null };
               setPendingTasks(prev => [requeuedTask, ...prev]);
               navigate("/pending");
+            }}
+          />
+        </div>
+
+        <div style={{ display: isCampaign ? "block" : "none" }}>
+          <CampaignPage
+            boards={boards}
+            frequencyOrder={frequencyOrder}
+            onTasksGenerated={(tasks) => {
+              setPendingTasks((prev) => [...tasks, ...prev]);
             }}
           />
         </div>

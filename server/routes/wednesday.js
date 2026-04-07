@@ -71,7 +71,7 @@ function buildSystemPrompt(boardType, formState, referenceContext, clarification
 
   // Inject task reference when the user loaded an existing Monday task as a starting point
   const taskReferenceSection = taskReference
-    ? `\n\n## TASK REFERENCE\nThe user loaded an existing Monday task as a reference. The form has already been pre-filled with that task's content. The user wants to create something similar but different — your job is to understand what they want to change and apply those changes to the form.\n\nReference task name: **${taskReference.name}**\n\nReference task brief (HTML):\n${taskReference.brief}\n\nImportant:\n- The form is already filled. Listen to what the user wants to change.\n- Apply changes using your standard JSON change blocks.\n- Feel free to ask clarifying questions if their request is vague.\n`
+    ? `\n\n## TASK REFERENCE\nThe user loaded an existing Monday task as a reference. The form has already been pre-filled with that task's content. The user wants to create something similar but different — your job is to understand what they want to change and apply those changes to the form.\n\nReference task name: **${taskReference.name}**\n\nReference task brief (HTML):\n${taskReference.brief}\n\nImportant:\n- The form is already filled. Listen to what the user wants to change.\n- Apply changes using your standard JSON change blocks.\n- If their request is vague, make a creative decision and go — do NOT ask multiple clarifying questions.\n`
     : "";
 
   // Inject clarification-mode instructions when opened from an AI panel "Generate Brief" failure
