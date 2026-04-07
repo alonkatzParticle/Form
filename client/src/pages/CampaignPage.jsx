@@ -2,18 +2,23 @@
 // User fills one form, picks multiple products, writes a shared brief,
 // and all tasks land in the Pending queue ready to ship one by one.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Megaphone, ChevronDown, X } from "lucide-react";
 import DynamicForm from "../components/forms/DynamicForm.jsx";
-import { buildColumnValues, buildAutoName } from "../components/forms/DynamicForm.jsx";
+import { buildAutoName } from "../components/forms/DynamicForm.jsx";
 import { useMonday } from "../hooks/useMonday.js";
+
+// Fields the campaign page manages itself — hidden from DynamicForm
+const HIDDEN_FIELDS = ["product", "taskName"];
 
 // ── Product multi-select ───────────────────────────────────────────────────────
 
 function ProductMultiSelect({ options, selected, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const btnRef = useRef(null);
 
   const filtered = options.filter((o) =>
     o.toLowerCase().includes(search.toLowerCase())
@@ -27,22 +32,51 @@ function ProductMultiSelect({ options, selected, onChange }) {
     );
   }
 
+  function handleOpen() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setOpen((p) => !p);
+    setSearch("");
+  }
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (!btnRef.current?.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
   return (
-    <div style={{ position: "relative" }}>
+    <div>
+      {/* Trigger button — styled to match .field inputs */}
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((p) => !p)}
+        onClick={handleOpen}
         style={{
           width: "100%", display: "flex", alignItems: "center",
           justifyContent: "space-between", gap: 8,
-          padding: "9px 12px", borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--border)", background: "var(--surface)",
-          color: selected.length ? "var(--text)" : "var(--text-muted)",
-          fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit",
-          transition: "border-color 0.15s",
+          padding: "9px 12px",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-sm)",
+          background: "var(--input-bg)",
+          color: selected.length ? "var(--text)" : "var(--placeholder)",
+          fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit",
+          transition: "border-color 0.15s, box-shadow 0.15s",
         }}
-        onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--purple)"}
-        onMouseOut={(e) => !open && (e.currentTarget.style.borderColor = "var(--border)")}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = "var(--purple)";
+          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(108,99,255,0.12)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = "var(--border)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
       >
         <span style={{ flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selected.length === 0
@@ -51,39 +85,54 @@ function ProductMultiSelect({ options, selected, onChange }) {
             ? selected[0]
             : `${selected.length} products selected`}
         </span>
-        <ChevronDown size={14} style={{ opacity: 0.6, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+        <ChevronDown size={14} style={{ opacity: 0.5, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
       </button>
 
+      {/* Fixed-position dropdown — avoids overflow clipping from scrollable parent */}
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 200,
-          background: "var(--surface)", border: "1px solid var(--border)",
-          borderRadius: "var(--radius-sm)", boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-          maxHeight: 280, display: "flex", flexDirection: "column",
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            top: pos.top,
+            left: pos.left,
+            width: pos.width,
+            zIndex: 9999,
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            maxHeight: 300,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <div style={{ padding: "8px 10px", borderBottom: "1px solid var(--border)" }}>
             <input
               autoFocus
+              type="text"
               placeholder="Search products…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
-                width: "100%", boxSizing: "border-box", padding: "6px 10px",
-                borderRadius: 6, border: "1px solid var(--border)",
-                background: "var(--bg)", color: "var(--text)", fontSize: "0.82rem",
-                fontFamily: "inherit", outline: "none",
+                width: "100%", padding: "6px 10px",
+                border: "1px solid var(--border)", borderRadius: 6,
+                background: "var(--input-bg)", color: "var(--text)",
+                fontSize: "0.85rem", fontFamily: "inherit", outline: "none",
               }}
             />
           </div>
           <div style={{ overflowY: "auto", flex: 1 }}>
             {filtered.map((opt) => (
-              <label key={opt} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "8px 12px", cursor: "pointer", fontSize: "0.85rem",
-                color: "var(--text)", transition: "background 0.1s",
-              }}
-                onMouseOver={(e) => e.currentTarget.style.background = "var(--surface-hover, rgba(255,255,255,0.05))"}
-                onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
+              <label
+                key={opt}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "8px 14px", cursor: "pointer", fontSize: "0.88rem",
+                  color: "var(--text)", background: selected.includes(opt) ? "rgba(108,99,255,0.06)" : "transparent",
+                  transition: "background 0.1s",
+                }}
+                onMouseOver={(e) => { if (!selected.includes(opt)) e.currentTarget.style.background = "var(--bg)"; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = selected.includes(opt) ? "rgba(108,99,255,0.06)" : "transparent"; }}
               >
                 <input
                   type="checkbox"
@@ -95,7 +144,7 @@ function ProductMultiSelect({ options, selected, onChange }) {
               </label>
             ))}
             {filtered.length === 0 && (
-              <p style={{ padding: "12px", color: "var(--text-muted)", fontSize: "0.82rem", margin: 0 }}>No products found</p>
+              <p style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>No products found</p>
             )}
           </div>
         </div>
@@ -106,15 +155,15 @@ function ProductMultiSelect({ options, selected, onChange }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
           {selected.map((s) => (
             <span key={s} style={{
-              display: "inline-flex", alignItems: "center", gap: 5,
+              display: "inline-flex", alignItems: "center", gap: 4,
               padding: "3px 8px 3px 10px", borderRadius: 999,
-              background: "rgba(124,106,247,0.15)", border: "1px solid rgba(124,106,247,0.3)",
+              background: "rgba(108,99,255,0.1)", border: "1px solid rgba(108,99,255,0.25)",
               color: "var(--purple)", fontSize: "0.78rem", fontWeight: 500,
             }}>
               {s}
               <button type="button" onClick={() => toggle(s)} style={{
                 background: "none", border: "none", cursor: "pointer", padding: 0,
-                color: "var(--purple)", display: "flex", alignItems: "center",
+                color: "var(--purple)", display: "flex", alignItems: "center", lineHeight: 1,
               }}>
                 <X size={11} />
               </button>
@@ -140,7 +189,7 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
   const activeBoard = boards?.find((b) => b.id === activeBoardId);
   const { users } = useMonday(activeBoard?.boardId);
 
-  // Product options for the active board
+  // Product options from the active board's product field
   const productField = activeBoard?.fields?.find((f) => f.key === "product");
   const productOptions = productField?.options ?? [];
 
@@ -160,9 +209,9 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
     if (!campaignName.trim()) return setError("Please enter a campaign name.");
     if (selectedProducts.length === 0) return setError("Select at least one product.");
 
-    // Validate required fields (excluding product — handled by multi-select)
+    // Validate required fields (DynamicForm hides product + taskName — skip those)
     const requiredFields = activeBoard?.fields?.filter(
-      (f) => f.required && f.key !== "product"
+      (f) => f.required && !HIDDEN_FIELDS.includes(f.key)
     ) ?? [];
     for (const f of requiredFields) {
       const val = formTask[f.key];
@@ -175,8 +224,7 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
     const tasks = selectedProducts.map((product) => {
       const taskData = { ...formTask, product };
       const platform = taskData.platform || "";
-      const autoName = [product, platform, campaignName.trim()].filter(Boolean).join(" | ");
-      const itemName = taskData.manualName || autoName;
+      const itemName = [product, platform, campaignName.trim()].filter(Boolean).join(" | ");
       return {
         id: `campaign-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         task: { ...taskData, manualName: itemName },
@@ -202,7 +250,7 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
         <button className="batch-back-btn" onClick={() => navigate("/")}>← Back</button>
       </header>
 
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: "32px 24px", overflowY: "auto", height: "calc(100vh - 56px)", boxSizing: "border-box" }}>
+      <div style={{ maxWidth: 820, margin: "0 auto", padding: "32px 24px", height: "calc(100vh - 56px)", overflowY: "auto", boxSizing: "border-box" }}>
 
         {/* Board selector */}
         <div className="board-tabs-bar" style={{ marginBottom: 28 }}>
@@ -219,11 +267,11 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
           </div>
         </div>
 
-        {/* Campaign name */}
-        <div className="field" style={{ marginBottom: 24 }}>
-          <label>Campaign Name <span className="required"> *</span></label>
+        {/* Campaign name — uses .field CSS so it matches the rest of the form */}
+        <div className="field" style={{ marginBottom: 20 }}>
+          <label>Campaign Name <span className="required">*</span></label>
           <input
-            className="form-input"
+            type="text"
             placeholder="e.g. Memorial Day 2025"
             value={campaignName}
             onChange={(e) => setCampaignName(e.target.value)}
@@ -232,8 +280,8 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
 
         {/* Products multi-select */}
         <div className="field" style={{ marginBottom: 28 }}>
-          <label>Products <span className="required"> *</span></label>
-          <p className="hint">One identical task will be created per product.</p>
+          <label>Products <span className="required">*</span></label>
+          <p className="hint">One identical task will be created per product. Name format: Product | Platform | Campaign</p>
           <ProductMultiSelect
             options={productOptions}
             selected={selectedProducts}
@@ -243,13 +291,13 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
 
         <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "0 0 28px" }} />
 
-        {/* Task form — product field hidden since handled above */}
+        {/* Task form — product + taskName hidden since handled above */}
         {activeBoard && (
           <DynamicForm
             board={activeBoard}
             users={users}
             frequencyOrder={frequencyOrder}
-            hiddenFieldKeys={["product"]}
+            hiddenFieldKeys={HIDDEN_FIELDS}
             onTaskChange={handleTaskChange}
             onReview={null}
           />
@@ -260,22 +308,12 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
         {/* Manual brief */}
         <div className="field" style={{ marginBottom: 28 }}>
           <label>Brief / Script</label>
-          <p className="hint">This brief will be posted as an update on every task. Write it once — it applies to all products.</p>
+          <p className="hint">Posted as an update on every task — write once, applies to all products.</p>
           <textarea
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
             placeholder="Write your shared brief, script, or creative direction here…"
             rows={10}
-            style={{
-              width: "100%", boxSizing: "border-box",
-              padding: "12px 14px", borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--border)", background: "var(--surface)",
-              color: "var(--text)", fontSize: "0.88rem", fontFamily: "inherit",
-              resize: "vertical", lineHeight: 1.6, outline: "none",
-              transition: "border-color 0.15s",
-            }}
-            onFocus={(e) => e.target.style.borderColor = "var(--purple)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--border)"}
           />
         </div>
 
@@ -283,8 +321,8 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
         {error && (
           <div style={{
             padding: "10px 14px", borderRadius: "var(--radius-sm)", marginBottom: 16,
-            background: "rgba(255,80,80,0.08)", border: "1px solid rgba(255,80,80,0.25)",
-            color: "#ff8080", fontSize: "0.85rem",
+            background: "var(--red-bg)", border: "1px solid rgba(255,59,48,0.2)",
+            color: "var(--red)", fontSize: "0.85rem",
           }}>
             {error}
           </div>
@@ -294,9 +332,9 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
         <button
           onClick={handleCreate}
           className="batch-submit-one-btn"
-          style={{ width: "100%", padding: "12px 0", fontSize: "0.95rem", borderRadius: "var(--radius-sm)" }}
+          style={{ width: "100%", padding: "12px 0", fontSize: "0.95rem", borderRadius: "var(--radius-sm)", marginBottom: 40 }}
         >
-          Create {selectedProducts.length > 0 ? `${selectedProducts.length} ` : ""}Campaign Tasks →
+          Create {selectedProducts.length > 0 ? `${selectedProducts.length} ` : ""}Campaign Task{selectedProducts.length !== 1 ? "s" : ""} →
         </button>
 
       </div>
