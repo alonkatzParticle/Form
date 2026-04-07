@@ -6,7 +6,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Megaphone, ChevronDown, X } from "lucide-react";
 import DynamicForm from "../components/forms/DynamicForm.jsx";
-import { buildAutoName } from "../components/forms/DynamicForm.jsx";
+import { buildAutoName, buildUpdateBody } from "../components/forms/DynamicForm.jsx";
 import { useMonday } from "../hooks/useMonday.js";
 
 // Fields the campaign page manages itself — hidden from DynamicForm
@@ -187,7 +187,6 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
   const [campaignName, setCampaignName] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [formTask, setFormTask] = useState({});
-  const [brief, setBrief] = useState("");
   const [error, setError] = useState("");
 
   const activeBoard = boards?.find((b) => b.id === activeBoardId);
@@ -224,15 +223,16 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
       if (empty) return setError(`"${f.label}" is required.`);
     }
 
-    // Generate one task per product
+    // Generate one task per product — brief auto-built from board's updateTemplate
     const tasks = selectedProducts.map((product) => {
       const taskData = { ...formTask, product };
       const platform = taskData.platform || "";
       const itemName = [product, platform, campaignName.trim()].filter(Boolean).join(" | ");
+      const briefHtml = buildUpdateBody(activeBoard.fields, taskData, users, activeBoard.updateTemplate ?? null);
       return {
         id: `campaign-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         task: { ...taskData, manualName: itemName },
-        brief: brief || "",
+        brief: briefHtml || "",
         boardType: activeBoardId,
         status: "idle",
         createdAt: Date.now(),
@@ -306,20 +306,6 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
             onReview={null}
           />
         )}
-
-        <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "28px 0" }} />
-
-        {/* Manual brief */}
-        <div className="field" style={{ marginBottom: 28 }}>
-          <label>Brief / Script</label>
-          <p className="hint">Posted as an update on every task — write once, applies to all products.</p>
-          <textarea
-            value={brief}
-            onChange={(e) => setBrief(e.target.value)}
-            placeholder="Write your shared brief, script, or creative direction here…"
-            rows={10}
-          />
-        </div>
 
         {/* Error */}
         {error && (

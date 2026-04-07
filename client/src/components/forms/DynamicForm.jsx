@@ -59,7 +59,7 @@ export function buildAutoName(board, task) {
 // Falls back to the default template for the board id, or plain auto-generation.
 // Block-level elements whose {{field}} refs ALL resolve to empty are dropped.
 
-function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = null) {
+export function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = null) {
   function getVal(key) {
     const field = fields.find((f) => f.key === key);
     if (!field || !isVisible(field, task)) return null;
