@@ -1,12 +1,11 @@
 // CampaignPage — create the same task for multiple products at once.
-// User fills one form, picks multiple products, writes a shared brief,
-// and all tasks land in the Pending queue ready to ship one by one.
+// Layout matches the Home page (home → app-header → board-tabs → card).
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Megaphone, ChevronDown, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import DynamicForm from "../components/forms/DynamicForm.jsx";
-import { buildAutoName, buildUpdateBody } from "../components/forms/DynamicForm.jsx";
+import { buildUpdateBody } from "../components/forms/DynamicForm.jsx";
 import { useMonday } from "../hooks/useMonday.js";
 
 // Fields the campaign page manages itself — hidden from DynamicForm
@@ -42,7 +41,6 @@ function ProductMultiSelect({ options, selected, onChange }) {
     setSearch("");
   }
 
-  // Close on outside click — but NOT when clicking inside the dropdown itself
   useEffect(() => {
     if (!open) return;
     function handleClick(e) {
@@ -56,7 +54,6 @@ function ProductMultiSelect({ options, selected, onChange }) {
 
   return (
     <div>
-      {/* Trigger button — styled to match .field inputs */}
       <button
         ref={btnRef}
         type="button"
@@ -91,23 +88,18 @@ function ProductMultiSelect({ options, selected, onChange }) {
         <ChevronDown size={14} style={{ opacity: 0.5, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
       </button>
 
-      {/* Fixed-position dropdown — avoids overflow clipping from scrollable parent */}
       {open && (
         <div
           ref={dropdownRef}
           style={{
             position: "fixed",
-            top: pos.top,
-            left: pos.left,
-            width: pos.width,
+            top: pos.top, left: pos.left, width: pos.width,
             zIndex: 9999,
             background: "var(--card)",
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-sm)",
             boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-            maxHeight: 300,
-            display: "flex",
-            flexDirection: "column",
+            maxHeight: 300, display: "flex", flexDirection: "column",
           }}
         >
           <div style={{ padding: "8px 10px", borderBottom: "1px solid var(--border)" }}>
@@ -132,8 +124,8 @@ function ProductMultiSelect({ options, selected, onChange }) {
                 style={{
                   display: "flex", alignItems: "center", gap: 10,
                   padding: "8px 14px", cursor: "pointer", fontSize: "0.88rem",
-                  color: "var(--text)", background: selected.includes(opt) ? "rgba(108,99,255,0.06)" : "transparent",
-                  transition: "background 0.1s",
+                  color: "var(--text)",
+                  background: selected.includes(opt) ? "rgba(108,99,255,0.06)" : "transparent",
                 }}
                 onMouseOver={(e) => { if (!selected.includes(opt)) e.currentTarget.style.background = "var(--bg)"; }}
                 onMouseOut={(e) => { e.currentTarget.style.background = selected.includes(opt) ? "rgba(108,99,255,0.06)" : "transparent"; }}
@@ -154,7 +146,6 @@ function ProductMultiSelect({ options, selected, onChange }) {
         </div>
       )}
 
-      {/* Selected chips */}
       {selected.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
           {selected.map((s) => (
@@ -188,11 +179,11 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [formTask, setFormTask] = useState({});
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const activeBoard = boards?.find((b) => b.id === activeBoardId);
   const { users } = useMonday(activeBoard?.boardId);
 
-  // Product options from the active board's product field
   const productField = activeBoard?.fields?.find((f) => f.key === "product");
   const productOptions = productField?.options ?? [];
 
@@ -212,7 +203,6 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
     if (!campaignName.trim()) return setError("Please enter a campaign name.");
     if (selectedProducts.length === 0) return setError("Select at least one product.");
 
-    // Validate required fields (DynamicForm hides product + taskName — skip those)
     const requiredFields = activeBoard?.fields?.filter(
       (f) => f.required && !HIDDEN_FIELDS.includes(f.key)
     ) ?? [];
@@ -223,7 +213,6 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
       if (empty) return setError(`"${f.label}" is required.`);
     }
 
-    // Generate one task per product — brief auto-built from board's updateTemplate
     const tasks = selectedProducts.map((product) => {
       const taskData = { ...formTask, product };
       const platform = taskData.platform || "";
@@ -245,88 +234,99 @@ export default function CampaignPage({ boards, frequencyOrder, onTasksGenerated 
   }
 
   return (
-    <div className="batch-page">
-      <header className="batch-header" style={{ justifyContent: "space-between" }}>
-        <div className="batch-header-center">
-          <Megaphone size={18} className="batch-header-icon" style={{ color: "var(--purple)" }} />
-          <span className="batch-header-title">Campaign Create</span>
-        </div>
-        <button className="batch-back-btn" onClick={() => navigate("/")}>← Back</button>
+    <div className="home">
+      <header className="app-header">
+        <h1>Campaign Create</h1>
+        <p>Create the same task across multiple products at once</p>
       </header>
 
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: "32px 24px", height: "calc(100vh - 56px)", overflowY: "auto", boxSizing: "border-box" }}>
+      <div className="board-tabs-bar">
+        <div className="board-tabs-pill">
+          {boards.map((b) => (
+            <button
+              key={b.id}
+              className={`board-tab ${activeBoardId === b.id ? "active" : ""}`}
+              onClick={() => handleBoardSwitch(b.id)}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        {/* Board selector */}
-        <div className="board-tabs-bar" style={{ marginBottom: 28 }}>
-          <div className="board-tabs-pill">
-            {boards.map((b) => (
+      <div className="layout">
+        <div className="layout-main">
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <h2>{activeBoard?.label ?? "Campaign"}</h2>
+                <p className="card-subtitle">Fill in the task details. One task will be created per product.</p>
+              </div>
+            </div>
+
+            <div className="card-body">
+              {/* Campaign name */}
+              <div className="field" style={{ marginBottom: 20 }}>
+                <label>Campaign Name <span className="required">*</span></label>
+                <p className="hint">Used as the task name suffix: Product | Platform | Campaign Name</p>
+                <input
+                  type="text"
+                  placeholder="e.g. Memorial Day 2025"
+                  value={campaignName}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                />
+              </div>
+
+              {/* Products multi-select */}
+              <div className="field" style={{ marginBottom: 24 }}>
+                <label>Products <span className="required">*</span></label>
+                <p className="hint">One identical task will be created per selected product</p>
+                <ProductMultiSelect
+                  options={productOptions}
+                  selected={selectedProducts}
+                  onChange={setSelectedProducts}
+                />
+              </div>
+
+              <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "8px 0 24px" }} />
+
+              {/* Task form */}
+              {activeBoard && (
+                <DynamicForm
+                  board={activeBoard}
+                  users={users}
+                  frequencyOrder={frequencyOrder}
+                  hiddenFieldKeys={HIDDEN_FIELDS}
+                  onTaskChange={handleTaskChange}
+                  onReview={null}
+                />
+              )}
+
+              {/* Error */}
+              {error && (
+                <div style={{
+                  padding: "10px 14px", borderRadius: "var(--radius-sm)", margin: "16px 0",
+                  background: "var(--red-bg)", border: "1px solid rgba(255,59,48,0.2)",
+                  color: "var(--red)", fontSize: "0.85rem",
+                }}>
+                  {error}
+                </div>
+              )}
+
+              {/* Create button — matches btn-submit styling */}
               <button
-                key={b.id}
-                className={`board-tab ${activeBoardId === b.id ? "active" : ""}`}
-                onClick={() => handleBoardSwitch(b.id)}
+                onClick={handleCreate}
+                disabled={submitting}
+                className="btn-submit"
+                style={{ marginTop: 8 }}
               >
-                {b.label}
+                {selectedProducts.length > 0
+                  ? `Create ${selectedProducts.length} Campaign Task${selectedProducts.length !== 1 ? "s" : ""} →`
+                  : "Create Campaign Tasks →"}
               </button>
-            ))}
+            </div>
           </div>
         </div>
-
-        {/* Campaign name — uses .field CSS so it matches the rest of the form */}
-        <div className="field" style={{ marginBottom: 20 }}>
-          <label>Campaign Name <span className="required">*</span></label>
-          <input
-            type="text"
-            placeholder="e.g. Memorial Day 2025"
-            value={campaignName}
-            onChange={(e) => setCampaignName(e.target.value)}
-          />
-        </div>
-
-        {/* Products multi-select */}
-        <div className="field" style={{ marginBottom: 28 }}>
-          <label>Products <span className="required">*</span></label>
-          <p className="hint">One identical task will be created per product. Name format: Product | Platform | Campaign</p>
-          <ProductMultiSelect
-            options={productOptions}
-            selected={selectedProducts}
-            onChange={setSelectedProducts}
-          />
-        </div>
-
-        <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "0 0 28px" }} />
-
-        {/* Task form — product + taskName hidden since handled above */}
-        {activeBoard && (
-          <DynamicForm
-            board={activeBoard}
-            users={users}
-            frequencyOrder={frequencyOrder}
-            hiddenFieldKeys={HIDDEN_FIELDS}
-            onTaskChange={handleTaskChange}
-            onReview={null}
-          />
-        )}
-
-        {/* Error */}
-        {error && (
-          <div style={{
-            padding: "10px 14px", borderRadius: "var(--radius-sm)", marginBottom: 16,
-            background: "var(--red-bg)", border: "1px solid rgba(255,59,48,0.2)",
-            color: "var(--red)", fontSize: "0.85rem",
-          }}>
-            {error}
-          </div>
-        )}
-
-        {/* Create button */}
-        <button
-          onClick={handleCreate}
-          className="batch-submit-one-btn"
-          style={{ width: "100%", padding: "12px 0", fontSize: "0.95rem", borderRadius: "var(--radius-sm)", marginBottom: 40 }}
-        >
-          Create {selectedProducts.length > 0 ? `${selectedProducts.length} ` : ""}Campaign Task{selectedProducts.length !== 1 ? "s" : ""} →
-        </button>
-
       </div>
     </div>
   );
