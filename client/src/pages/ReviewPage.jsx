@@ -189,10 +189,14 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
     if (!selectedId || !selected || !activeBoard) return;
     setIsRegenerating(true);
     try {
-      const { generateBriefHtml, buildColumnValues: bCV } = await import("../components/forms/DynamicForm.jsx");
-      const { html: newBriefHtml, finalEstimate } = await generateBriefHtml(activeBoard, selected.task, users);
+      const { generateBriefHtml } = await import("../components/forms/DynamicForm.jsx");
+      const { html, finalEstimate } = await generateBriefHtml(activeBoard, selected.task, users);
+      const entryFiles = taskFiles?.[selected.id] ?? {};
+      const hasFiles = Object.values(entryFiles).some(f => f?.length > 0);
+      const newBriefHtml = hasFiles
+        ? html + '\n\n\ud83d\udcce <strong>Reference files are attached</strong> \u2014 check the <strong>Files</strong> tab on this task.'
+        : html;
       setEditingBrief(newBriefHtml);
-      // Also update the task's estimate so it will be submitted correctly
       const taskPatch = finalEstimate ? { _elevenLabsEstimate: finalEstimate } : {};
       setTasks(prev => prev.map(t => t.id === selectedId ? { ...t, brief: newBriefHtml, editedBrief: newBriefHtml, task: { ...t.task, ...taskPatch } } : t));
     } catch (err) {

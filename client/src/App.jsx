@@ -38,24 +38,25 @@ export default function App() {
   // Non-persisted: holds FileList objects (not JSON-serializable) keyed by taskId
   const [taskFiles, setTaskFiles] = useState({});
 
-  // Extract file fields from a task, store them in taskFiles, return cleaned task
+  // Extract file fields from a task, store them in taskFiles, return { cleanTask, hasFiles }
   function extractFiles(taskId, taskObj, board) {
     const fileFields = board?.fields?.filter((f) => f.type === "file") ?? [];
-    if (fileFields.length === 0) return taskObj;
+    if (fileFields.length === 0) return { cleanTask: taskObj, hasFiles: false };
     const files = {};
     const clean = { ...taskObj };
     for (const field of fileFields) {
       const val = taskObj[field.key];
-      if (val && (val instanceof FileList || val instanceof Array) && val.length > 0) {
+      if (val && (val instanceof FileList || Array.isArray(val)) && val.length > 0) {
         files[field.key] = val;
       }
-      clean[field.key] = null; // strip non-serializable data
+      clean[field.key] = null;
     }
-    if (Object.keys(files).length > 0) {
-      setTaskFiles((prev) => ({ ...prev, [taskId]: files }));
-    }
-    return clean;
+    const hasFiles = Object.keys(files).length > 0;
+    if (hasFiles) setTaskFiles((prev) => ({ ...prev, [taskId]: files }));
+    return { cleanTask: clean, hasFiles };
   }
+
+  const FILES_NOTE = '\n\n📎 <strong>Reference files are attached</strong> — check the <strong>Files</strong> tab on this task.';
 
   function clearTaskFiles(taskId) {
     setTaskFiles((prev) => { const n = { ...prev }; delete n[taskId]; return n; });
@@ -200,8 +201,9 @@ export default function App() {
             frequencyOrder={frequencyOrder}
             onGenerateSuccess={(task) => {
               const board = boards.find((b) => b.id === task.boardType) ?? boards[0];
-              const cleanTaskData = extractFiles(task.id, task.task, board);
-              const cleanTask = { ...task, task: cleanTaskData };
+              const { cleanTask: cleanTaskData, hasFiles } = extractFiles(task.id, task.task, board);
+              const brief = hasFiles ? (task.brief || "") + FILES_NOTE : (task.brief || "");
+              const cleanTask = { ...task, task: cleanTaskData, brief, editedBrief: brief };
               setPendingTasks((prev) => [...prev, cleanTask]);
               navigate(`/review?ids=${task.id}`);
             }}

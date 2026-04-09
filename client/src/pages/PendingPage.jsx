@@ -146,7 +146,12 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
     setIsRegenerating(true);
     try {
       const { generateBriefHtml } = await import("../components/forms/DynamicForm.jsx");
-      const { html: newBriefHtml, finalEstimate } = await generateBriefHtml(activeBoard, selected.task, users);
+      const { html, finalEstimate } = await generateBriefHtml(activeBoard, selected.task, users);
+      const entryFiles = taskFiles?.[selected.id] ?? {};
+      const hasFiles = Object.values(entryFiles).some(f => f?.length > 0);
+      const newBriefHtml = hasFiles
+        ? html + '\n\n\ud83d\udcce <strong>Reference files are attached</strong> \u2014 check the <strong>Files</strong> tab on this task.'
+        : html;
       setEditingBrief(newBriefHtml);
       const taskPatch = finalEstimate ? { _elevenLabsEstimate: finalEstimate } : {};
       setTasks(prev => prev.map(t => t.id === selectedId
