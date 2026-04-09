@@ -175,7 +175,7 @@ function SuccessCard({ itemUrl, isBatch, onCreateAnother, onGoHome }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted }) {
+export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded }) {
   const navigate = useNavigate();
   const pathname = usePathname();
   
@@ -298,6 +298,24 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
 
       if (itemId && briefToSubmit) {
         await axios.post("/api/monday/create-update", { itemId, body: briefToSubmit });
+      }
+
+      // Upload any files attached to this task
+      if (itemId && taskFiles) {
+        const entryFiles = taskFiles[entry.id] ?? {};
+        const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
+        for (const field of fileFields) {
+          const fileList = entryFiles[field.key];
+          if (!fileList || fileList.length === 0) continue;
+          for (const file of Array.from(fileList)) {
+            const fd = new FormData();
+            fd.append("itemId", itemId);
+            fd.append("columnId", field.mondayColumnId);
+            fd.append("file", file, file.name);
+            await axios.post("/api/monday/upload-file", fd);
+          }
+        }
+        onFilesUploaded?.(entry.id);
       }
       
       // Archive to submitted history before removing from pending

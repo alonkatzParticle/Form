@@ -35,6 +35,31 @@ export default function App() {
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  // Non-persisted: holds FileList objects (not JSON-serializable) keyed by taskId
+  const [taskFiles, setTaskFiles] = useState({});
+
+  // Extract file fields from a task, store them in taskFiles, return cleaned task
+  function extractFiles(taskId, taskObj, board) {
+    const fileFields = board?.fields?.filter((f) => f.type === "file") ?? [];
+    if (fileFields.length === 0) return taskObj;
+    const files = {};
+    const clean = { ...taskObj };
+    for (const field of fileFields) {
+      const val = taskObj[field.key];
+      if (val && (val instanceof FileList || val instanceof Array) && val.length > 0) {
+        files[field.key] = val;
+      }
+      clean[field.key] = null; // strip non-serializable data
+    }
+    if (Object.keys(files).length > 0) {
+      setTaskFiles((prev) => ({ ...prev, [taskId]: files }));
+    }
+    return clean;
+  }
+
+  function clearTaskFiles(taskId) {
+    setTaskFiles((prev) => { const n = { ...prev }; delete n[taskId]; return n; });
+  }
 
   // Background sync: pull shared tickets from server and merge (dedupe by id)
   useEffect(() => {
@@ -156,7 +181,10 @@ export default function App() {
             boards={boards}
             frequencyOrder={frequencyOrder}
             onGenerateSuccess={(task) => {
-              setPendingTasks((prev) => [...prev, task]);
+              const board = boards.find((b) => b.id === task.boardType) ?? boards[0];
+              const cleanTaskData = extractFiles(task.id, task.task, board);
+              const cleanTask = { ...task, task: cleanTaskData };
+              setPendingTasks((prev) => [...prev, cleanTask]);
               navigate(`/review?ids=${task.id}`);
             }}
           />
@@ -181,6 +209,8 @@ export default function App() {
             boards={boards}
             frequencyOrder={frequencyOrder}
             onTaskSubmitted={handleTaskSubmitted}
+            taskFiles={taskFiles}
+            onFilesUploaded={clearTaskFiles}
           />
         </div>
 
@@ -191,6 +221,8 @@ export default function App() {
             boards={boards}
             frequencyOrder={frequencyOrder}
             onTaskSubmitted={handleTaskSubmitted}
+            taskFiles={taskFiles}
+            onFilesUploaded={clearTaskFiles}
           />
         </div>
 
@@ -211,7 +243,12 @@ export default function App() {
             boards={boards}
             frequencyOrder={frequencyOrder}
             onTasksGenerated={(tasks) => {
-              setPendingTasks((prev) => [...tasks, ...prev]);
+              const cleaned = tasks.map((t) => {
+                const board = boards.find((b) => b.id === t.boardType);
+                const cleanTaskData = extractFiles(t.id, t.task, board);
+                return { ...t, task: cleanTaskData };
+              });
+              setPendingTasks((prev) => [...cleaned, ...prev]);
             }}
           />
         </div>
