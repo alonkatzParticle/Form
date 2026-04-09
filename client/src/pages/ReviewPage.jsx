@@ -401,13 +401,6 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
         <div className="batch-header-center">
           <span className="batch-header-title">{isBatchMode ? "Batch Review" : "Review & Submit"}</span>
         </div>
-        <div style={{ width: "200px", textAlign: "right" }}>
-          {isBatchMode && reviewTasks.length > 1 && (
-            <button className="batch-submit-all-btn" onClick={handleSubmitAll}>
-              Submit All ({reviewTasks.length})
-            </button>
-          )}
-        </div>
       </header>
 
       {reviewTasks.length === 0 ? (
