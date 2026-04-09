@@ -244,11 +244,17 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       });
       const itemId = createRes.data?.itemId;
       const itemUrl = createRes.data?.url ?? null;
+
+      // Non-fatal: item is already created — don't block task removal on these
       if (itemId && briefToSubmit) {
-        await axios.post("/api/monday/create-update", { itemId, body: briefToSubmit });
+        try {
+          await axios.post("/api/monday/create-update", { itemId, body: briefToSubmit });
+        } catch (e) {
+          console.warn("[Pending] Brief upload failed (item was created):", e.message);
+        }
       }
 
-      // Upload any files attached to this task
+      // Non-fatal: upload files if any
       if (itemId && taskFiles) {
         const entryFiles = taskFiles[entry.id] ?? {};
         const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
@@ -256,22 +262,26 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
           const fileList = entryFiles[field.key];
           if (!fileList || fileList.length === 0) continue;
           for (const file of Array.from(fileList)) {
-            const fd = new FormData();
-            fd.append("itemId", itemId);
-            fd.append("columnId", field.mondayColumnId);
-            fd.append("file", file, file.name);
-            await axios.post("/api/monday/upload-file", fd);
+            try {
+              const fd = new FormData();
+              fd.append("itemId", itemId);
+              fd.append("columnId", field.mondayColumnId);
+              fd.append("file", file, file.name);
+              await axios.post("/api/monday/upload-file", fd);
+            } catch (e) {
+              console.warn("[Pending] File upload failed (item was created):", e.message);
+            }
           }
         }
         onFilesUploaded?.(entry.id);
       }
-      
+
       // Archive to submitted history
       if (onTaskSubmitted) {
         onTaskSubmitted({ ...entry, brief: briefToSubmit, mondayUrl: itemUrl });
       }
 
-      // On success, remove from outbox and show confirmation
+      // Remove from outbox and show confirmation
       if (id === selectedId) {
         setSelectedId(null);
         setEditingBrief("");
@@ -279,6 +289,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       setTasks((prev) => prev.filter((t) => t.id !== id));
       setSuccessState({ url: itemUrl });
     } catch (err) {
+      // Only reaches here if create-item itself failed (no item created yet)
       const msg = err.response?.data?.error || err.message || "Submission failed";
       console.error("[Pending] Submit error:", msg);
       setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "error", errorMsg: msg } : t));
