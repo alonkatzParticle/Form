@@ -51,8 +51,16 @@ function ReadOnlyField({ label, value }) {
   );
 }
 
-export default function PastTicketsPage({ submittedTasks, boards, onRequeue }) {
+export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onRefresh }) {
   const [selectedId, setSelectedId] = useState(submittedTasks?.[0]?.id ?? null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try { await onRefresh?.(); } finally {
+      setTimeout(() => setRefreshing(false), 600);
+    }
+  }
   
   const selected = submittedTasks?.find(t => t.id === selectedId);
   const activeBoard = boards?.find(b => b.id === selected?.boardType) ?? boards?.[0];
@@ -86,8 +94,22 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue }) {
           <Clock size={18} style={{ marginRight: 8, color: "var(--text-muted)" }} />
           <span className="batch-header-title">Past Tickets</span>
         </div>
-        <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", paddingRight: 8 }}>
-          {sorted.length} submitted
+        <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 8 }}>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{sorted.length} submitted</span>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "5px 12px", borderRadius: 8, border: "1px solid var(--border)",
+              background: "var(--surface)", color: "var(--text-muted)",
+              fontSize: "0.8rem", cursor: refreshing ? "not-allowed" : "pointer",
+              opacity: refreshing ? 0.5 : 1, transition: "all 0.15s"
+            }}
+          >
+            <RotateCcw size={13} style={{ animation: refreshing ? "btn-spin 0.6s linear infinite" : "none" }} />
+            {refreshing ? "Syncing…" : "Refresh"}
+          </button>
         </div>
       </header>
 

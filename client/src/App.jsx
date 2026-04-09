@@ -61,17 +61,27 @@ export default function App() {
     setTaskFiles((prev) => { const n = { ...prev }; delete n[taskId]; return n; });
   }
 
-  // Background sync: pull shared tickets from server and merge (dedupe by id)
-  useEffect(() => {
+  // Fetch all shared tickets from server and replace local cache
+  const refreshSubmittedTasks = useCallback(() => {
     axios.get("/api/tickets").then(({ data }) => {
       if (!Array.isArray(data)) return;
+      // Server is the source of truth — replace local with server list
+      // then re-add any local-only entries (submitted this session, not yet synced)
       setSubmittedTasks(prev => {
-        const existingIds = new Set(prev.map(t => t.id));
-        const newOnes = data.filter(t => !existingIds.has(t.id));
-        return newOnes.length ? [...newOnes, ...prev].sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0)) : prev;
+        const serverIds = new Set(data.map(t => t.id));
+        const localOnly = prev.filter(t => !serverIds.has(t.id));
+        return [...data, ...localOnly].sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
       });
     }).catch(() => {}); // silently ignore if DB not configured
   }, [setSubmittedTasks]);
+
+  // Initial sync on mount
+  useEffect(() => { refreshSubmittedTasks(); }, [refreshSubmittedTasks]);
+
+  // Re-sync every time the user navigates to Past Tickets
+  useEffect(() => {
+    if (isPastTickets) refreshSubmittedTasks();
+  }, [isPastTickets, refreshSubmittedTasks]);
 
   const handleTaskSubmitted = useCallback((submittedTask) => {
     const entry = {
@@ -230,6 +240,7 @@ export default function App() {
           <PastTicketsPage
             submittedTasks={submittedTasks}
             boards={boards}
+            onRefresh={refreshSubmittedTasks}
             onRequeue={(ticket) => {
               const requeuedTask = { ...ticket, id: `task-${Date.now()}`, mondayUrl: null, submittedAt: null };
               setPendingTasks(prev => [requeuedTask, ...prev]);
