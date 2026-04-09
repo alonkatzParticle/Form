@@ -95,16 +95,23 @@ export async function generateBrief({ formValues, boardType, estimatedDurationTe
     const legendItems = Object.entries(sections)
       .map(([name, { color }]) => `<span style="color:${color};font-weight:700;">■</span> ${name}`)
       .join(" &nbsp; ");
-    const legend = `<p style="font-size:14px;margin:2px 0 10px 0;">${legendItems}</p>`;
+    const scriptLegend = `<p style="font-size:14px;margin:2px 0 10px 0;">${legendItems}</p>`;
+
+    // Visuals legend includes Hook (red) since visuals use "Hook: ..." labels
+    const visualsLegendItems = [
+      `<span style="color:#E8412A;font-weight:700;">■</span> Hook`,
+      ...Object.entries(sections).map(([name, { color }]) => `<span style="color:${color};font-weight:700;">■</span> ${name}`)
+    ].join(" &nbsp; ");
+    const visualsLegend = `<p style="font-size:14px;margin:2px 0 10px 0;">${visualsLegendItems}</p>`;
 
     // Inject legend after Script heading
     if (html.includes("Script")) {
-      html = html.replace(/(<h3[^>]*>[^<]*[Ss]cript[^<]*<\/h3>)/, `$1${legend}`);
+      html = html.replace(/(<h3[^>]*>[^<]*[Ss]cript[^<]*<\/h3>)/, `$1${scriptLegend}`);
     }
 
     // Inject legend after Visuals heading
     if (html.includes("Visual")) {
-      html = html.replace(/(<h3[^>]*>[^<]*[Vv]isual[^<]*<\/h3>)/, `$1${legend}`);
+      html = html.replace(/(<h3[^>]*>[^<]*[Vv]isual[^<]*<\/h3>)/, `$1${visualsLegend}`);
     }
 
     // Color-code "Label: text" lines inside the Visuals section

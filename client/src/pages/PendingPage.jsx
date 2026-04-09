@@ -413,7 +413,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                         task={{ ...selected.task, ...(taskFiles?.[selected.id] ?? {}) }}
                         users={users}
                         frequencyOrder={frequencyOrder}
-                        skipMondayTypes={["item_name"]}
+                        skipMondayTypes={[]}
                         onChange={(key, val) => {
                           const field = activeBoard?.fields?.find(f => f.key === key);
                           if (field?.type === "file") {
