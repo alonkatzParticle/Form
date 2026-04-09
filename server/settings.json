@@ -23,7 +23,8 @@
             "Ulta",
             "Marketing/Media"
           ],
-          "step1": true
+          "step1": true,
+          "sectionHeader": "Step 1 — Context"
         },
         {
           "key": "product",
@@ -333,7 +334,8 @@
             "Website",
             "Ulta"
           ],
-          "step1": true
+          "step1": true,
+          "sectionHeader": "Step 1 — Context"
         },
         {
           "key": "productBundle",

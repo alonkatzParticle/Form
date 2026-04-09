@@ -94,7 +94,7 @@ function SuccessCard({ itemUrl, onCreateAnother }) {
   );
 }
 
-export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded }) {
+export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange }) {
   const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState(null);
   const [editingBrief, setEditingBrief] = usePersistedState("pending_editingBrief", "");
@@ -410,13 +410,17 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                     <div className="batch-form-wrapper" style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
                       <TaskFormSections
                         boardFields={activeBoard?.fields ?? []}
-                        task={selected.task}
+                        task={{ ...selected.task, ...(taskFiles?.[selected.id] ?? {}) }}
                         users={users}
                         frequencyOrder={frequencyOrder}
-                        skipTypes={["file"]}
                         skipMondayTypes={["item_name"]}
                         onChange={(key, val) => {
-                          setTasks((prev) => prev.map((t) => t.id === selected.id ? { ...t, task: { ...t.task, [key]: val } } : t));
+                          const field = activeBoard?.fields?.find(f => f.key === key);
+                          if (field?.type === "file") {
+                            onFileChange?.(selected.id, key, val);
+                          } else {
+                            setTasks((prev) => prev.map((t) => t.id === selected.id ? { ...t, task: { ...t.task, [key]: val } } : t));
+                          }
                         }}
                       />
                     </div>

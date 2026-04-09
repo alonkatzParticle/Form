@@ -61,6 +61,14 @@ export default function App() {
     setTaskFiles((prev) => { const n = { ...prev }; delete n[taskId]; return n; });
   }
 
+  // Called when a file field changes in Pending or Review
+  function handleFileChange(taskId, fieldKey, files) {
+    setTaskFiles((prev) => ({
+      ...prev,
+      [taskId]: { ...(prev[taskId] ?? {}), [fieldKey]: files },
+    }));
+  }
+
   // Fetch all shared tickets from server and replace local cache
   const refreshSubmittedTasks = useCallback(() => {
     axios.get("/api/tickets").then(({ data }) => {
@@ -221,6 +229,7 @@ export default function App() {
             onTaskSubmitted={handleTaskSubmitted}
             taskFiles={taskFiles}
             onFilesUploaded={clearTaskFiles}
+            onFileChange={handleFileChange}
           />
         </div>
 
@@ -233,6 +242,7 @@ export default function App() {
             onTaskSubmitted={handleTaskSubmitted}
             taskFiles={taskFiles}
             onFilesUploaded={clearTaskFiles}
+            onFileChange={handleFileChange}
           />
         </div>
 
