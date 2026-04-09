@@ -48,17 +48,34 @@ function buildSystemPrompt(agent, boardType) {
 
 // Generates a formatted HTML brief from resolved form values.
 // formValues: [{ label, value }] — only non-empty, display-ready values.
+// Department is extracted from formValues automatically.
 export async function generateBrief({ formValues, boardType, estimatedDurationText = null }) {
   const agent = AI_AGENTS.briefWriter;
   const fieldList = formValues.map(({ label, value }) => `${label}: ${value}`).join("\n");
-  const example = agent.examples[boardType] ?? agent.examples.video;
 
+  // Extract department from the filled form values (e.g. "Department: Marketing/Media")
+  const department = formValues.find(
+    (fv) => fv.label?.toLowerCase() === "department"
+  )?.value ?? "";
+
+  // Resolve department-specific config.
+  // Priority: exact dept match → _default for this board → legacy fallback
+  const deptConfig =
+    agent.departments?.[boardType]?.[department] ??
+    agent.departments?.[boardType]?.["_default"] ??
+    { systemPrompt: agent.systemPrompt, example: agent.examples?.[boardType], colorCode: true };
+
+  if (!deptConfig?.systemPrompt) {
+    throw new Error(`No brief config for boardType "${boardType}" / department "${department}"`);
+  }
+
+  // scriptSections are still computed but only used when colorCode is explicitly true
   const scriptSectionsDef = Object.entries(agent.scriptSections || {})
     .map(([name, { color, description }]) => `- ${name} (${description}): color ${color}`)
     .join("\n");
 
-  const system = fillPlaceholders(agent.systemPrompt, {
-    BRIEF_EXAMPLE: example,
+  const system = fillPlaceholders(deptConfig.systemPrompt, {
+    BRIEF_EXAMPLE: deptConfig.example ?? "",
     SCRIPT_SECTIONS: scriptSectionsDef,
   });
 
@@ -66,13 +83,14 @@ export async function generateBrief({ formValues, boardType, estimatedDurationTe
     model: agent.model,
     max_tokens: agent.maxTokens,
     system,
-    messages: [{ role: "user", content: `Board type: ${boardType}\n\nFilled values:\n${fieldList}` }],
+    messages: [{ role: "user", content: `Board type: ${boardType}\nDepartment: ${department || "(not specified)"}\n\nFilled values:\n${fieldList}` }],
   }));
 
   let html = message.content[0].text.trim();
   html = html.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/, "").trim();
 
-  const sections = agent.scriptSections;
+  // Only inject color-coding legend for departments that use it
+  const sections = deptConfig.colorCode ? agent.scriptSections : null;
   if (sections) {
     const legendItems = Object.entries(sections)
       .map(([name, { color }]) => `<span style="color:${color};font-weight:700;">■</span> ${name}`)

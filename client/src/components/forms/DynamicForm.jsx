@@ -5,8 +5,10 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import InlineDurationEstimator from "../InlineDurationEstimator.jsx";
+import TaskFormSections from "./TaskFormSections.jsx";
 import { DEFAULT_UPDATE_TEMPLATES } from "../../updateTemplateDefaults.js";
 import { estimateDuration, formatDurationRange } from "../../utils/durationEstimate.js";
+
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
 
@@ -28,11 +30,14 @@ export function Field({ label, required, hint, children }) {
 export function isVisible(field, task, hiddenKeys = []) {
   if (field.hidden) return false;  // hidden fields never render — but still submit to Monday
   if (hiddenKeys.includes(field.key)) return false;
+  // showWhen: only display this field when another field has the specified value
+  if (field.showWhen) {
+    const val = task[field.showWhen.field];
+    if (Array.isArray(val)) return val.includes(field.showWhen.includes);
+    return val === field.showWhen.includes;
+  }
   if (!field.show_if) return true;
-  if (!field.showWhen) return true;
-  const val = task[field.showWhen.field];
-  if (Array.isArray(val)) return val.includes(field.showWhen.includes);
-  return val === field.showWhen.includes;
+  return true;
 }
 
 // ─── Auto name builder ────────────────────────────────────────────────────────
@@ -800,6 +805,13 @@ function FileInput({ value, onChange }) {
   const [dragging, setDragging] = useState(false);
   const files = value ? Array.from(value) : [];
 
+  // Nano Banana 2 image generation state
+  const [genOpen, setGenOpen] = useState(false);
+  const [genPrompt, setGenPrompt] = useState("");
+  const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState(null);
+  const [genPreview, setGenPreview] = useState(null); // { base64, mimeType, name }
+
   function mergeFiles(incoming) {
     const dt = new DataTransfer();
     files.forEach((f) => dt.items.add(f));
@@ -817,6 +829,60 @@ function FileInput({ value, onChange }) {
     e.preventDefault();
     setDragging(false);
     if (e.dataTransfer.files.length > 0) mergeFiles(e.dataTransfer.files);
+  }
+
+  // Convert base64 → File object and add to the list
+  function addGeneratedImage(base64, mimeType, name) {
+    const byteString = atob(base64);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    const blob = new Blob([ab], { type: mimeType });
+    const ext = mimeType.split("/")[1] || "png";
+    const file = new File([blob], name || `generated-image.${ext}`, { type: mimeType });
+    const dt = new DataTransfer();
+    files.forEach((f) => dt.items.add(f));
+    dt.items.add(file);
+    onChange(dt.files);
+  }
+
+  async function handleGenerate(e) {
+    if (e?.preventDefault) e.preventDefault();
+    if (!genPrompt.trim()) return;
+    setGenLoading(true);
+    setGenError(null);
+    setGenPreview(null);
+    try {
+      const res = await fetch("/api/ai/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: genPrompt.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Generation failed");
+      const ext = data.mimeType?.split("/")[1] || "png";
+      setGenPreview({ base64: data.base64, mimeType: data.mimeType, name: `generated-${Date.now()}.${ext}` });
+    } catch (err) {
+      setGenError(err.message);
+    } finally {
+      setGenLoading(false);
+    }
+  }
+
+  function handleAddToFiles() {
+    if (!genPreview) return;
+    addGeneratedImage(genPreview.base64, genPreview.mimeType, genPreview.name);
+    setGenOpen(false);
+    setGenPrompt("");
+    setGenPreview(null);
+    setGenError(null);
+  }
+
+  function handleCancelGen() {
+    setGenOpen(false);
+    setGenPrompt("");
+    setGenPreview(null);
+    setGenError(null);
   }
 
   return (
@@ -848,6 +914,77 @@ function FileInput({ value, onChange }) {
         <span className="file-dropzone-sub">or click to browse</span>
       </div>
 
+      {/* Nano Banana 2 generate button */}
+      {!genOpen && (
+        <button
+          type="button"
+          className="nb2-trigger-btn"
+          onClick={() => setGenOpen(true)}
+        >
+          <span className="nb2-trigger-icon">✨</span>
+          Generate Image with Nano Banana 2
+        </button>
+      )}
+
+      {/* Inline generator panel */}
+      {genOpen && (
+        <div className="nb2-panel">
+          <div className="nb2-panel-header">
+            <span className="nb2-panel-title">
+              <span className="nb2-sparkle">✨</span> Nano Banana 2
+            </span>
+            <button type="button" className="nb2-close-btn" onClick={handleCancelGen}>✕</button>
+          </div>
+
+          <div className="nb2-form">
+            <textarea
+              className="nb2-prompt-input"
+              value={genPrompt}
+              onChange={(e) => setGenPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !genLoading && genPrompt.trim()) {
+                  handleGenerate(e);
+                }
+              }}
+              placeholder="Describe the image you want to generate… (⌘↵ to generate)"
+              rows={3}
+              disabled={genLoading}
+            />
+            <button
+              type="button"
+              className="nb2-generate-btn"
+              disabled={genLoading || !genPrompt.trim()}
+              onClick={handleGenerate}
+            >
+              {genLoading
+                ? <><span className="nb2-spinner" /> Generating…</>
+                : "Generate →"}
+            </button>
+          </div>
+
+
+          {genError && <p className="nb2-error">{genError}</p>}
+
+          {genPreview && (
+            <div className="nb2-preview">
+              <img
+                src={`data:${genPreview.mimeType};base64,${genPreview.base64}`}
+                alt="Generated"
+                className="nb2-preview-img"
+              />
+              <div className="nb2-preview-actions">
+                <button type="button" className="nb2-add-btn" onClick={handleAddToFiles}>
+                  ＋ Add to Files
+                </button>
+                <button type="button" className="nb2-regen-btn" onClick={handleGenerate} disabled={genLoading}>
+                  ↩ Regenerate
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* File list */}
       {files.length > 0 && (
         <ul className="file-list">
@@ -868,9 +1005,10 @@ function FileInput({ value, onChange }) {
   );
 }
 
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview, hiddenFieldKeys = [] }) {
+export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview, hiddenFieldKeys = [], step1Values = null }) {
   const DRAFT_KEY = `task_draft_${board.id}`;
 
   // On mount: immediately restore from localStorage draft if one exists.
@@ -963,6 +1101,16 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     }
   }, [wednesdayResult]);
 
+  // Apply Step 1 context field values whenever they change
+  useEffect(() => {
+    if (!step1Values || Object.keys(step1Values).length === 0) return;
+    setTask((prev) => {
+      const merged = { ...prev, ...sanitizeResult(step1Values, prev) };
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(merged)); } catch {}
+      return merged;
+    });
+  }, [step1Values]);
+
   // Notify Wednesday of form state changes
   useEffect(() => {
     onTaskChange?.(task);
@@ -1010,40 +1158,32 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
 
     setGeneratingBrief(true);
     try {
-      // generateBriefHtml now returns { html, finalEstimate } — estimate is computed inside
       const { html: briefHtml, finalEstimate } = await generateBriefHtml(board, task, users);
-      
-      // Build column values AFTER we have the estimate so targetDuration is populated
       const taskWithEstimate = finalEstimate
         ? { ...task, _elevenLabsEstimate: finalEstimate }
         : task;
       const columnValues = buildColumnValues(board.fields, taskWithEstimate);
-
       onReview({ task: taskWithEstimate, itemName, columnValues, briefHtml });
     } finally {
       setGeneratingBrief(false);
     }
   }
 
-  // ─── Layout pass ─────────────────────────────────────────────────────────────
-  const visibleFields = board.fields.filter((f) => isVisible(f, task, hiddenFieldKeys));
-  const renderGroups = visibleFields.reduce((acc, f) => {
-    if (f.half) {
-      const last = acc[acc.length - 1];
-      if (last && last.type === "row" && last.fields.length === 1) {
-        last.fields.push(f);
-        return acc;
-      }
-      acc.push({ type: "row", fields: [f] });
-      return acc;
-    }
-    acc.push({ type: "single", field: f });
-    return acc;
-  }, []);
+  // ─── Render ───────────────────────────────────────────────────────────────────
+  const footer = (
+    <>
+      {submitError && <div className="msg-error">{submitError}</div>}
+      {onReview && (
+        <button type="submit" className="btn-submit" disabled={generatingBrief}>
+          {generatingBrief && <span className="btn-spinner" style={{ borderColor: "rgba(255,255,255,0.35)", borderTopColor: "#fff" }} />}
+          {generatingBrief ? "Generating Brief…" : "Review Brief →"}
+        </button>
+      )}
+    </>
+  );
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <form className="task-form" onSubmit={handleReview}>
+    <form onSubmit={handleReview}>
       {hasDraft && (
         <div className="draft-banner">
           <span>You have an unsaved draft for this form.</span>
@@ -1051,50 +1191,16 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
           <button type="button" className="draft-banner-btn draft-banner-btn--dismiss" onClick={discardDraft}>Discard</button>
         </div>
       )}
-
-      {renderGroups.map((group, idx) => {
-        if (group.type === "row") {
-          return (
-            <div key={idx} className="field-row">
-              {group.fields.map((f) => (
-                <Field key={f.key} label={f.label} required={f.required} hint={f.hint}>
-                  {renderInput(f, task, setField, users, frequencyOrder)}
-                </Field>
-              ))}
-            </div>
-          );
-        }
-        return (
-          <div key={idx}>
-            <Field label={group.field.label} required={group.field.required} hint={group.field.hint}>
-              {renderInput(group.field, task, setField, users, frequencyOrder)}
-            </Field>
-            {group.field.durationEstimator && (
-              <InlineDurationEstimator
-                script={task[group.field.key]}
-                autoResult={aiDuration}
-                targetDuration={task.targetDuration}
-                onTargetChange={(val) => setField("targetDuration", val)}
-                onScriptChange={(val) => setField(group.field.key, val)}
-                onEstimateChange={(val, scr) => {
-                  setField("_elevenLabsEstimate", val);
-                  setField("_estimatedScript", scr);
-                }}
-                videoType={task.type || ""}
-              />
-            )}
-          </div>
-        );
-      })}
-
-      {submitError && <div className="msg-error">{submitError}</div>}
-
-      {onReview && (
-        <button type="submit" className="btn-submit" disabled={generatingBrief}>
-          {generatingBrief && <span className="btn-spinner" style={{borderColor:"rgba(255,255,255,0.35)", borderTopColor:"#fff"}} />}
-          {generatingBrief ? "Generating Brief…" : "Review Brief →"}
-        </button>
-      )}
+      <TaskFormSections
+        boardFields={board.fields}
+        task={task}
+        onChange={setField}
+        users={users}
+        frequencyOrder={frequencyOrder}
+        hiddenFieldKeys={hiddenFieldKeys}
+        aiDuration={aiDuration}
+        footer={footer}
+      />
     </form>
   );
 }

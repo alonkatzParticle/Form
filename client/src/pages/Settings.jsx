@@ -27,6 +27,7 @@ const NAV_PAGES = [
   { id: "task-rename",    label: "Task Rename",      icon: "✎" },
   { id: "auto-rename",    label: "Auto Rename",      icon: "↻" },
   { id: "naming-rules",   label: "Naming Rules",     icon: "≡" },
+  { id: "ai-prompts",     label: "AI Prompts",       icon: "🤖" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -172,6 +173,8 @@ export default function Settings({ onClose }) {
           <TaskRenameEditor />
         ) : activePage === "auto-rename" ? (
           <AutoRenameEditor />
+        ) : activePage === "ai-prompts" ? (
+          <PromptsViewer />
         ) : activePage === "update-format" ? (
           <UpdateTemplateEditor
             boards={boards}
@@ -1028,3 +1031,224 @@ function Toggle({ label, checked, onChange }) {
     </label>
   );
 }
+
+// ── PromptsViewer ─────────────────────────────────────────────────────────────
+const PV_BOARD_IDS = ["video", "design"];
+const PV_BOARD_LABELS = { video: "Video Board", design: "Design Board" };
+
+// Accent color per agent key — drives the left border stripe on each card
+const PV_ACCENT = {
+  autoFill:           "#3b82f6",  // blue
+  generateTask:       "#8b5cf6",  // purple
+  pasteFormat:        "#06b6d4",  // cyan
+  historyLoad:        "#6b7280",  // gray
+  batchGenerate:      "#f59e0b",  // amber
+  singleTaskGenerate: "#f97316",  // orange
+  reference:          "#6366f1",  // indigo
+  wednesday_video:    "#ec4899",  // pink
+  wednesday_design:   "#a855f7",  // violet
+  // briefWriter department sub-entries (briefWriter__boardId__deptName)
+  "briefWriter__video__Marketing/Media": "#10b981",  // green
+  "briefWriter__video__TV":              "#0ea5e9",  // sky blue
+  "briefWriter__video__Website":         "#14b8a6",  // teal
+  "briefWriter__video___default":        "#84cc16",  // lime
+  "briefWriter__design__Marketing":      "#f43f5e",  // rose
+  "briefWriter__design__Website":        "#fb7185",  // rose-light
+  "briefWriter__design___default":       "#fb923c",  // orange-light
+};
+
+// Resolve accent — falls back to green for any unrecognized briefWriter__ key
+function pvAccent(key) {
+  if (PV_ACCENT[key]) return PV_ACCENT[key];
+  if (key.startsWith("briefWriter__")) return "#10b981";
+  return "#6b7280";
+}
+
+
+function pvSub(text, fieldDefs) {
+  return (text ?? "")
+    .replace("{{FIELD_DEFINITIONS}}", fieldDefs ?? "")
+    .replace("{{SKILL_KNOWLEDGE}}", "[skill knowledge — loaded at runtime]")
+    .replace("{{BOARD_EXAMPLES}}", "[recent board tasks — loaded at runtime]")
+    .replace("{{BRIEF_EXAMPLE}}", "[brief example — loaded at runtime]")
+    .replace(/\{\{FORM_STATE\}\}/g, "[current form state — injected at runtime]");
+}
+
+function PromptsViewer() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
+  const [activeBoard, setActiveBoard] = useState("video");
+  const [activeDept, setActiveDept] = useState(null);   // null = show all
+  const [expandedKey, setExpandedKey] = useState(null);
+
+  useEffect(() => {
+    axios.get("/api/settings/prompts")
+      .then((r) => setData(r.data))
+      .catch(() => setErr("Failed to load AI prompts."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="tr-page"><p className="ut-hint">Loading…</p></div>;
+  if (err)     return <div className="tr-page"><p className="ut-hint" style={{ color: "#ef4444" }}>{err}</p></div>;
+
+  const { fieldDefinitions, agents, boardDepartments } = data;
+  const fieldDefs = fieldDefinitions[activeBoard] ?? "";
+
+  // Agents scoped to the active board
+  const boardAgents = agents.filter((a) => a.scope === "all" || a.scope === activeBoard);
+
+  // Smart filter for department selection.
+  // Regular agents: include if supportedDepts === "all" OR includes the dept.
+  // briefWriter sub-entries (key: briefWriter__board__dept):
+  //   → show ONLY the exact dept match, OR _default if no exact match exists.
+  //   → never show both. _default never surfaces when a specific match is present.
+  function filterByDept(agentList, dept) {
+    if (!dept) return agentList;  // no filter → show all
+
+    // Collect briefWriter sub-entries for this dept selection
+    const bwEntries = agentList.filter((a) => a.key.startsWith("briefWriter__"));
+    const bwExactMatch = bwEntries.find(
+      (a) => Array.isArray(a.supportedDepts) && a.supportedDepts.includes(dept)
+    );
+    const bwDefault = bwEntries.find((a) => a.key.endsWith("__default"));
+
+    // Which single briefWriter entry to show:
+    const bwToShow = bwExactMatch ?? bwDefault;
+
+    return agentList.filter((a) => {
+      // briefWriter sub-entries: only show the chosen one
+      if (a.key.startsWith("briefWriter__")) {
+        return bwToShow && a.key === bwToShow.key;
+      }
+      // All other agents: show if scope matches dept or is "all"
+      const sd = a.supportedDepts;
+      if (!sd || sd === "all") return true;
+      return Array.isArray(sd) && sd.includes(dept);
+    });
+  }
+
+  const visible = filterByDept(boardAgents, activeDept);
+
+  // Department pills for the active board (from settings.json options via API)
+  const deptOptions = boardDepartments?.[activeBoard] ?? [];
+  // Count using the same smart filter so badge numbers are accurate
+  function deptCount(dept) { return filterByDept(boardAgents, dept).length; }
+
+
+  return (
+    <div className="pv-page">
+
+      {/* ── Header ── */}
+      <div>
+        <div className="pv-title">AI Prompts</div>
+        <p className="pv-subtitle">Read-only. Switch boards to see the field definitions injected into each prompt.</p>
+        <div className="pv-board-tabs">
+          {PV_BOARD_IDS.map((id) => (
+            <button key={id}
+              className={`pv-board-tab${activeBoard === id ? " pv-board-tab--active" : ""}`}
+              onClick={() => { setActiveBoard(id); setExpandedKey(null); setActiveDept(null); }}
+            >{PV_BOARD_LABELS[id]}</button>
+          ))}
+        </div>
+
+        {/* Department filter pills */}
+        {deptOptions.length > 0 && (
+          <div className="pv-dept-tabs">
+            <button
+              className={`pv-dept-tab${activeDept === null ? " pv-dept-tab--active" : ""}`}
+              onClick={() => { setActiveDept(null); setExpandedKey(null); }}
+            >All Departments</button>
+            {deptOptions.map((dept) => (
+              <button
+                key={dept}
+                className={`pv-dept-tab${activeDept === dept ? " pv-dept-tab--active" : ""}`}
+                onClick={() => { setActiveDept(activeDept === dept ? null : dept); setExpandedKey(null); }}
+              >
+                {dept}
+                <span className="pv-dept-count">{deptCount(dept)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+
+      {/* ── Field Definitions ── */}
+      <div className="pv-fielddefs">
+        <div className="pv-fielddefs-header">
+          <span className="pv-fielddefs-title">Field Definitions</span>
+          <span className="pv-fielddefs-badge">{PV_BOARD_LABELS[activeBoard]}</span>
+          <span className="pv-fielddefs-hint">Injected as <code>{"{{FIELD_DEFINITIONS}}"}</code> at runtime</span>
+        </div>
+        <pre className="pv-code">{fieldDefs || "No field definitions for this board."}</pre>
+      </div>
+
+      {/* ── Agents ── */}
+      <div>
+        <div className="pv-agents-header">
+          <span className="pv-agents-title">Agents</span>
+          <span className="pv-agents-count">{visible.length}</span>
+        </div>
+      </div>
+
+      <div className="pv-agents-list">
+        {visible.map((agent) => {
+          const isOpen = expandedKey === agent.key;
+          const accent = pvAccent(agent.key);
+          return (
+            <div
+              key={agent.key}
+              className={`pv-agent${isOpen ? " pv-agent--open" : ""}`}
+              style={{ "--pv-accent": accent }}
+            >
+              {/* Clickable header — flexbox column, NOT grid */}
+              <button className="pv-agent-header" onClick={() => setExpandedKey(isOpen ? null : agent.key)}>
+                <div className="pv-agent-top-row">
+                  <span className="pv-agent-name">{agent.name}</span>
+                  <span className="pv-agent-model">{agent.model}</span>
+                  {agent.scope !== "all" && <span className="pv-agent-scope">{agent.scope} only</span>}
+                  <span className="pv-agent-chevron">▼</span>
+                </div>
+                <div className="pv-agent-desc">{agent.description}</div>
+              </button>
+
+              {/* Expanded body */}
+              {isOpen && (
+                <div className="pv-agent-body">
+                  {agent.modeInstruction && (
+                    <div className="pv-block">
+                      <div className="pv-block-label-row">
+                        <span className="pv-block-label">Mode Instruction</span>
+                      </div>
+                      <pre className="pv-code pv-code--sm">{agent.modeInstruction}</pre>
+                    </div>
+                  )}
+
+                  <div className="pv-block">
+                    <div className="pv-block-label-row">
+                      <span className="pv-block-label">System Prompt</span>
+                      <span className="pv-block-label-hint">· field defs substituted for {PV_BOARD_LABELS[activeBoard]}</span>
+                    </div>
+                    <pre className="pv-code">{pvSub(agent.systemPrompt, fieldDefs)}</pre>
+                  </div>
+
+                  {agent.examples?.[activeBoard] && (
+                    <div className="pv-block">
+                      <div className="pv-block-label-row">
+                        <span className="pv-block-label">Brief Example</span>
+                        <span className="pv-block-label-hint">· {PV_BOARD_LABELS[activeBoard]}</span>
+                      </div>
+                      <pre className="pv-code pv-code--sm">{agent.examples[activeBoard]}</pre>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+

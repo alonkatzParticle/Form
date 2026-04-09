@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { Field, renderInput, isVisible, buildAutoName, buildColumnValues } from "../components/forms/DynamicForm.jsx";
+import TaskFormSections from "../components/forms/TaskFormSections.jsx";
 import InlineDurationEstimator from "../components/InlineDurationEstimator.jsx";
+
 import WednesdayPanel from "../components/WednesdayPanel.jsx";
 import { useMonday } from "../hooks/useMonday.js";
 import { useNavigate } from "react-router-dom";
@@ -49,59 +51,6 @@ function getSidebarLabel(t, board) {
 
 // ─── Task Form ────────────────────────────────────────────────────────────────
 
-function ReviewTaskForm({ boardFields, task, onChange, users, frequencyOrder }) {
-  const visibleFields = boardFields.filter((f) => isVisible(f, task) && f.type !== "file" && f.mondayValueType !== "item_name");
-  function setField(key, value) { onChange({ ...task, [key]: value }); }
-  const renderGroups = visibleFields.reduce((acc, f) => {
-    if (f.half) {
-      const last = acc[acc.length - 1];
-      if (last && last.type === "row" && last.fields.length === 1) { last.fields.push(f); return acc; }
-      acc.push({ type: "row", fields: [f] });
-      return acc;
-    }
-    acc.push({ type: "single", field: f });
-    return acc;
-  }, []);
-
-  return (
-    <div className="task-form">
-      {renderGroups.map((group, idx) => {
-        if (group.type === "row") {
-          return (
-            <div key={idx} className="field-row">
-              {group.fields.map((f) => (
-                <Field key={f.key} label={f.label} required={f.required} hint={f.hint}>
-                  {renderInput(f, task, setField, users, frequencyOrder)}
-                </Field>
-              ))}
-            </div>
-          );
-        }
-        return (
-          <div key={idx}>
-            <Field label={group.field.label} required={group.field.required} hint={group.field.hint}>
-              {renderInput(group.field, task, setField, users, frequencyOrder)}
-            </Field>
-            {group.field.durationEstimator && (
-              <InlineDurationEstimator
-                script={task[group.field.key]}
-                autoResult={undefined}
-                targetDuration={task.targetDuration}
-                onTargetChange={(val) => setField("targetDuration", val)}
-                onScriptChange={(val) => setField(group.field.key, val)}
-                onEstimateChange={(val, scr) => {
-                  setField("_elevenLabsEstimate", val);
-                  setField("_estimatedScript", scr);
-                }}
-                videoType={task.type || ""}
-              />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 function StatusDot({ status }) {
   const icons = { idle: "○", done: "●", generating: "⟳", error: "!" };
@@ -526,13 +475,15 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                 <div className="batch-split-left" style={{ flex: 1, overflowY: "auto", borderRight: "1px solid var(--border)" }}>
                   {selected.task && selected.status !== "submitting" && (
                     <div className="batch-form-wrapper" style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
-                      <ReviewTaskForm
+                      <TaskFormSections
                         boardFields={activeBoard?.fields ?? []}
                         task={selected.task}
                         users={users}
                         frequencyOrder={frequencyOrder}
-                        onChange={(updated) => {
-                          setTasks((prev) => prev.map((t) => t.id === selected.id ? { ...t, task: updated } : t));
+                        skipTypes={["file"]}
+                        skipMondayTypes={["item_name"]}
+                        onChange={(key, val) => {
+                          setTasks((prev) => prev.map((t) => t.id === selected.id ? { ...t, task: { ...t.task, [key]: val } } : t));
                         }}
                       />
                     </div>

@@ -4,10 +4,103 @@
 import express from "express";
 import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate } from "../services/settingsService.js";
 import { getBoardColumns } from "../services/mondayService.js";
+import { AI_AGENTS, FIELD_DEFINITIONS } from "../aiAgents.js";
+
+// Map settings board labels → boardType keys used in AI_AGENTS
+const BOARD_TYPE_KEYS = { "Video Projects": "video", "Design Projects - 2.0": "design" };
 
 const router = express.Router();
 
+// Return all AI agent prompt data for the read-only prompts viewer in Settings.
+//
+// Auto-discovery: most agents are picked up automatically from AI_AGENTS.
+// Special cases handled here:
+//   "wednesday"    — nested per-board object → expanded into wednesday_video, wednesday_design
+//   "briefWriter"  — has a departments map → expanded into per-department sub-entries per board
+//
+// Adding a new top-level agent to AI_AGENTS.js will appear in the viewer automatically.
+// Adding a new department to briefWriter.departments will also appear automatically.
+router.get("/prompts", (_req, res) => {
+  try {
+    const agents = [];
+
+    for (const [key, agent] of Object.entries(AI_AGENTS)) {
+
+      // ── wednesday: nested per-board object ─────────────────────────────────
+      if (key === "wednesday") {
+        for (const [boardId, wa] of Object.entries(agent)) {
+          agents.push({
+            key: `wednesday_${boardId}`,
+            name: `Wednesday (${boardId})`,
+            description: "Conversational AI sidebar assistant.",
+            model: wa.model,
+            systemPrompt: wa.systemPrompt,
+            scope: boardId,
+          });
+        }
+        continue;
+      }
+
+      // ── briefWriter: expand departments map into per-department sub-entries ─
+      if (key === "briefWriter" && agent.departments) {
+        for (const [boardId, deptMap] of Object.entries(agent.departments)) {
+          for (const [deptName, deptConfig] of Object.entries(deptMap)) {
+            const displayName = deptName === "_default"
+              ? "Other Departments"
+              : deptName;
+            agents.push({
+              key: `briefWriter__${boardId}__${deptName}`,
+              name: `Brief Writer — ${displayName}`,
+              description: deptName === "_default"
+                ? `Generic brief writer for all ${boardId} departments not listed above.`
+                : `Brief writer for the ${displayName} department on the ${boardId} board.`,
+              model: agent.model,
+              systemPrompt: deptConfig.systemPrompt ?? "",
+              modeInstruction: "",
+              examples: { [boardId]: deptConfig.example ?? "" },
+              scope: boardId,
+              colorCode: deptConfig.colorCode ?? false,
+              supportedDepts: deptName === "_default" ? "all" : [deptName],
+            });
+          }
+        }
+        continue;
+      }
+
+      // ── all other agents: standard flat entry ───────────────────────────────
+      agents.push({
+        key,
+        name: agent.name,
+        description: agent.description ?? "",
+        model: agent.model,
+        systemPrompt: agent.systemPrompt ?? "",
+        modeInstruction: agent.modeInstruction ?? "",
+        examples: agent.examples ?? null,
+        scope: "all",
+        supportedDepts: agent.supportedDepts ?? "all",
+      });
+    }
+
+    // Build boardDepartments map from settings.json so the viewer can show dept pills
+    const settings = getSettings();
+    const boardDepartments = {};
+    for (const board of settings.boards) {
+      const bKey = BOARD_TYPE_KEYS[board.label];
+      if (!bKey) continue;
+      const deptField = board.fields.find((f) => f.key === "department");
+      if (deptField?.options) boardDepartments[bKey] = deptField.options;
+    }
+
+    res.json({ fieldDefinitions: FIELD_DEFINITIONS, agents, boardDepartments });
+  } catch (err) {
+    console.error("Prompts read error:", err.message);
+    res.status(500).json({ error: "Failed to read AI prompts" });
+  }
+});
+
+
 // Verify the settings password. Returns 200 on match, 401 on wrong password.
+
 router.post("/auth", (req, res) => {
   const { password } = req.body;
   if (password === process.env.SETTINGS_PASSWORD) {

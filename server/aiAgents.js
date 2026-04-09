@@ -76,6 +76,7 @@ export const AI_AGENTS = {
     maxTokens: 2048,
     responseFormat: "json",
     useSkillKnowledge: false,
+    supportedDepts: ["Marketing/Media"],   // only trained on Marketing/Media format
     modeInstruction: `The user has provided a rough description. Fill in as many fields as you can infer from it. Be conservative — only fill fields that are clearly implied. Do not invent details that weren't mentioned.`,
     systemPrompt: `You are a creative marketing task brief assistant for Particle for Men. Your job is to fill out structured task brief forms that create Monday.com tickets.
 
@@ -103,6 +104,7 @@ Rules:
     maxTokens: 2048,
     responseFormat: "json",
     useSkillKnowledge: true,
+    supportedDepts: ["Marketing/Media"],   // only trained on Marketing/Media format
     modeInstruction: `The user has provided a one-line idea. Generate a complete, detailed, production-ready task brief from it. Be creative and specific — write real concepts and scripts. Use the brand knowledge to make it high quality.`,
     systemPrompt: `You are a creative marketing task brief assistant for Particle for Men. Your job is to fill out structured task brief forms that create Monday.com tickets.
 
@@ -131,6 +133,7 @@ Rules:
     maxTokens: 2048,
     responseFormat: "json",
     useSkillKnowledge: false,
+    supportedDepts: ["Marketing/Media"],   // only trained on Marketing/Media format
     modeInstruction: `The user has pasted an existing brief or rough notes. Reformat and restructure it into the proper form fields. Preserve the original wording and intent exactly — do not rewrite, improve, or add anything that wasn't there.`,
     systemPrompt: `You are a creative marketing task brief assistant for Particle for Men. Your job is to fill out structured task brief forms that create Monday.com tickets.
 
@@ -186,6 +189,7 @@ Rules:
     maxTokens: 4096,
     responseFormat: "json",
     useSkillKnowledge: true,
+    supportedDepts: ["Marketing/Media"],   // only trained on Marketing/Media format
     modeInstruction: `Generate multiple distinct task briefs from the user's batch request. Return a JSON object with a "tasks" array containing 2–5 task objects. Each task must be meaningfully different from the others.`,
     systemPrompt: `You are a creative marketing task brief generator for Particle for Men. You create multiple distinct task briefs in one shot.
 
@@ -226,6 +230,7 @@ Rules:
     maxTokens: 1200,
     responseFormat: "json",
     useSkillKnowledge: true,
+    supportedDepts: ["Marketing/Media"],   // only trained on Marketing/Media format
     modeInstruction: `Generate exactly ONE task object for the given angle or product variation. Return a single JSON object (not an array).`,
     systemPrompt: `You are a creative marketing task brief generator for Particle for Men. You generate ONE task at a time.
 
@@ -248,16 +253,16 @@ Rules:
   // Fires when the user clicks "Review Brief →" on the form.
   // Takes the filled form values and formats them into a clean HTML brief
   // that is shown on the review page and posted as a Monday.com update.
+  // Department is resolved server-side from formValues → departments map below.
   briefWriter: {
     name: "Brief Writer",
     description: "Formats the filled form values into a polished HTML brief when the user clicks 'Review Brief'. The brief is editable before submitting and then posted as a Monday.com update.",
-    model: "claude-haiku-4-5",   // TEST: Haiku+Haiku pipeline — switch back to claude-sonnet-4-6 if quality insufficient
+    model: "claude-haiku-4-5",
     maxTokens: 2048,
     responseFormat: "html",
 
-    // Script section color coding — only applies to the Script/Message field.
+    // Script section color coding — used only by colorCode:true departments (Marketing/Media).
     // Change the color values here to update the colors everywhere.
-    // Sections that aren't present in a script are simply skipped.
     scriptSections: {
       Problem:       { color: "#D97706", description: "The pain point or struggle the viewer relates to" },
       Solution:      { color: "#16A34A", description: "Where the product is introduced as the answer" },
@@ -265,9 +270,20 @@ Rules:
       CTA:           { color: "#2563EB", description: "The call to action — click, visit, try" },
     },
 
-    // Board-specific formatting examples — the AI uses these to learn the expected output format.
-    examples: {
-      video: `EXAMPLE INPUT:
+    // ── Department-specific configs ────────────────────────────────────────────
+    // Keyed by boardType → department name (matching settings.json options exactly).
+    // Lookup order: exact match → "_default" → legacy fallback.
+    // Each config: { systemPrompt, example, colorCode? }
+    // colorCode:true → script/visuals color legend is injected into the brief.
+    departments: {
+
+      // ── Video board ──────────────────────────────────────────────────────────
+      video: {
+
+        // ── Marketing/Media — full brief writer with color-coded script ────────
+        "Marketing/Media": {
+          colorCode: true,
+          example: `EXAMPLE INPUT:
 Product: Anti-Gray Serum
 Type: Script (<1 min)
 Priority: Medium
@@ -296,24 +312,7 @@ EXAMPLE OUTPUT:
 <h3>Visuals</h3>
 <p><span style="color:#E8412A">Close-up of a man running his hand through his hair in the mirror, noticing the gray.</span><br/><span style="color:#D97706">Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic.</span><br/><span style="color:#16A34A">Product hero shot, dropper applying serum to scalp.</span><br/><span style="color:#7C3AED">Real before/after photos, five-star reviews stacking on screen.</span><br/><span style="color:#2563EB">Clean white background, bottle center frame, URL bold underneath.</span></p>`,
 
-      design: `EXAMPLE INPUT:
-Product/Bundle: Hand Cream
-Department: Marketing
-Priority: Medium
-Requestor: Anton Shpakovskiy, Aviad Eilam, Tom Tabaritzi
-Versions: 4
-Sizes: 1x1, 9x16
-Platform: Meta
-Concept: Show a before-and-after transformation using a horizontal light/white strip that "reveals" improved skin when passing across the hand.
-
-EXAMPLE OUTPUT:
-<p><b>Product:</b> Hand Cream &nbsp;|&nbsp; <b>Platform:</b> Meta &nbsp;|&nbsp; <b>Priority:</b> Medium &nbsp;|&nbsp; <b>Versions:</b> 4 &nbsp;|&nbsp; <b>Sizes:</b> 1x1, 9x16 &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy, Aviad Eilam, Tom Tabaritzi</p>
-
-<h3>Concept</h3>
-<p>Show a before-and-after transformation using a horizontal light/white strip that "reveals" improved skin when passing across the hand.</p>`,
-    },
-
-    systemPrompt: `You are writing a creative task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by editors, videographers, and designers.
+          systemPrompt: `You are writing a creative task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by editors, videographers, and designers.
 
 Return ONLY valid HTML. No markdown, no code fences, no explanation — just the HTML.
 
@@ -340,6 +339,251 @@ Section colors: Problem=#D97706, Solution=#16A34A, Social Proof=#7C3AED, CTA=#25
 Only include sections that have content. Follow the example output exactly.
 
 {{BRIEF_EXAMPLE}}`,
+        },
+
+        // ── TV — placeholder; to be expanded with full TV brief rules ──────────
+        "TV": {
+          colorCode: false,
+          example: `EXAMPLE INPUT:
+Product: Anti-Gray Serum
+Department: TV
+Type: :30 Commercial
+Priority: High
+Requestor: Anton Shpakovskiy
+Versions Needed: 1
+Sizes Needed: 16x9
+Estimated Duration: 30 seconds
+Video Concept: A cinematic spot showing a man's transformation — from self-conscious about gray hair to confident after using Particle.
+Script/Message: [VO]: Every man ages. Not every man does it the same way. Particle Anti-Gray Serum — made for the man who refuses to let time decide how he looks. [SUPER: particle.com]
+Visuals: Open on a man at 45 looking in the mirror. Time-lapse of daily routine with Particle. Close on fuller, darker hair. End card: product shot + URL.
+
+EXAMPLE OUTPUT:
+<p><b>Product:</b> Anti-Gray Serum &nbsp;|&nbsp; <b>Type:</b> :30 Commercial &nbsp;|&nbsp; <b>Priority:</b> High &nbsp;|&nbsp; <b>Est. Duration:</b> 30 seconds &nbsp;|&nbsp; <b>Versions:</b> 1 &nbsp;|&nbsp; <b>Sizes:</b> 16x9 &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy</p>
+
+<h3>Video Concept</h3>
+<p>A cinematic spot showing a man's transformation — from self-conscious about gray hair to confident after using Particle.</p>
+
+<h3>Script</h3>
+<p>[VO]: Every man ages. Not every man does it the same way. Particle Anti-Gray Serum — made for the man who refuses to let time decide how he looks. [SUPER: particle.com]</p>
+
+<h3>Visuals / Direction</h3>
+<p>Open on a man at 45 looking in the mirror. Time-lapse of daily routine with Particle. Close on fuller, darker hair. End card: product shot + URL.</p>`,
+
+          systemPrompt: `You are writing a TV commercial task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by editors, videographers, and directors.
+
+Return ONLY valid HTML. No markdown, no code fences, no explanation — just the HTML.
+
+FORMATTING RULES:
+1. Start with ONE compact metadata line: all short fields (Product, Type, Priority, Est. Duration, Versions, Sizes, Requestor) as a single <p> with <b>Label:</b> value pairs separated by " &nbsp;|&nbsp; "
+2. Long creative fields each get a <h3> heading followed by a <p>.
+3. Preserve line breaks using <br/> tags.
+4. Only include fields that have actual content — skip anything empty.
+5. If "Estimated Duration" is present, include it in the metadata as <b>Est. Duration:</b> [value].
+
+TV BRIEF STRUCTURE:
+- Video Concept → <h3>Video Concept</h3>
+- Script/Message → <h3>Script</h3> (plain text, no color coding — TV scripts use [VO], [SUPER], [SFX] notation if present)
+- Visuals → <h3>Visuals / Direction</h3>
+- Hook Variations, if present → <h3>Hook / Opening Line</h3> before the script
+
+Do NOT apply colored spans to any text. TV briefs use plain readable text throughout.
+
+{{BRIEF_EXAMPLE}}`,
+        },
+
+        // ── Website — placeholder; to be expanded with full Website brief rules ─
+        "Website": {
+          colorCode: false,
+          example: `EXAMPLE INPUT:
+Product: Face Wash
+Department: Website
+Type: Landing Page
+Priority: High
+Requestor: Anton Shpakovskiy
+Sizes Needed: Desktop + Mobile
+Video Concept: Hero video for the Face Wash launch page — morning routine transformation.
+Script/Message: Wake up. Wash. Win the day. Particle Face Wash is the first step in a routine that actually works.
+
+EXAMPLE OUTPUT:
+<p><b>Product:</b> Face Wash &nbsp;|&nbsp; <b>Type:</b> Landing Page &nbsp;|&nbsp; <b>Priority:</b> High &nbsp;|&nbsp; <b>Sizes:</b> Desktop + Mobile &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy</p>
+
+<h3>Goal</h3>
+<p>Hero video for the Face Wash launch page — morning routine transformation.</p>
+
+<h3>Copy</h3>
+<p>Wake up. Wash. Win the day. Particle Face Wash is the first step in a routine that actually works.</p>`,
+
+          systemPrompt: `You are writing a website content task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by designers, developers, and copywriters.
+
+Return ONLY valid HTML. No markdown, no code fences, no explanation — just the HTML.
+
+FORMATTING RULES:
+1. Start with ONE compact metadata line: all short fields (Product, Type, Priority, Versions, Sizes, Requestor) as a single <p> with <b>Label:</b> value pairs separated by " &nbsp;|&nbsp; "
+2. Long creative fields each get a <h3> heading followed by a <p>.
+3. Preserve line breaks using <br/> tags.
+4. Only include fields that have actual content — skip anything empty.
+
+WEBSITE BRIEF STRUCTURE:
+- Video Concept / Goal → <h3>Goal</h3>
+- Script/Message / Copy → <h3>Copy</h3>
+- Visuals → <h3>Visual Direction</h3>
+- Hook Variations, if present → include them under <h3>Key Messages</h3>
+
+Do NOT apply colored spans to any text.
+
+{{BRIEF_EXAMPLE}}`,
+        },
+
+        // ── Default — all other Video departments (Socials, SP, Retention, Creative, Amazon, Ulta, etc.)
+        "_default": {
+          colorCode: false,
+          example: `EXAMPLE INPUT:
+Product: Face Wash
+Department: Socials
+Priority: Medium
+Requestor: Aviad Eilam
+Versions Needed: 1
+Sizes Needed: 9x16
+Video Concept: Organic-feeling repost of a customer using the face wash in their morning routine.
+Hook Variations: 1. The cleanest skin of my life. 2. I wasn't expecting results this fast.
+
+EXAMPLE OUTPUT:
+<p><b>Product:</b> Face Wash &nbsp;|&nbsp; <b>Department:</b> Socials &nbsp;|&nbsp; <b>Priority:</b> Medium &nbsp;|&nbsp; <b>Versions:</b> 1 &nbsp;|&nbsp; <b>Sizes:</b> 9x16 &nbsp;|&nbsp; <b>Requestor:</b> Aviad Eilam</p>
+
+<h3>Hook Variations</h3>
+<p><b>1.</b> The cleanest skin of my life.</p>
+<p><b>2.</b> I wasn't expecting results this fast.</p>
+
+<h3>Video Concept</h3>
+<p>Organic-feeling repost of a customer using the face wash in their morning routine.</p>`,
+
+          systemPrompt: `You are writing a task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update.
+
+Return ONLY valid HTML. No markdown, no code fences, no explanation — just the HTML.
+
+FORMATTING RULES:
+1. Start with ONE compact metadata line: all short fields (Product, Type, Platform, Department, Priority, Deadline, Versions, Sizes, Requestor) as a single <p> with <b>Label:</b> value pairs separated by " &nbsp;|&nbsp; "
+2. Long creative fields each get a <h3> heading followed by a <p>.
+3. Preserve line breaks using <br/> tags.
+4. Only include fields that have actual content — skip anything empty.
+5. If "Estimated Duration" is present, include it in the metadata as <b>Est. Duration:</b> [value].
+6. If hook variations are present, render them under <h3>Hook Variations</h3> before any script section, with each hook as <p><b>N.</b> [hook]</p>.
+
+Do NOT apply colored spans to any text. Present all content as clean plain HTML.
+
+{{BRIEF_EXAMPLE}}`,
+        },
+      },
+
+      // ── Design board ──────────────────────────────────────────────────────────
+      design: {
+
+        // ── Marketing — existing design brief (concept + metadata) ─────────────
+        "Marketing": {
+          colorCode: false,
+          example: `EXAMPLE INPUT:
+Product/Bundle: Hand Cream
+Department: Marketing
+Priority: Medium
+Requestor: Anton Shpakovskiy, Aviad Eilam, Tom Tabaritzi
+Versions: 4
+Sizes: 1x1, 9x16
+Platform: Meta
+Concept: Show a before-and-after transformation using a horizontal light/white strip that "reveals" improved skin when passing across the hand.
+
+EXAMPLE OUTPUT:
+<p><b>Product:</b> Hand Cream &nbsp;|&nbsp; <b>Platform:</b> Meta &nbsp;|&nbsp; <b>Priority:</b> Medium &nbsp;|&nbsp; <b>Versions:</b> 4 &nbsp;|&nbsp; <b>Sizes:</b> 1x1, 9x16 &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy, Aviad Eilam, Tom Tabaritzi</p>
+
+<h3>Concept</h3>
+<p>Show a before-and-after transformation using a horizontal light/white strip that "reveals" improved skin when passing across the hand.</p>`,
+
+          systemPrompt: `You are writing a design task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by designers.
+
+Return ONLY valid HTML. No markdown, no code fences, no explanation — just the HTML.
+
+FORMATTING RULES:
+1. Start with ONE compact metadata line: all short fields (Product, Platform, Department, Priority, Deadline, Versions, Sizes, Requestor) as a single <p> with <b>Label:</b> value pairs separated by " &nbsp;|&nbsp; "
+2. The Concept field gets a <h3>Concept</h3> heading followed by a <p> with the content.
+3. Any additional creative fields get their own <h3> heading.
+4. Only include fields that have actual content — skip anything empty.
+5. Do NOT apply colored spans. Plain HTML only.
+
+{{BRIEF_EXAMPLE}}`,
+        },
+
+        // ── Website — placeholder; to be expanded with full design website rules ─
+        "Website": {
+          colorCode: false,
+          example: `EXAMPLE INPUT:
+Product/Bundle: Face Wash
+Department: Website
+Priority: High
+Requestor: Anton Shpakovskiy
+Versions: 2
+Sizes: Desktop 1440px, Mobile 375px
+Platform: Webflow
+Concept: Landing page hero section for the Face Wash launch. Clean layout with before/after photography and a strong CTA above the fold.
+
+EXAMPLE OUTPUT:
+<p><b>Product:</b> Face Wash &nbsp;|&nbsp; <b>Department:</b> Website &nbsp;|&nbsp; <b>Platform:</b> Webflow &nbsp;|&nbsp; <b>Priority:</b> High &nbsp;|&nbsp; <b>Versions:</b> 2 &nbsp;|&nbsp; <b>Sizes:</b> Desktop 1440px, Mobile 375px &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy</p>
+
+<h3>Concept</h3>
+<p>Landing page hero section for the Face Wash launch. Clean layout with before/after photography and a strong CTA above the fold.</p>`,
+
+          systemPrompt: `You are writing a website design task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by designers and developers.
+
+Return ONLY valid HTML. No markdown, no code fences, no explanation — just the HTML.
+
+FORMATTING RULES:
+1. Start with ONE compact metadata line: all short fields (Product, Department, Platform, Priority, Versions, Sizes, Requestor) as a single <p> with <b>Label:</b> value pairs separated by " &nbsp;|&nbsp; "
+2. The Concept field → <h3>Concept</h3>
+3. Any additional creative or technical fields get their own <h3> heading.
+4. Only include fields that have actual content — skip anything empty.
+5. Do NOT apply colored spans. Plain HTML only.
+
+{{BRIEF_EXAMPLE}}`,
+        },
+
+        // ── Default — all other Design departments ─────────────────────────────
+        "_default": {
+          colorCode: false,
+          example: `EXAMPLE INPUT:
+Product/Bundle: Face Cream Tin
+Department: Branding
+Priority: Medium
+Requestor: Tom Tabaritzi
+Versions: 1
+Sizes: Various
+Concept: Redesign the Face Cream tin label to align with the refreshed brand identity — clean, minimal, premium feel.
+
+EXAMPLE OUTPUT:
+<p><b>Product:</b> Face Cream Tin &nbsp;|&nbsp; <b>Department:</b> Branding &nbsp;|&nbsp; <b>Priority:</b> Medium &nbsp;|&nbsp; <b>Versions:</b> 1 &nbsp;|&nbsp; <b>Sizes:</b> Various &nbsp;|&nbsp; <b>Requestor:</b> Tom Tabaritzi</p>
+
+<h3>Concept</h3>
+<p>Redesign the Face Cream tin label to align with the refreshed brand identity — clean, minimal, premium feel.</p>`,
+
+          systemPrompt: `You are writing a design task brief for the Particle for Men team. This brief will be posted as a Monday.com update and read by designers.
+
+Return ONLY valid HTML. No markdown, no code fences, no explanation — just the HTML.
+
+FORMATTING RULES:
+1. Start with ONE compact metadata line: all short fields (Product, Department, Platform, Priority, Versions, Sizes, Requestor) as a single <p> with <b>Label:</b> value pairs separated by " &nbsp;|&nbsp; "
+2. The Concept field → <h3>Concept</h3>
+3. Any additional creative fields get their own <h3> heading.
+4. Only include fields that have actual content — skip anything empty.
+5. Do NOT apply colored spans. Plain HTML only.
+
+{{BRIEF_EXAMPLE}}`,
+        },
+      },
+    },
+
+    // ── Legacy fields — kept for AI Prompts viewer display fallback ────────────
+    examples: {
+      video:  "See departments.video above.",
+      design: "See departments.design above.",
+    },
+    systemPrompt: `See departments map above — system prompt is resolved per department at runtime.`,
   },
 
   // ── From Reference ─────────────────────────────────────────────────────────

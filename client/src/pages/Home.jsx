@@ -1,13 +1,20 @@
-// Home — main page. Board list and form config come from /api/settings.
-// To add a new board: add it to server/settings.json — no code changes needed here.
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import axios from "axios";
 import { useMonday } from "../hooks/useMonday.js";
 import DynamicForm from "../components/forms/DynamicForm.jsx";
 import AIPanel from "../components/AIPanel.jsx";
 import WednesdayPanel from "../components/WednesdayPanel.jsx";
 import HistoryDrawer from "../components/HistoryDrawer.jsx";
+import Step1Card, { getStep1Keys, isStep1Complete } from "../components/Step1Card.jsx";
 import { usePersistedState } from "../hooks/usePersistedState.js";
+
+// Departments that have full AI panel support per board.
+// If the selected department is NOT in this list, the AI panel is hidden entirely.
+// Empty department (not yet chosen) → panel remains visible.
+const AI_SUPPORTED_DEPTS = {
+  video:  ["Marketing/Media"],
+  design: ["Marketing"],
+};
 
 export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBatch, onGenerateSuccess }) {
   const [activeBoardId, setActiveBoardId] = usePersistedState("home_activeBoardId", boards?.[0]?.id ?? null);
@@ -21,7 +28,20 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
   const [wednesdaySeedMessage, setWednesdaySeedMessage] = usePersistedState("home_wednesdaySeedMessage", null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyResult, setHistoryResult] = useState(null);
-  const [taskReference, setTaskReference] = usePersistedState("home_taskReference", null); // { name, brief } for Wednesday remix
+  const [taskReference, setTaskReference] = usePersistedState("home_taskReference", null);
+
+  // Step 1 state — persisted per board so users don’t have to re-fill after navigation
+  const [step1Values, setStep1Values] = usePersistedState("home_step1Values", {});
+
+  // Derive active board early so step1Keys can read field definitions from it
+  const activeBoard = boards.find((b) => b.id === activeBoardId);
+
+  const step1Keys = getStep1Keys(activeBoard?.fields ?? []);
+  const mergedStep1 = { ...formTask, ...step1Values }; // step1Values wins on conflict
+
+  const handleStep1Change = useCallback((key, val) => {
+    setStep1Values((prev) => ({ ...prev, [key]: val }));
+  }, [setStep1Values]);
 
   // Load an existing Monday task as reference:
   // 1. Fetch its brief HTML
@@ -62,12 +82,19 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
   }
 
   // Hook to fetch team members based on the active board
-  const activeBoard = boards.find((b) => b.id === activeBoardId);
+  const step1Complete = isStep1Complete(activeBoard?.fields ?? [], mergedStep1);
+
+  // Show the AI panel only if the department is supported (or not yet chosen)
+  const dept = mergedStep1.department ?? "";
+  const supportedDepts = AI_SUPPORTED_DEPTS[activeBoardId] ?? [];
+  const showAIPanel = !dept || supportedDepts.includes(dept);
+
   const { users, loading, error } = useMonday(activeBoard?.boardId);
 
   function handleBoardSwitch(id) {
     setActiveBoardId(id);
     setAiResult(null);
+    setStep1Values({}); // reset step1 when switching boards
   }
 
   function handleReview(data) {
@@ -120,55 +147,48 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
       {activeBoard && (
         <div className={`layout${wednesdayOpen ? " layout--wednesday" : ""}`}>
           <div className="layout-main">
-            <AIPanel
-              boardType={activeBoardId}
-              onResult={setAiResult}
-              taskContext={formTask}
-              onReferenceContext={setReferenceContext}
-              onNeedsClarification={(msg) => {
-                setWednesdaySeedMessage(msg);
-                setWednesdayOpen(true);
-              }}
+            {/* Step 1: context fields — must be filled before AI panel unlocks */}
+            <Step1Card
+              board={activeBoard}
+              users={users}
+              formTask={mergedStep1}
+              onFieldChange={handleStep1Change}
+              frequencyOrder={frequencyOrder[activeBoard.id] ?? {}}
             />
-            <div className="card">
-              <div className="card-header">
-                <div>
-                  <h2>{activeBoard.label}</h2>
-                  <p className="card-subtitle">Fill in the details below to create a task on Monday.com</p>
-                </div>
-              <div className="card-header-actions">
-                  <button
-                    className="batch-open-btn"
-                    onClick={() => onOpenBatch?.(activeBoardId)}
-                    title="Create multiple tasks at once"
-                  >
-                    ⚡ Batch
-                  </button>
-                  <button
-                    className="history-open-btn"
-                    onClick={() => setHistoryOpen(true)}
-                    title="View task history"
-                  >
-                    🕐 History
-                  </button>
-              </div>
-              </div>
-              <div className="card-body">
-                <DynamicForm
-                  key={`${activeBoard.id}-${formResetKey}`}
-                  board={activeBoard}
-                  users={users}
-                  aiResult={historyResult ?? aiResult}
-                  onAIResultApplied={() => { setAiResult(null); setHistoryResult(null); }}
-                  wednesdayResult={wednesdayResult}
-                  onWednesdayResultApplied={() => setWednesdayResult(null)}
-                  onTaskChange={setFormTask}
-                  onDraftDiscarded={() => setChatResetKey((k) => k + 1)}
-                  frequencyOrder={frequencyOrder[activeBoard.id] ?? {}}
-                  onReview={handleReview}
-                />
-              </div>
-            </div>
+
+            {showAIPanel && (
+              <AIPanel
+                boardType={activeBoardId}
+                boardFields={activeBoard?.fields ?? []}
+                currentTask={formTask}
+                onResult={setAiResult}
+                taskContext={mergedStep1}
+                onReferenceContext={setReferenceContext}
+                disabled={!step1Complete}
+                department={dept}
+                onNeedsClarification={(msg) => {
+                  setWednesdaySeedMessage(msg);
+                  setWednesdayOpen(true);
+                }}
+              />
+            )}
+
+            {/* DynamicForm renders Step 2 and Step 3 as their own cards */}
+            <DynamicForm
+              key={`${activeBoard.id}-${formResetKey}`}
+              board={activeBoard}
+              users={users}
+              aiResult={historyResult ?? aiResult}
+              onAIResultApplied={() => { setAiResult(null); setHistoryResult(null); }}
+              wednesdayResult={wednesdayResult}
+              onWednesdayResultApplied={() => setWednesdayResult(null)}
+              step1Values={step1Values}
+              hiddenFieldKeys={step1Keys}
+              onTaskChange={setFormTask}
+              onDraftDiscarded={() => setChatResetKey((k) => k + 1)}
+              frequencyOrder={frequencyOrder[activeBoard.id] ?? {}}
+              onReview={handleReview}
+            />
           </div>
 
           <WednesdayPanel

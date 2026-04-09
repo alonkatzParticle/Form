@@ -3,11 +3,15 @@
 //   generate:  writes a full brief from a one-liner
 //   format:    reformats pasted messy notes into structured fields
 //   reference: analyzes a video/image reference with Gemini, then fills the form
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 
 // Set to true to re-enable the From Reference tab when ready
 const SHOW_REFERENCE_TAB = false;
+
+// Departments on the video board that have full AI generation configured.
+// All other departments show only Paste & Format (brief writer still works from the form).
+const AI_GEN_DEPTS = ["Marketing/Media"];
 
 const MODES = [
   { id: "autofill",   label: "Auto-fill",      hint: "Describe your task roughly — AI will fill in the form fields." },
@@ -78,14 +82,124 @@ function formatFileSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+// ── Suggestion review diff panel ─────────────────────────────────────────────
+function SuggestionReview({ suggestions, boardFields = [], currentTask = {}, onApply, onDiscard }) {
+  const suggestedKeys = Object.keys(suggestions).filter((k) => {
+    const v = suggestions[k];
+    if (v === null || v === undefined || v === "") return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return true;
+  });
+
+  const [accepted, setAccepted] = useState(() => new Set(suggestedKeys));
+
+  function toggle(key) {
+    setAccepted((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  function handleApply() {
+    const result = {};
+    for (const key of accepted) result[key] = suggestions[key];
+    onApply(result);
+  }
+
+  function fieldLabel(key) {
+    return boardFields.find((f) => f.key === key)?.label ?? key;
+  }
+
+  function fmt(val) {
+    if (Array.isArray(val)) return val.filter(Boolean).join("  ·  ");
+    return String(val ?? "");
+  }
+
+  function oldVal(key) {
+    const v = currentTask[key];
+    if (!v) return null;
+    if (Array.isArray(v)) return v.length > 0 ? fmt(v) : null;
+    return v || null;
+  }
+
+  return (
+    <div className="suggestion-review">
+      <div className="suggestion-review-header">
+        <span className="suggestion-review-title">✦ Review AI Suggestions</span>
+        <span className="suggestion-review-count">{accepted.size} / {suggestedKeys.length} selected</span>
+      </div>
+
+      <div className="suggestion-review-list">
+        {suggestedKeys.map((key) => {
+          const on = accepted.has(key);
+          const old = oldVal(key);
+          const nxt = fmt(suggestions[key]);
+          return (
+            <div
+              key={key}
+              className={`suggestion-field${on ? " suggestion-field--on" : " suggestion-field--off"}`}
+              onClick={() => toggle(key)}
+            >
+              <div className="suggestion-field-top">
+                <span className="suggestion-check">{on ? "✓" : "○"}</span>
+                <span className="suggestion-field-label">{fieldLabel(key)}</span>
+              </div>
+              {old && (
+                <div className="suggestion-row suggestion-row--old">
+                  <span className="suggestion-tag">was</span>
+                  <span className="suggestion-text suggestion-text--old">{old}</span>
+                </div>
+              )}
+              <div className="suggestion-row suggestion-row--new">
+                <span className="suggestion-tag suggestion-tag--new">now</span>
+                <span className="suggestion-text suggestion-text--new">{nxt}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="suggestion-review-actions">
+        <button
+          className="btn-apply-suggestions"
+          onClick={handleApply}
+          disabled={accepted.size === 0}
+        >
+          Apply {accepted.size} Change{accepted.size !== 1 ? "s" : ""} →
+        </button>
+        <button className="btn-discard-suggestions" onClick={onDiscard}>
+          Discard
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function AIPanel({ boardType, onResult, taskContext = {}, onReferenceContext, onNeedsClarification }) {
+export default function AIPanel({ boardType, boardFields = [], currentTask = {}, onResult, taskContext = {}, onReferenceContext, onNeedsClarification, disabled = false, department = "" }) {
   const [open, setOpen] = useState(false);
+
+  // Whether full AI panel is available for the current department.
+  // On design board or when no department is selected: show everything.
+  const isGenLocked = boardType === "video" && !!department && !AI_GEN_DEPTS.includes(department);
+
+  // All tabs hidden when locked — panel opens but shows only the banner.
+  const visibleModes = isGenLocked ? [] : MODES;
+
+
+  // Close panel if it becomes disabled
+  useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
+  // Reset to safe mode when lock state changes
+  useEffect(() => { if (!isGenLocked) setMode("autofill"); }, [isGenLocked]); // eslint-disable-line
+
+
   const [mode, setMode] = useState("autofill");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(""); // for reference tab stages
   const [error, setError] = useState(null);
+  const [pendingSuggestions, setPendingSuggestions] = useState(null);
 
   // Reference tab state
   const [refFile, setRefFile] = useState(null);
@@ -95,6 +209,27 @@ export default function AIPanel({ boardType, onResult, taskContext = {}, onRefer
   const [refAnalysis, setRefAnalysis] = useState(null); // Gemini analysis text
 
   const activeMode = MODES.find((m) => m.id === mode);
+
+  // Returns true if any of the suggested keys already have a value in currentTask.
+  // When false, we can skip the review and apply directly.
+  function wouldOverwrite(suggestions) {
+    return Object.keys(suggestions).some((key) => {
+      const v = suggestions[key];
+      if (v === null || v === undefined || v === "") return false; // AI didn't suggest anything here
+      const existing = currentTask[key];
+      if (!existing) return false;
+      if (Array.isArray(existing)) return existing.length > 0;
+      return existing !== "";
+    });
+  }
+
+  function applyOrQueue(data) {
+    if (wouldOverwrite(data)) {
+      setPendingSuggestions(data);
+    } else {
+      onResult(data); // form is empty — apply straight away
+    }
+  }
 
   // ── Standard modes submit ──────────────────────────────────────────────────
   async function handleSubmit() {
@@ -108,12 +243,11 @@ export default function AIPanel({ boardType, onResult, taskContext = {}, onRefer
         boardType,
         taskContext,
       });
-      onResult(res.data);
+      applyOrQueue(res.data);
       setInput("");
     } catch (err) {
       const status = err.response?.status;
       const msg = err.response?.data?.error || "AI request failed";
-      // 422 = AI asked for clarification — open Wednesday with the question instead of showing an error
       if (status === 422 && onNeedsClarification) {
         onNeedsClarification(msg);
       } else {
@@ -172,7 +306,7 @@ export default function AIPanel({ boardType, onResult, taskContext = {}, onRefer
         onReferenceContext?.(_referenceAnalysis);
       }
 
-      onResult(formFields);
+      applyOrQueue(formFields);
     } catch (err) {
       const msg =
         err.code === "ECONNABORTED"
@@ -188,29 +322,56 @@ export default function AIPanel({ boardType, onResult, taskContext = {}, onRefer
   function handleModeChange(newMode) {
     setMode(newMode);
     setError(null);
+    setPendingSuggestions(null); // clear pending suggestions when switching mode
+  }
+
+  function handleApplySuggestions(accepted) {
+    onResult(accepted);
+    setPendingSuggestions(null);
+  }
+
+  function handleDiscardSuggestions() {
+    setPendingSuggestions(null);
   }
 
   return (
-    <div className={`card ai-panel-card${open ? " ai-panel-card--open" : ""}`}>
+    <div className={`card ai-panel-card${open ? " ai-panel-card--open" : ""}${disabled ? " ai-panel-card--locked" : ""}`}>
       <button
         type="button"
         className="ai-panel-toggle"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => !disabled && setOpen((o) => !o)}
+        style={{ cursor: disabled ? "not-allowed" : "pointer" }}
       >
         <span className="ai-panel-toggle-label">
-          <span className="ai-panel-icon">✦</span>
+          <span className="ai-panel-icon">{disabled ? "🔒" : "✦"}</span>
           AI Assistant
         </span>
         <span className="ai-panel-toggle-hint">
-          {open ? "" : "Auto-fill or generate a brief with AI"}
+          {disabled
+            ? "Complete Step 1 to unlock"
+            : isGenLocked
+              ? `Brief writer available · Full AI coming soon for ${department}`
+              : open ? "" : "Auto-fill or generate a brief with AI"}
         </span>
-        <span className="ai-panel-chevron">{open ? "▲" : "▼"}</span>
+        {!disabled && <span className="ai-panel-chevron">{open ? "▲" : "▼"}</span>}
       </button>
 
       {open && (
         <div className="card-body ai-panel">
+
+          {/* Department lock banner — shown above tabs when generation is restricted */}
+          {isGenLocked && (
+            <div className="ai-dept-lock-banner">
+              <span className="ai-dept-lock-icon">🚧</span>
+              <div>
+                <strong>AI generation not yet configured for {department}</strong>
+                <p>Auto-fill and Generate are only available for Marketing/Media right now. Use <em>Paste &amp; Format</em> below to structure existing notes, or fill the form manually and click <em>Review Brief →</em> when ready.</p>
+              </div>
+            </div>
+          )}
+
           <div className="ai-tabs">
-            {MODES.map((m) => (
+            {visibleModes.map((m) => (
               <button
                 key={m.id}
                 className={`ai-tab ${mode === m.id ? "active" : ""}`}
@@ -307,6 +468,17 @@ export default function AIPanel({ boardType, onResult, taskContext = {}, onRefer
           )}
 
           {error && <div className="msg-error">{error}</div>}
+
+          {/* ── Suggestion review — shown after generation ── */}
+          {pendingSuggestions && (
+            <SuggestionReview
+              suggestions={pendingSuggestions}
+              boardFields={boardFields}
+              currentTask={currentTask}
+              onApply={handleApplySuggestions}
+              onDiscard={handleDiscardSuggestions}
+            />
+          )}
         </div>
       )}
     </div>

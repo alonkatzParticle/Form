@@ -22,7 +22,8 @@
             "Amazon",
             "Ulta",
             "Marketing/Media"
-          ]
+          ],
+          "step1": true
         },
         {
           "key": "product",
@@ -69,24 +70,8 @@
             "Bold Moves Bundle",
             "Instant Eye Firming Cream",
             "Hair Revival Kit"
-          ]
-        },
-        {
-          "key": "taskName",
-          "label": "Task Name",
-          "type": "text",
-          "required": true,
-          "hint": "Please don't include \"/\" in the name",
-          "placeholder": "e.g. Face Cream Q2 UGC \u2014 9x16 Versions",
-          "mondayColumnId": null,
-          "mondayValueType": "item_name"
-        },
-        {
-          "key": "deadline",
-          "label": "Deadline",
-          "type": "date",
-          "hint": "Only fill this if you have a hard deadline",
-          "mondayColumnId": "date_Mjj2cG7T"
+          ],
+          "step1": true
         },
         {
           "key": "platform",
@@ -105,43 +90,49 @@
           "showWhen": {
             "field": "department",
             "includes": "Marketing/Media"
-          }
+          },
+          "step1": true
         },
         {
-          "key": "howDidYouMake",
-          "label": "How did you make this?",
+          "key": "type",
+          "label": "Type",
           "type": "select",
-          "mondayColumnId": "color_mm1q4zbz",
-          "defaultValue": "Claude",
-          "options": [
-            "Adge",
-            "Upspring",
-            "ChatGPT",
-            "Claude"
-          ],
-          "section": "Additional Details"
-        },
-        {
-          "key": "requestor",
-          "label": "Requestor",
-          "type": "people",
           "required": true,
-          "searchable": true,
-          "mondayColumnId": "person"
+          "half": true,
+          "mondayColumnId": "label4",
+          "options": [
+            "Iterations/Cuts/Edits",
+            "GIF - New Static",
+            "Miscellaneous",
+            "Collection",
+            "Motion Design",
+            "Translation",
+            "Special Project",
+            "TV",
+            "AI Project",
+            "UGC/Creator",
+            "AI Creator",
+            "Amazon/Ulta",
+            "Long Form (+1 min)",
+            "Script - Short Form (<20 seconds)",
+            "GIF - Existing Static",
+            "Upload B-Rolls",
+            "CTA",
+            "Script (<1 min)"
+          ],
+          "step1": true
         },
         {
-          "key": "editorDesigner",
-          "label": "Editor / Designer",
-          "type": "people",
-          "allowedPeople": [
-            "Matan",
-            "Yael",
-            "Isaac",
-            "Omri"
-          ],
-          "mondayColumnId": "people"
+          "key": "taskName",
+          "label": "Task Name",
+          "type": "text",
+          "required": true,
+          "hint": "Please don't include \"/\" in the name",
+          "placeholder": "e.g. Face Cream Q2 UGC \u2014 9x16 Versions",
+          "mondayColumnId": null,
+          "mondayValueType": "item_name",
+          "sectionHeader": "Step 2 \u2014 AI Generated"
         },
-
         {
           "key": "videoConcept",
           "label": "Video Concept",
@@ -186,32 +177,25 @@
           "mondayColumnId": "numeric_mm209bwg"
         },
         {
-          "key": "type",
-          "label": "Type",
-          "type": "select",
+          "key": "requestor",
+          "label": "Requestor",
+          "type": "people",
           "required": true,
-          "half": true,
-          "mondayColumnId": "label4",
-          "options": [
-            "Iterations/Cuts/Edits",
-            "GIF - New Static",
-            "Miscellaneous",
-            "Collection",
-            "Motion Design",
-            "Translation",
-            "Special Project",
-            "TV",
-            "AI Project",
-            "UGC/Creator",
-            "AI Creator",
-            "Amazon/Ulta",
-            "Long Form (+1 min)",
-            "Script - Short Form (<20 seconds)",
-            "GIF - Existing Static",
-            "Upload B-Rolls",
-            "CTA",
-            "Script (<1 min)"
-          ]
+          "searchable": true,
+          "mondayColumnId": "person",
+          "sectionHeader": "Step 3 \u2014 Your Details"
+        },
+        {
+          "key": "editorDesigner",
+          "label": "Editor / Designer",
+          "type": "people",
+          "allowedPeople": [
+            "Matan",
+            "Yael",
+            "Isaac",
+            "Omri"
+          ],
+          "mondayColumnId": "people"
         },
         {
           "key": "versionsNeeded",
@@ -252,6 +236,13 @@
           ]
         },
         {
+          "key": "deadline",
+          "label": "Deadline",
+          "type": "date",
+          "hint": "Only fill this if you have a hard deadline",
+          "mondayColumnId": "date_Mjj2cG7T"
+        },
+        {
           "key": "relevantFiles",
           "label": "Relevant Files",
           "type": "file",
@@ -268,16 +259,47 @@
           "mondayValueType": "link",
           "linkText": "DropBox",
           "section": "Additional Details"
+        },
+        {
+          "key": "howDidYouMake",
+          "label": "How did you make this?",
+          "type": "select",
+          "mondayColumnId": "color_mm1q4zbz",
+          "defaultValue": "Claude",
+          "options": [
+            "Adge",
+            "Upspring",
+            "ChatGPT",
+            "Claude"
+          ],
+          "section": "Additional Details"
         }
       ],
       "updateTemplate": "<h3><u>Task Brief</u></h3><br><p><b>Product:</b> {{product}}</p><p><b>Type:</b> {{type}}</p><p><b>Platform:</b> {{platform}}</p><p><b>Requestor:</b> {{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"> </span>{{deadline}}</p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{versionsNeeded}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizesNeeded}}</p><p><br></p><h3>Video Concept</h3><p>{{videoConcept}}</p><br><p><b>Hook:</b> {{hook}}</p><p><br></p><p><b>Script / Message:</b>&nbsp;</p><p>{{scriptMessage}}</p><p><br></p><p><b>Dropbox:</b> {{dropboxLink}}</p><p><br></p><p><br></p>",
       "autoName": {
         "segments": [
-          { "field": "product" },
-          { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" } },
-          { "field": "howDidYouMake" },
-          { "field": "type", "onlyValues": ["AI Creator"] },
-          { "field": "taskName" }
+          {
+            "field": "product"
+          },
+          {
+            "field": "platform",
+            "fallback": "department",
+            "valueMap": {
+              "Gentleman Today": "META | GT"
+            }
+          },
+          {
+            "field": "howDidYouMake"
+          },
+          {
+            "field": "type",
+            "onlyValues": [
+              "AI Creator"
+            ]
+          },
+          {
+            "field": "taskName"
+          }
         ]
       }
     },
@@ -286,16 +308,6 @@
       "label": "Design Projects - 2.0",
       "boardId": "8036329818",
       "fields": [
-        {
-          "key": "taskName",
-          "label": "Task Name",
-          "type": "text",
-          "required": true,
-          "hint": "Please don't include \"/\" in the name",
-          "placeholder": "e.g. Face Cream PDP Banner \u2014 Q2",
-          "mondayColumnId": null,
-          "mondayValueType": "item_name"
-        },
         {
           "key": "department",
           "label": "Department",
@@ -320,7 +332,8 @@
             "GIF Design",
             "Website",
             "Ulta"
-          ]
+          ],
+          "step1": true
         },
         {
           "key": "productBundle",
@@ -367,7 +380,8 @@
             "Golfer's Bundle",
             "Lip Balm",
             "Hand Cream"
-          ]
+          ],
+          "step1": true
         },
         {
           "key": "platform",
@@ -383,7 +397,8 @@
             "Newsletter",
             "Gentleman Today",
             "Other"
-          ]
+          ],
+          "step1": true
         },
         {
           "key": "websiteType",
@@ -397,7 +412,42 @@
             "LP",
             "Other",
             "Test Products"
-          ]
+          ],
+          "step1": true,
+          "showWhen": {
+            "field": "department",
+            "includes": "Website"
+          }
+        },
+        {
+          "key": "taskName",
+          "label": "Task Name",
+          "type": "text",
+          "required": true,
+          "hint": "Please don't include \"/\" in the name",
+          "placeholder": "e.g. Face Cream PDP Banner \u2014 Q2",
+          "mondayColumnId": null,
+          "mondayValueType": "item_name",
+          "sectionHeader": "Step 2 \u2014 Brief Details"
+        },
+        {
+          "key": "conceptIdea",
+          "label": "Concept / Idea",
+          "type": "textarea",
+          "required": true,
+          "hint": "Describe visual subject and scene",
+          "placeholder": "e.g. Flat-lay hero shot of the face cream surrounded by botanicals\u2026",
+          "rows": 4,
+          "mondayColumnId": "long_textpvqldjpg"
+        },
+        {
+          "key": "supportingText",
+          "label": "Supporting Text",
+          "type": "textarea",
+          "hint": "Additional text if needed",
+          "placeholder": "e.g. 'Now with 10% Vitamin C'",
+          "rows": 3,
+          "mondayColumnId": "long_text_mkngjytf"
         },
         {
           "key": "requestor",
@@ -405,7 +455,8 @@
           "type": "people",
           "required": true,
           "searchable": true,
-          "mondayColumnId": "people_Mjj2RrZM"
+          "mondayColumnId": "people_Mjj2RrZM",
+          "sectionHeader": "Step 3 \u2014 Your Details"
         },
         {
           "key": "editorDesigner",
@@ -416,13 +467,6 @@
             "Dan"
           ],
           "mondayColumnId": "people"
-        },
-        {
-          "key": "deadline",
-          "label": "Deadline",
-          "type": "date",
-          "hint": "Only fill if you have a hard deadline",
-          "mondayColumnId": "date_Mjj20aki"
         },
         {
           "key": "priority",
@@ -446,25 +490,6 @@
           "placeholder": "e.g. 2",
           "min": 1,
           "mondayColumnId": "numberpuotbeaf"
-        },
-        {
-          "key": "conceptIdea",
-          "label": "Concept / Idea",
-          "type": "textarea",
-          "required": true,
-          "hint": "Describe visual subject and scene",
-          "placeholder": "e.g. Flat-lay hero shot of the face cream surrounded by botanicals\u2026",
-          "rows": 4,
-          "mondayColumnId": "long_textpvqldjpg"
-        },
-        {
-          "key": "supportingText",
-          "label": "Supporting Text",
-          "type": "textarea",
-          "hint": "Additional text if needed",
-          "placeholder": "e.g. 'Now with 10% Vitamin C'",
-          "rows": 3,
-          "mondayColumnId": "long_text_mkngjytf"
         },
         {
           "key": "sizes",
@@ -492,6 +517,13 @@
             "field": "sizes",
             "includes": "Other"
           }
+        },
+        {
+          "key": "deadline",
+          "label": "Deadline",
+          "type": "date",
+          "hint": "Only fill if you have a hard deadline",
+          "mondayColumnId": "date_Mjj20aki"
         },
         {
           "key": "howDidYouCreate",
@@ -527,11 +559,25 @@
       "updateTemplate": "<h2><u>Task Brief</u></h2><p><br></p><p><b>Product:</b>&nbsp;{{productBundle}}</p><p><b>Platform:</b>&nbsp;{{platform}}</p><p><b>Requestor:</b>&nbsp;{{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">&nbsp;{{deadline}}</span></p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{amountOfVersions}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizes}}&nbsp;{{otherSizes}}</p><p><br></p><h3><span style=\"font-size: 1rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Concept</span></h3><p>{{conceptIdea}}</p><p></p><p><br></p><p><b>Dropbox:</b>&nbsp;{{dropbox}}</p><p><br></p><p><br></p>",
       "autoName": {
         "segments": [
-          { "field": "productBundle" },
-          { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" } },
-          { "field": "howDidYouCreate" },
-          { "field": "websiteType" },
-          { "field": "taskName" }
+          {
+            "field": "productBundle"
+          },
+          {
+            "field": "platform",
+            "fallback": "department",
+            "valueMap": {
+              "Gentleman Today": "META | GT"
+            }
+          },
+          {
+            "field": "howDidYouCreate"
+          },
+          {
+            "field": "websiteType"
+          },
+          {
+            "field": "taskName"
+          }
         ]
       }
     }

@@ -33,10 +33,44 @@ router.post("/create-item", async (req, res) => {
     }
     res.json({ itemId, url, create_item: result?.create_item });
   } catch (err) {
+    const isDeactivatedLabel = err.message?.includes("label has been deactivated");
+
+    if (isDeactivatedLabel) {
+      // Build reverse map: mondayColumnId → field label, to identify the bad field
+      const { boardId, columnValues } = req.body;
+      const settings = getSettings();
+      const board = settings.boards?.find((b) => b.boardId === boardId);
+      const colIdToLabel = {};
+      if (board?.fields) {
+        for (const f of board.fields) {
+          if (f.mondayColumnId) colIdToLabel[f.mondayColumnId] = f.label;
+        }
+      }
+
+      // Status-type columns submit { label: value } — these are the suspects
+      const suspects = Object.entries(columnValues || {})
+        .filter(([, v]) => v && typeof v === "object" && "label" in v)
+        .map(([colId, v]) => `"${colIdToLabel[colId] || colId}" (value: "${v.label}")`);
+
+      console.error(
+        `[create-item] Deactivated label error for board ${boardId}.\n` +
+        `  Item: ${req.body.itemName}\n` +
+        `  Status fields sent: ${suspects.join(", ") || "(none detected)"}\n` +
+        `  Full payload: ${JSON.stringify(columnValues, null, 2)}`
+      );
+
+      const userMsg = suspects.length
+        ? `One of your selected values no longer exists in Monday.com: ${suspects.join(", ")}. Please choose a different option.`
+        : "One of your selected values is no longer valid in Monday.com. Check fields like Type, Department, Product, or Priority.";
+
+      return res.status(422).json({ error: userMsg, code: "DEACTIVATED_LABEL" });
+    }
+
     console.error("Monday create-item error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // Resolve the Monday identity for the API key in the request header.

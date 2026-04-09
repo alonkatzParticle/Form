@@ -1,4 +1,5 @@
-// geminiService.js — uses Google Gemini to analyze video and image references.
+// geminiService.js — uses Google Gemini to analyze video/image references
+// AND to generate images via Nano Banana 2 (gemini-3.1-flash-image-preview).
 // Videos are uploaded via Gemini's File API (much faster than base64 inline).
 // Images are sent inline (small enough).
 // A 90-second overall timeout guards against hanging requests.
@@ -11,6 +12,7 @@ import { join } from "path";
 import { randomUUID } from "crypto";
 
 const MODEL = "gemini-2.0-flash";
+const IMAGE_GEN_MODEL = "gemini-3.1-flash-image-preview"; // Nano Banana 2
 const TIMEOUT_MS = 90_000; // 90 seconds max
 
 let _genAI = null;
@@ -182,4 +184,42 @@ export async function analyzeReference({ fileData, mimeType, fileUrl, instructio
 
   if (!text) throw new Error("Gemini returned an empty analysis");
   return text;
+}
+
+/**
+ * Generate an image from a text prompt using Nano Banana 2.
+ * Returns { base64, mimeType } where base64 is the raw image data.
+ *
+ * @param {string} prompt  The image generation prompt
+ * @returns {Promise<{ base64: string, mimeType: string }>}
+ */
+export async function generateImage(prompt) {
+  const model = getGenAI().getGenerativeModel({
+    model: IMAGE_GEN_MODEL,
+    generationConfig: {
+      responseModalities: ["image", "text"],
+    },
+  });
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Image generation timed out after 90 seconds.")), TIMEOUT_MS)
+  );
+
+  const genPromise = model.generateContent(prompt);
+  const result = await Promise.race([genPromise, timeoutPromise]);
+
+  // Find the inline image part in the response
+  const parts = result.response?.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((p) => p.inlineData?.mimeType?.startsWith("image/"));
+
+  if (!imagePart) {
+    // Fallback: check if there's a text refusal
+    const textPart = parts.find((p) => p.text);
+    throw new Error(textPart?.text || "Nano Banana 2 returned no image. Try rephrasing your prompt.");
+  }
+
+  return {
+    base64: imagePart.inlineData.data,
+    mimeType: imagePart.inlineData.mimeType,
+  };
 }

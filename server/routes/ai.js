@@ -5,7 +5,7 @@
 
 import express from "express";
 import { assistWithTask, generateBrief, trimScriptToTarget } from "../services/aiService.js";
-import { analyzeReference } from "../services/geminiService.js";
+import { analyzeReference, generateImage } from "../services/geminiService.js";
 import { AI_AGENTS } from "../aiAgents.js";
 import { estimateDuration, formatDurationRange } from "../utils/durationEstimate.js";
 // ELEVENLABS_DISABLED — restore import when credits available:
@@ -261,6 +261,21 @@ router.post("/batch-stream", async (req, res) => {
 
   emit({ type: "done" });
   res.end();
+});
+
+// Generate an image with Nano Banana 2 (gemini-3.1-flash-image-preview).
+// Body: { prompt }
+// Returns: { base64, mimeType }
+router.post("/generate-image", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt?.trim()) return res.status(400).json({ error: "prompt is required" });
+    const result = await generateImage(prompt.trim());
+    res.json(result);
+  } catch (err) {
+    console.error("[generate-image] Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
