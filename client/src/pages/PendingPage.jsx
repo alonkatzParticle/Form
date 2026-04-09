@@ -335,13 +335,6 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
           </div>
         )}
 
-        <div style={{ width: "180px", textAlign: "right" }}>
-          {visibleTasks.length > 0 && (
-            <button className="batch-submit-all-btn" onClick={handleSubmitAll}>
-              Submit All ({visibleTasks.length})
-            </button>
-          )}
-        </div>
       </header>
 
       {successState ? (
