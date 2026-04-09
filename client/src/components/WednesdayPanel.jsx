@@ -9,6 +9,9 @@ import ReactMarkdown from "react-markdown";
 const STORAGE_KEY = (boardId) => `wednesday_chat_${boardId}`;
 const MAX_HISTORY = 20;
 
+// Fields the AI is never allowed to change — enforced client-side regardless of what the model returns
+const PROTECTED_FIELDS = new Set(["department", "product", "productBundle", "platform"]);
+
 // ── Parse Wednesday's response ────────────────────────────────────────────────
 // Extracts [PROPOSE]{...}[/PROPOSE] or [CONFIRM]{...}[/CONFIRM] blocks from text.
 // Returns { visibleText, changes, changeType: "propose"|"confirm"|null }
@@ -25,15 +28,21 @@ function parseResponse(text) {
     const trimmed = text.trim();
     if (trimmed.startsWith("{")) {
       try {
-        const changes = JSON.parse(trimmed);
-        return { visibleText: "", changes, changeType: "propose" };
+        const raw = JSON.parse(trimmed);
+        const changes = Object.fromEntries(Object.entries(raw).filter(([k]) => !PROTECTED_FIELDS.has(k)));
+        if (Object.keys(changes).length > 0) return { visibleText: "", changes, changeType: "propose" };
       } catch { /* not valid JSON, fall through */ }
     }
     return { visibleText: trimmed, changes: null, changeType: null };
   }
 
-  let changes = null;
-  try { changes = JSON.parse(match[1].trim()); } catch { /* invalid JSON, treat as no changes */ }
+  let rawChanges = null;
+  try { rawChanges = JSON.parse(match[1].trim()); } catch { /* invalid JSON, treat as no changes */ }
+
+  // Strip any protected fields the model tried to include
+  const changes = rawChanges
+    ? Object.fromEntries(Object.entries(rawChanges).filter(([k]) => !PROTECTED_FIELDS.has(k)))
+    : null;
 
   const visibleText = text
     .replace(/\[PROPOSE\][\s\S]*?\[\/PROPOSE\]/g, "")
