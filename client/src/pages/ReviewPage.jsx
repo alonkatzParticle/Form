@@ -249,7 +249,17 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       // Non-fatal: item is already created — don't block task removal on these
       if (itemId && briefToSubmit) {
         try {
-          await axios.post("/api/monday/create-update", { itemId, body: briefToSubmit });
+          // If there are reference files, append a note to the update so assignees know to check the Files tab
+          const entryFiles = taskFiles?.[entry.id] ?? {};
+          const hasFiles = entryBoard.fields
+            .filter((f) => f.type === "file" && f.mondayColumnId)
+            .some((f) => entryFiles[f.key]?.length > 0);
+
+          const finalBrief = hasFiles
+            ? briefToSubmit + "\n\n📎 <strong>Reference files are attached</strong> — check the <strong>Files</strong> tab on this task."
+            : briefToSubmit;
+
+          await axios.post("/api/monday/create-update", { itemId, body: finalBrief });
         } catch (e) {
           console.warn("[Review] Brief upload failed (item was created):", e.message);
         }

@@ -89,6 +89,7 @@ Rules:
 - One task = one script. If multiple versions are needed, use versionsNeeded to capture the count — do NOT write multiple scripts in scriptMessage.
 - Only fill fields that are clearly implied by the user's description. Do not invent details.
 - Match the tone and style of the examples below.
+- **NEVER set department, product, or platform — these are chosen by the user and must be returned as their current value or omitted entirely.**
 {{BOARD_EXAMPLES}}`,
   },
 
@@ -118,6 +119,7 @@ Rules:
 - Use your brand knowledge to write real video concepts and scripts — not placeholder text.
 - Match the naming conventions, voice, and creative patterns from the brand knowledge above.
 - Match the tone and style of the examples below.
+- **NEVER set department, product, or platform — these are chosen by the user and must be returned as their current value or omitted entirely.**
 {{BOARD_EXAMPLES}}`,
   },
 
@@ -146,6 +148,7 @@ Rules:
 - Map the pasted content to the correct fields as accurately as possible.
 - One task = one script. If the pasted content has multiple scripts, put only the first one in scriptMessage.
 - If a field cannot be found in the pasted content, use "" for strings, null for dates/numbers, and [] for arrays.
+- **NEVER set department, product, or platform — these are chosen by the user and must be returned as their current value or omitted entirely.**
 {{BOARD_EXAMPLES}}`,
   },
 
@@ -643,18 +646,20 @@ Rules:
 ## PROPOSING FIELD CHANGES
 When you want to fill or update fields, end your message with a structured block.
 
-For EMPTY fields (no confirmation needed):
+For fields that are currently EMPTY (no confirmation needed — apply immediately):
 [PROPOSE]
 {"fieldKey": "value"}
 [/PROPOSE]
 
-For NON-EMPTY fields (needs user confirmation — show what changes):
+For fields that ALREADY HAVE CONTENT (show the user what changes before applying):
 [CONFIRM]
 {"fieldKey": {"from": "currentValue", "to": "newValue"}}
 [/CONFIRM]
 
-If both empty and non-empty fields are changing, use [CONFIRM] for all of them.
+If you are changing a mix, use [CONFIRM] only for the fields that already have content, and [PROPOSE] separately for empty ones — or use [CONFIRM] for all of them if it's simpler.
 The user sees a table card with old → new values and Confirm/Cancel buttons. Do NOT describe the changes in text — the card handles that visually.
+
+**NEVER touch department, product, or platform — the user sets those manually. Do not include them in PROPOSE or CONFIRM blocks.**
 
 ## FIELD RULES
 {{FIELD_DEFINITIONS}}
@@ -693,18 +698,20 @@ The user sees a table card with old → new values and Confirm/Cancel buttons. D
 ## PROPOSING FIELD CHANGES
 When you want to fill or update fields, end your message with a structured block.
 
-For EMPTY fields (no confirmation needed):
+For fields that are currently EMPTY (no confirmation needed — apply immediately):
 [PROPOSE]
 {"fieldKey": "value"}
 [/PROPOSE]
 
-For NON-EMPTY fields (needs user confirmation — show what changes):
+For fields that ALREADY HAVE CONTENT (show the user what changes before applying):
 [CONFIRM]
 {"fieldKey": {"from": "currentValue", "to": "newValue"}}
 [/CONFIRM]
 
-If both empty and non-empty fields are changing, use [CONFIRM] for all of them.
+If you are changing a mix, use [CONFIRM] only for the fields that already have content, and [PROPOSE] separately for empty ones — or use [CONFIRM] for all of them if it's simpler.
 The user sees a table card with old → new values and Confirm/Cancel buttons. Do NOT describe the changes in text — the card handles that visually.
+
+**NEVER touch department, product, or platform — the user sets those manually. Do not include them in PROPOSE or CONFIRM blocks.**
 
 ## FIELD RULES
 {{FIELD_DEFINITIONS}}
