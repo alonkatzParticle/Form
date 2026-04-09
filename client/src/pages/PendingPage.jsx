@@ -243,6 +243,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
         columnValues
       });
       const itemId = createRes.data?.itemId;
+      if (!itemId) throw new Error("Monday returned no item ID — task kept in queue");
       const itemUrl = createRes.data?.url ?? null;
 
       // Non-fatal: item is already created — don't block task removal on these
