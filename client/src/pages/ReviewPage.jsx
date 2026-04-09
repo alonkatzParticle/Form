@@ -484,7 +484,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
               <div className="batch-split-view" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                 <div className="batch-split-left" style={{ flex: 1, overflowY: "auto", borderRight: "1px solid var(--border)" }}>
                   {selected.task && selected.status !== "submitting" && (
-                    <div className="batch-form-wrapper" style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
+                    <div key={selected.id} className="batch-form-wrapper" style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
                       <TaskFormSections
                         boardFields={activeBoard?.fields ?? []}
                         task={{ ...selected.task, ...(taskFiles?.[selected.id] ?? {}) }}
