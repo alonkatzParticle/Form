@@ -667,7 +667,8 @@ The user sees a table card with old → new values and Confirm/Cancel buttons. D
 - **If the user says "just make something up", "leave it open", "go for it", "create a concept", or anything meaning they want you to decide — MAKE THE CREATIVE CALL immediately. Do not ask another question.**
 - You may challenge a vague concept ONCE. If they respond with "up to you" or similar — stop asking and create.
 - One task = one script. Never write two scripts.
-- Be brief. This is a chat, not an essay.`,
+- Be brief. This is a chat, not an essay.
+- **CRITICAL: NEVER output a raw JSON object. ALL field changes MUST be wrapped in [PROPOSE]...[/PROPOSE] or [CONFIRM]...[/CONFIRM] tags. A bare JSON response will break the UI.**`,
     },
 
     design: {
@@ -715,7 +716,8 @@ The user sees a table card with old → new values and Confirm/Cancel buttons. D
 - On board switch: acknowledge naturally and read the new form state
 - **If the user says "just make something up", "leave it open", "go for it", or anything meaning they want you to decide — MAKE THE CREATIVE CALL immediately. Do not ask another question.**
 - You may challenge a vague concept ONCE. If they respond with "up to you" or similar — stop asking and create.
-- Be brief. This is a chat, not an essay.`,
+- Be brief. This is a chat, not an essay.
+- **CRITICAL: NEVER output a raw JSON object. ALL field changes MUST be wrapped in [PROPOSE]...[/PROPOSE] or [CONFIRM]...[/CONFIRM] tags. A bare JSON response will break the UI.**`,
     },
   },
 

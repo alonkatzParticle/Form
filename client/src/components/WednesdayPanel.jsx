@@ -19,7 +19,18 @@ function parseResponse(text) {
   const match = proposeMatch || confirmMatch;
   const changeType = proposeMatch ? "propose" : confirmMatch ? "confirm" : null;
 
-  if (!match) return { visibleText: text.trim(), changes: null, changeType: null };
+  if (!match) {
+    // Fallback: if the entire message is a JSON object, treat it as a silent PROPOSE.
+    // This handles cases where the model forgets to wrap its output in tags.
+    const trimmed = text.trim();
+    if (trimmed.startsWith("{")) {
+      try {
+        const changes = JSON.parse(trimmed);
+        return { visibleText: "", changes, changeType: "propose" };
+      } catch { /* not valid JSON, fall through */ }
+    }
+    return { visibleText: trimmed, changes: null, changeType: null };
+  }
 
   let changes = null;
   try { changes = JSON.parse(match[1].trim()); } catch { /* invalid JSON, treat as no changes */ }
@@ -31,6 +42,7 @@ function parseResponse(text) {
 
   return { visibleText, changes, changeType };
 }
+
 
 // ── Field label lookup ────────────────────────────────────────────────────────
 function fieldLabel(key) {

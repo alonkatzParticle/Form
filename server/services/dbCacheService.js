@@ -36,8 +36,9 @@ function writeTicketsFile(tickets) {
 // ─── Neon DB ──────────────────────────────────────────────────────────────────
 let _sql = null;
 function getDb() {
-  if (!process.env.DATABASE_URL) return null;
-  if (!_sql) _sql = neon(process.env.DATABASE_URL);
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_DATABASE_URL;
+  if (!url) return null;
+  if (!_sql) _sql = neon(url);
   return _sql;
 }
 
