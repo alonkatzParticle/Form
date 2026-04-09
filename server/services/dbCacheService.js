@@ -1,11 +1,39 @@
 // dbCacheService.js — Neon Postgres wrapper for persistent caching.
-// Only active when DATABASE_URL is set (Vercel production).
-// Local dev falls back to file-based cache with no changes.
+// When DATABASE_URL is set (Vercel + Neon): uses Postgres.
+// Otherwise: falls back to a local JSON file so all users share the same history.
 
 import { neon } from "@neondatabase/serverless";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+// ─── File-based fallback ──────────────────────────────────────────────────────
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = path.join(__dirname, "../data");
+const TICKETS_FILE = path.join(DATA_DIR, "tickets.json");
+
+function readTicketsFile() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(TICKETS_FILE)) return [];
+    return JSON.parse(fs.readFileSync(TICKETS_FILE, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+function writeTicketsFile(tickets) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(TICKETS_FILE, JSON.stringify(tickets, null, 2));
+  } catch (err) {
+    console.warn("[db] writeTicketsFile failed:", err.message);
+  }
+}
+
+// ─── Neon DB ──────────────────────────────────────────────────────────────────
 let _sql = null;
 function getDb() {
   if (!process.env.DATABASE_URL) return null;
@@ -80,7 +108,11 @@ export function isDbAvailable() {
 
 export async function getTickets() {
   const sql = getDb();
-  if (!sql) return [];
+  if (!sql) {
+    // File-based fallback: return all tickets sorted newest first
+    const tickets = readTicketsFile();
+    return tickets.sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0)).slice(0, 200);
+  }
   try {
     const rows = await sql`
       SELECT data FROM submitted_tickets
@@ -96,7 +128,13 @@ export async function getTickets() {
 
 export async function addTicket(ticket) {
   const sql = getDb();
-  if (!sql) return;
+  if (!sql) {
+    // File-based fallback: upsert by id
+    const tickets = readTicketsFile().filter(t => t.id !== ticket.id);
+    tickets.unshift(ticket);
+    writeTicketsFile(tickets.slice(0, 500)); // cap at 500
+    return;
+  }
   try {
     await sql`
       INSERT INTO submitted_tickets (id, data, submitted_at)
@@ -115,7 +153,11 @@ export async function addTicket(ticket) {
 
 export async function removeTicket(id) {
   const sql = getDb();
-  if (!sql) return;
+  if (!sql) {
+    // File-based fallback
+    writeTicketsFile(readTicketsFile().filter(t => t.id !== id));
+    return;
+  }
   try {
     await sql`DELETE FROM submitted_tickets WHERE id = ${id}`;
   } catch (err) {
