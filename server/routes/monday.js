@@ -100,6 +100,7 @@ router.post("/create-update", async (req, res) => {
 router.post("/upload-file", upload.single("file"), async (req, res) => {
   try {
     const { itemId, columnId } = req.body;
+    const apiKey = req.headers["x-monday-api-key"] || null;
     if (!itemId || !columnId || !req.file) {
       return res.status(400).json({ error: "itemId, columnId and file are required" });
     }
@@ -109,6 +110,7 @@ router.post("/upload-file", upload.single("file"), async (req, res) => {
       req.file.buffer,
       req.file.originalname,
       req.file.mimetype,
+      apiKey,
     );
     res.json(result);
   } catch (err) {

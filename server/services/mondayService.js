@@ -138,7 +138,7 @@ export async function createUpdate(itemId, body, apiKey = null) {
 
 // Upload a file to a Monday file column on an existing item.
 // Monday's file upload uses a separate multipart endpoint instead of the standard GraphQL one.
-export async function uploadFileToColumn(itemId, columnId, fileBuffer, fileName, mimeType) {
+export async function uploadFileToColumn(itemId, columnId, fileBuffer, fileName, mimeType, apiKey = null) {
   const mutation = `
     mutation ($file: File!) {
       add_file_to_column(item_id: ${itemId}, column_id: "${columnId}", file: $file) {
@@ -154,7 +154,7 @@ export async function uploadFileToColumn(itemId, columnId, fileBuffer, fileName,
 
   const res = await fetch("https://api.monday.com/v2/file", {
     method: "POST",
-    headers: { Authorization: process.env.MONDAY_API_KEY },
+    headers: { Authorization: apiKey || process.env.MONDAY_API_KEY },
     body: form,
   });
   const data = await res.json();
