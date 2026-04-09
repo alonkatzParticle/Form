@@ -141,34 +141,7 @@
           ],
           "mondayColumnId": "people"
         },
-        {
-          "key": "type",
-          "label": "Type",
-          "type": "select",
-          "required": true,
-          "half": true,
-          "mondayColumnId": "label4",
-          "options": [
-            "Iterations/Cuts/Edits",
-            "GIF - New Static",
-            "Miscellaneous",
-            "Collection",
-            "Motion Design",
-            "Translation",
-            "Special Project",
-            "TV",
-            "AI Project",
-            "UGC/Creator",
-            "AI Creator",
-            "Amazon/Ulta",
-            "Long Form (+1 min)",
-            "Script - Short Form (<20 seconds)",
-            "GIF - Existing Static",
-            "Upload B-Rolls",
-            "CTA",
-            "Script (<1 min)"
-          ]
-        },
+
         {
           "key": "videoConcept",
           "label": "Video Concept",
@@ -211,6 +184,34 @@
           "type": "number",
           "hidden": true,
           "mondayColumnId": "numeric_mm209bwg"
+        },
+        {
+          "key": "type",
+          "label": "Type",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "mondayColumnId": "label4",
+          "options": [
+            "Iterations/Cuts/Edits",
+            "GIF - New Static",
+            "Miscellaneous",
+            "Collection",
+            "Motion Design",
+            "Translation",
+            "Special Project",
+            "TV",
+            "AI Project",
+            "UGC/Creator",
+            "AI Creator",
+            "Amazon/Ulta",
+            "Long Form (+1 min)",
+            "Script - Short Form (<20 seconds)",
+            "GIF - Existing Static",
+            "Upload B-Rolls",
+            "CTA",
+            "Script (<1 min)"
+          ]
         },
         {
           "key": "versionsNeeded",
