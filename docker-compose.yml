@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    # Loads all environment variables from .env at the project root
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Healthcheck — Docker will restart the container if the API stops responding
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

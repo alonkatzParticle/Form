@@ -50,4 +50,14 @@ app.use("/api/tickets", ticketsRoutes);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
+// In Docker / self-hosted production: serve the pre-built React app.
+// Vercel handles static files itself (it sets VERCEL=1), so this block is skipped there.
+// Local dev also skips it (NODE_ENV is not 'production').
+if (process.env.NODE_ENV === "production" && !process.env.VERCEL) {
+  const distPath = resolve(__dirname, "../client/dist");
+  app.use(express.static(distPath));
+  // SPA fallback — any unknown route returns index.html
+  app.get("*", (_req, res) => res.sendFile(resolve(distPath, "index.html")));
+}
+
 export default app;

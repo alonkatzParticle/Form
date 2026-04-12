@@ -1,0 +1,23 @@
+# Dependencies — never copy these, let npm ci install fresh inside the image
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build output — gets produced inside the container by the frontend-builder stage
+client/dist/
+
+# Secrets — always excluded
+.env
+
+# Git & IDE
+.git/
+.github/
+.gitignore
+.DS_Store
+
+# Dev-only files
+*.log
+test-*.js
+CLAUDE.md
+HANDOFF.md
+TODO.md
