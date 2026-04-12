@@ -278,6 +278,11 @@ function toMondayValue(field, value) {
     case "file":      return null;
     case "status": {
       if (field.options && !field.options.includes(value)) return null;
+      // If the field stores explicit Monday indices, send by index to avoid
+      // deactivated-label collisions (e.g. two "TV" entries where one is archived).
+      if (field.mondayOptionIndices && field.mondayOptionIndices[value] !== undefined) {
+        return { index: field.mondayOptionIndices[value] };
+      }
       return { label: value };
     }
     case "multi_select": return { labels: value };

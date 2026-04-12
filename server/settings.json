@@ -23,6 +23,10 @@
             "Ulta",
             "Marketing/Media"
           ],
+          "mondayOptionIndices": {
+            "Socials": 0, "Website": 1, "Special Project (SP)": 2, "Retention": 3,
+            "Creative": 4, "TV": 8, "Amazon": 9, "Ulta": 10, "Marketing/Media": 105
+          },
           "step1": true,
           "sectionHeader": "Step 1 — Context"
         },
@@ -121,6 +125,13 @@
             "CTA",
             "Script (<1 min)"
           ],
+          "mondayOptionIndices": {
+            "Iterations/Cuts/Edits": 0, "GIF - New Static": 1, "Miscellaneous": 2, "Collection": 3,
+            "Motion Design": 4, "Translation": 5, "Special Project": 6, "TV": 101,
+            "AI Project": 8, "UGC/Creator": 9, "AI Creator": 13, "Amazon/Ulta": 14,
+            "Long Form (+1 min)": 15, "Script - Short Form (<20 seconds)": 16,
+            "GIF - Existing Static": 17, "Upload B-Rolls": 18, "CTA": 19, "Script (<1 min)": 156
+          },
           "step1": true
         },
         {
@@ -321,7 +332,6 @@
             "Marketing",
             "Socials",
             "Projects",
-            "GT",
             "Default",
             "Adge Data",
             "TV",
@@ -334,6 +344,12 @@
             "Website",
             "Ulta"
           ],
+          "mondayOptionIndices": {
+            "Email": 0, "Marketing": 1, "Socials": 2, "Projects": 3,
+            "Default": 5, "Adge Data": 6, "TV": 7, "Branding": 8,
+            "Products & Packaging": 9, "Email Completed": 10, "Amazon": 11,
+            "Creative": 12, "GIF Design": 13, "Website": 14, "Ulta": 15
+          },
           "step1": true,
           "sectionHeader": "Step 1 — Context"
         },
