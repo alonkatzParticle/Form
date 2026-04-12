@@ -10,12 +10,17 @@ async function mondayQuery(query, variables = {}, apiKey = null) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "API-Version": "2024-01",
       Authorization: key,
     },
     body: JSON.stringify({ query, variables }),
   });
   const data = await res.json();
-  if (data.errors) throw new Error(data.errors.map((e) => e.message).join("; ") || JSON.stringify(data.errors));
+  if (data.errors) {
+    const err = new Error(data.errors.map((e) => e.message).join("; ") || JSON.stringify(data.errors));
+    err.mondayErrors = data.errors; // attach raw errors for precise downstream parsing
+    throw err;
+  }
   return data.data;
 }
 

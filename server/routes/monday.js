@@ -33,13 +33,17 @@ router.post("/create-item", async (req, res) => {
     }
     res.json({ itemId, url, create_item: result?.create_item });
   } catch (err) {
-    const isDeactivatedLabel = err.message?.includes("label has been deactivated");
+    const isDeactivatedLabel = err.message?.includes("label has been deactivated") ||
+      err.message?.includes("deactivated") ||
+      err.message?.includes("ColumnValueException");
 
     if (isDeactivatedLabel) {
-      // Build reverse map: mondayColumnId → field label, to identify the bad field
-      const { boardId, columnValues } = req.body;
+      const { boardId, columnValues, itemName, updateBody } = req.body;
+      const apiKey = req.headers["x-monday-api-key"] || null;
       const settings = getSettings();
       const board = settings.boards?.find((b) => b.boardId === boardId);
+
+      // Build reverse map: mondayColumnId → field label for user-facing messages
       const colIdToLabel = {};
       if (board?.fields) {
         for (const f of board.fields) {
@@ -47,23 +51,57 @@ router.post("/create-item", async (req, res) => {
         }
       }
 
-      // Status-type columns submit { label: value } — these are the suspects
-      const suspects = Object.entries(columnValues || {})
-        .filter(([, v]) => v && typeof v === "object" && "label" in v)
-        .map(([colId, v]) => `"${colIdToLabel[colId] || colId}" (value: "${v.label}")`);
+      // Try to identify EXACTLY which columns Monday flagged from the raw error messages
+      const rawErrors = err.mondayErrors || [];
+      const badColIds = new Set();
+      for (const e of rawErrors) {
+        const msg = JSON.stringify(e);
+        for (const colId of Object.keys(columnValues || {})) {
+          if (msg.includes(colId)) badColIds.add(colId);
+        }
+      }
 
-      console.error(
-        `[create-item] Deactivated label error for board ${boardId}.\n` +
-        `  Item: ${req.body.itemName}\n` +
-        `  Status fields sent: ${suspects.join(", ") || "(none detected)"}\n` +
-        `  Full payload: ${JSON.stringify(columnValues, null, 2)}`
+      // Fall back to all status-type columns if we couldn't parse specifics
+      const allStatusCols = Object.entries(columnValues || {})
+        .filter(([, v]) => v && typeof v === "object" && "label" in v)
+        .map(([colId]) => colId);
+      const colsToStrip = badColIds.size > 0 ? [...badColIds] : allStatusCols;
+
+      const badDescriptions = colsToStrip
+        .map((colId) => `"${colIdToLabel[colId] || colId}" (value: "${columnValues[colId]?.label ?? "?"}")`)
+        .join(", ");
+
+      console.warn(
+        `[create-item] Deactivated label — retrying without: ${badDescriptions}\n` +
+        `  Board: ${boardId} | Item: ${itemName}\n` +
+        `  Raw Monday error: ${err.message}`
       );
 
-      const userMsg = suspects.length
-        ? `One of your selected values no longer exists in Monday.com: ${suspects.join(", ")}. Please choose a different option.`
-        : "One of your selected values is no longer valid in Monday.com. Check fields like Type, Department, Product, or Priority.";
+      // Retry without the bad status columns
+      const cleanedColumnValues = { ...columnValues };
+      for (const colId of colsToStrip) delete cleanedColumnValues[colId];
 
-      return res.status(422).json({ error: userMsg, code: "DEACTIVATED_LABEL" });
+      try {
+        const retryResult = await createItem(boardId, itemName, cleanedColumnValues, apiKey);
+        const itemId = retryResult?.create_item?.id;
+        const url = retryResult?.create_item?.url ?? null;
+        if (itemId && updateBody) {
+          await createUpdate(itemId, updateBody, apiKey).catch((e) =>
+            console.warn("Update post failed after retry:", e.message)
+          );
+        }
+        return res.json({
+          itemId, url,
+          create_item: retryResult?.create_item,
+          warning: `Task created, but these fields could not be set (options deactivated in Monday): ${badDescriptions}. Update them directly in Monday.`,
+        });
+      } catch (retryErr) {
+        console.error("[create-item] Retry also failed:", retryErr.message);
+        return res.status(422).json({
+          error: `Could not create task even after stripping problematic fields. Monday error: ${retryErr.message}`,
+          code: "DEACTIVATED_LABEL",
+        });
+      }
     }
 
     console.error("Monday create-item error:", err.message);

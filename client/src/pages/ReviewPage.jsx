@@ -249,6 +249,8 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       const itemId = createRes.data?.itemId;
       if (!itemId) throw new Error("Monday returned no item ID — task kept in queue");
       const itemUrl = createRes.data?.url ?? null;
+      // Non-blocking: server stripped deactivated labels and retried — show a warning
+      const submitWarning = createRes.data?.warning ?? null;
 
       // Non-fatal: item is already created — don't block task removal on these
       if (itemId && briefToSubmit) {
@@ -301,7 +303,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
 
       // Show success card for single-task flow
       if (!isBatchMode) {
-        setSuccessState({ url: itemUrl });
+        setSuccessState({ url: itemUrl, warning: submitWarning });
       }
 
       // In batch mode: update query params but don't show success yet until submitAll is done
@@ -354,6 +356,13 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
           onCreateAnother={() => navigate("/")}
           onGoHome={() => navigate("/")}
         />
+        {successState.warning && (
+          <div style={{ margin: "0 auto", maxWidth: 520, padding: "0 24px 24px" }}>
+            <div style={{ background: "#78350f22", border: "1px solid #92400e", borderRadius: 10, padding: "12px 16px", color: "#fbbf24", fontSize: 13, lineHeight: 1.5 }}>
+              ⚠️ {successState.warning}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
