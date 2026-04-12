@@ -274,10 +274,9 @@
         },
         {
           "key": "howDidYouMake",
-          "label": "How did you make this?",
+          "label": "AI Assist",
           "type": "select",
           "mondayColumnId": "color_mm1q4zbz",
-          "defaultValue": "Claude",
           "options": [
             "Adge",
             "Upspring",

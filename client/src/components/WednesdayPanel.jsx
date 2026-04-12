@@ -371,8 +371,8 @@ export default function WednesdayPanel({ isOpen, onClose, boardType, boardLabel,
         )
       );
 
-      // Apply to form
-      onApplyChanges?.(flat);
+      // Apply to form — also mark as Claude-assisted since the user just used AI
+      onApplyChanges?.({ ...flat, howDidYouMake: formState?.howDidYouMake || "Claude" });
 
       const updated = prev.map((m) =>
         m.id === msgId ? { ...m, cardStatus: "applied" } : m

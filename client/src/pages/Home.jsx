@@ -100,7 +100,8 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
   function handleReview(data) {
     const pendingTaskObj = {
       id: "single-" + Date.now(),
-      task: data.task,
+      // Auto-mark as Claude-assisted if the brief was AI-generated
+      task: data.briefHtml ? { ...data.task, howDidYouMake: "Claude" } : data.task,
       brief: data.briefHtml,
       status: "idle",
       boardType: activeBoardId,
