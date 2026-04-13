@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { uploadFileToMonday } from "../utils/mondayUpload.js";
 import { Field, renderInput, isVisible, buildAutoName, buildColumnValues } from "../components/forms/DynamicForm.jsx";
 import TaskFormSections from "../components/forms/TaskFormSections.jsx";
 import InlineDurationEstimator from "../components/InlineDurationEstimator.jsx";
@@ -215,11 +216,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
           if (!fileList || fileList.length === 0) continue;
           for (const file of Array.from(fileList)) {
             try {
-              const fd = new FormData();
-              fd.append("itemId", itemId);
-              fd.append("columnId", field.mondayColumnId);
-              fd.append("file", file, file.name);
-              await axios.post("/api/monday/upload-file", fd);
+              await uploadFileToMonday(itemId, field.mondayColumnId, file);
             } catch (e) {
               console.warn("[Pending] File upload failed (item was created):", e.message);
             }

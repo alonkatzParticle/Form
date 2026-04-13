@@ -13,6 +13,16 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
+// Returns the effective Monday API key so the browser can upload files
+// directly to Monday's API, bypassing Vercel's 4.5 MB request limit.
+// The user's personal key (from x-monday-api-key header) takes priority;
+// falls back to the shared env key.
+router.get("/upload-token", (req, res) => {
+  const key = req.headers["x-monday-api-key"] || process.env.MONDAY_API_KEY || null;
+  if (!key) return res.status(503).json({ error: "No Monday API key configured" });
+  res.json({ token: key });
+});
+
 // Create a new task on a Monday board, then post a summary update on it.
 // Body: { boardId, itemName, columnValues, updateBody? }
 router.post("/create-item", async (req, res) => {
