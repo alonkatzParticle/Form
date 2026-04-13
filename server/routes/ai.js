@@ -16,7 +16,7 @@ const router = express.Router();
 // Helper: estimate script duration and inject into formValues + return formatted text.
 // Only runs for the Marketing/Media department on the video board.
 async function injectDurationEstimate(task, formValues, boardType) {
-  if (boardType !== "video" || task.department !== "Marketing/Media") {
+  if (boardType !== "video" || task.department !== "Marketing/Media" || task.type === "TV") {
     return { formValues, durationText: null };
   }
   const SCRIPT_KEYS = ["scriptMessage", "script", "copyText", "bodyText"];

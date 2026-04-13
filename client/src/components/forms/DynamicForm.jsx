@@ -210,7 +210,7 @@ export async function generateBriefHtml(board, task, users) {
 
   // ── Duration Estimation (syllable-based) ──
   // Only meaningful for Marketing/Media department on the video board.
-  const isMarketingMedia = board.id === "video" && task.department === "Marketing/Media";
+  const isMarketingMedia = board.id === "video" && task.department === "Marketing/Media" && task.type !== "TV";
   const scriptField = isMarketingMedia ? board.fields.find((f) => f.durationEstimator) : null;
   const currentScript = scriptField ? task[scriptField.key] : null;
 
