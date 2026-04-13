@@ -209,9 +209,9 @@ export async function generateBriefHtml(board, task, users) {
     .filter(Boolean);
 
   // ── Duration Estimation (syllable-based) ──
-  // ELEVENLABS_DISABLED: ElevenLabs call commented out — restore when credits are available.
-  // To re-enable: uncomment the axios block below and remove the estimateDuration() call.
-  const scriptField = board.fields.find((f) => f.durationEstimator);
+  // Only meaningful for Marketing/Media department on the video board.
+  const isMarketingMedia = board.id === "video" && task.department === "Marketing/Media";
+  const scriptField = isMarketingMedia ? board.fields.find((f) => f.durationEstimator) : null;
   const currentScript = scriptField ? task[scriptField.key] : null;
 
   // ELEVENLABS_DISABLED — uncomment to restore TTS-based estimation:

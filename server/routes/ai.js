@@ -14,19 +14,14 @@ import { estimateDuration, formatDurationRange } from "../utils/durationEstimate
 const router = express.Router();
 
 // Helper: estimate script duration and inject into formValues + return formatted text.
-async function injectDurationEstimate(task, formValues) {
+// Only runs for the Marketing/Media department on the video board.
+async function injectDurationEstimate(task, formValues, boardType) {
+  if (boardType !== "video" || task.department !== "Marketing/Media") {
+    return { formValues, durationText: null };
+  }
   const SCRIPT_KEYS = ["scriptMessage", "script", "copyText", "bodyText"];
   const scriptKey = SCRIPT_KEYS.find(k => task[k] && String(task[k]).trim().length > 0);
   if (!scriptKey) return { formValues, durationText: null };
-
-  // ELEVENLABS_DISABLED — uncomment to restore TTS estimation:
-  // try {
-  //   const { estimatedSeconds } = await estimateScriptDuration(String(task[scriptKey]));
-  //   const s = Math.round(estimatedSeconds + 3);
-  //   const durationText = `${Math.max(0, s - 2)}\u2013${s + 2} sec`;
-  //   const filtered = formValues.filter(f => f.label !== "Estimated Duration");
-  //   return { formValues: [...filtered, { label: "Estimated Duration", value: durationText }], durationText };
-  // } catch { /* fall through to math */ }
 
   // Syllable-based instant estimation
   const seconds = estimateDuration(String(task[scriptKey]));
@@ -173,7 +168,7 @@ router.post("/batch", async (req, res) => {
             .filter(([, v]) => v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0))
             .map(([k, v]) => ({ label: k, value: Array.isArray(v) ? v.join(", ") : String(v) }));
 
-          const { formValues: fv, durationText } = await injectDurationEstimate(task, formValues);
+          const { formValues: fv, durationText } = await injectDurationEstimate(task, formValues, boardType);
           const brief = await generateBrief({ formValues: fv, boardType, estimatedDurationText: durationText });
           return { id: `batch-${i}-${Date.now()}`, task, brief };
         } catch {
@@ -249,7 +244,7 @@ router.post("/batch-stream", async (req, res) => {
           .filter(([, v]) => v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0))
           .map(([k, v]) => ({ label: k, value: Array.isArray(v) ? v.join(", ") : String(v) }));
 
-        const { formValues: fv, durationText } = await injectDurationEstimate(task, formValues);
+        const { formValues: fv, durationText } = await injectDurationEstimate(task, formValues, boardType);
         const brief = await generateBrief({ formValues: fv, boardType, estimatedDurationText: durationText });
         emit({ type: "task", index: i, id: `batch-${i}-${Date.now()}`, task, brief });
       } catch (err) {
