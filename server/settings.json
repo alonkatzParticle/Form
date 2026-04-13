@@ -284,6 +284,7 @@
             "ChatGPT",
             "Claude"
           ],
+          "skipBrief": true,
           "section": "Additional Details"
         }
       ],
