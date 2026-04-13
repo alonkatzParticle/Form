@@ -188,7 +188,7 @@ export function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = n
 
 export async function generateBriefHtml(board, task, users) {
   const formValues = board.fields
-    .filter((f) => isVisible(f, task) && f.type !== "file" && f.mondayValueType !== "item_name")
+    .filter((f) => isVisible(f, task) && f.type !== "file" && f.mondayValueType !== "item_name" && !f.skipBrief)
     .map((f) => {
       const val = task[f.key];
       if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.length === 0)) return null;

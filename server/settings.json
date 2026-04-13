@@ -265,11 +265,12 @@
           "key": "dropboxLink",
           "label": "DropBox Link",
           "type": "url",
-          "hint": "Paste folder link for saving finished videos",
+          "hint": "Paste the folder link where the editor will upload finished files",
           "placeholder": "https://www.dropbox.com/\u2026",
           "mondayColumnId": "link4__1",
           "mondayValueType": "link",
           "linkText": "DropBox",
+          "skipBrief": true,
           "section": "Additional Details"
         },
         {
@@ -286,7 +287,7 @@
           "section": "Additional Details"
         }
       ],
-      "updateTemplate": "<h3><u>Task Brief</u></h3><br><p><b>Product:</b> {{product}}</p><p><b>Type:</b> {{type}}</p><p><b>Platform:</b> {{platform}}</p><p><b>Requestor:</b> {{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"> </span>{{deadline}}</p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{versionsNeeded}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizesNeeded}}</p><p><br></p><h3>Video Concept</h3><p>{{videoConcept}}</p><br><p><b>Hook:</b> {{hook}}</p><p><br></p><p><b>Script / Message:</b>&nbsp;</p><p>{{scriptMessage}}</p><p><br></p><p><b>Dropbox:</b> {{dropboxLink}}</p><p><br></p><p><br></p>",
+      "updateTemplate": "<h3><u>Task Brief</u></h3><br><p><b>Product:</b> {{product}}</p><p><b>Type:</b> {{type}}</p><p><b>Platform:</b> {{platform}}</p><p><b>Requestor:</b> {{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"> </span>{{deadline}}</p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{versionsNeeded}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizesNeeded}}</p><p><br></p><h3>Video Concept</h3><p>{{videoConcept}}</p><br><p><b>Hook:</b> {{hook}}</p><p><br></p><p><b>Script / Message:</b>&nbsp;</p><p>{{scriptMessage}}</p><p><br></p><p><br></p>",
       "autoName": {
         "segments": [
           {
@@ -566,14 +567,15 @@
           "key": "dropbox",
           "label": "Dropbox",
           "type": "url",
-          "hint": "For uploading finished project",
+          "hint": "Paste the folder link where the designer will upload finished files",
           "placeholder": "https://www.dropbox.com/\u2026",
           "mondayColumnId": "link0__1",
           "mondayValueType": "link",
-          "linkText": "Dropbox"
+          "linkText": "Dropbox",
+          "skipBrief": true
         }
       ],
-      "updateTemplate": "<h2><u>Task Brief</u></h2><p><br></p><p><b>Product:</b>&nbsp;{{productBundle}}</p><p><b>Platform:</b>&nbsp;{{platform}}</p><p><b>Requestor:</b>&nbsp;{{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">&nbsp;{{deadline}}</span></p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{amountOfVersions}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizes}}&nbsp;{{otherSizes}}</p><p><br></p><h3><span style=\"font-size: 1rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Concept</span></h3><p>{{conceptIdea}}</p><p></p><p><br></p><p><b>Dropbox:</b>&nbsp;{{dropbox}}</p><p><br></p><p><br></p>",
+      "updateTemplate": "<h2><u>Task Brief</u></h2><p><br></p><p><b>Product:</b>&nbsp;{{productBundle}}</p><p><b>Platform:</b>&nbsp;{{platform}}</p><p><b>Requestor:</b>&nbsp;{{requestor}}<b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\"><br></b></p><p><b style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Deadline:</b><span style=\"font-size: 0.9rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">&nbsp;{{deadline}}</span></p><p><br></p><p><b>Versions Needed:</b>&nbsp;{{amountOfVersions}}</p><p><b>Sizes Needed:</b>&nbsp;{{sizes}}&nbsp;{{otherSizes}}</p><p><br></p><h3><span style=\"font-size: 1rem; font-family: Inter, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;\">Concept</span></h3><p>{{conceptIdea}}</p><p></p><p><br></p><p><br></p>",
       "autoName": {
         "segments": [
           {
