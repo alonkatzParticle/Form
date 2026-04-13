@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { uploadFileToMonday } from "../utils/mondayUpload.js";
 import { Field, renderInput, isVisible, buildAutoName, buildColumnValues } from "../components/forms/DynamicForm.jsx";
+import FilePreview from "../components/FilePreview.jsx";
 import TaskFormSections from "../components/forms/TaskFormSections.jsx";
 import InlineDurationEstimator from "../components/InlineDurationEstimator.jsx";
 
@@ -545,6 +546,14 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                       </div>
                     )}
                   </div>
+
+                  {/* File attachment preview */}
+                  {(() => {
+                    const fileFields = activeBoard?.fields?.filter(f => f.type === "file" && f.mondayColumnId) ?? [];
+                    const entryFiles = taskFiles?.[selected.id] ?? {};
+                    return <FilePreview fileFields={fileFields} entryFiles={entryFiles} />;
+                  })()}
+
                 </div>
               </div>
             </>

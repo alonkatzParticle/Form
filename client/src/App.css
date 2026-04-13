@@ -4022,6 +4022,80 @@ body {
 .batch-no-brief { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 40px; }
 .batch-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.9rem; }
 
+/* ── File Attachment Preview ───────────────────────────────────────────────── */
+.file-preview-wrap {
+  border-top: 1px solid var(--border);
+  padding: 16px 24px 20px;
+  background: var(--surface);
+}
+.file-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+.file-preview-field-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.file-preview-section { margin-bottom: 12px; }
+.file-preview-section:last-child { margin-bottom: 0; }
+.file-preview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.file-preview-thumb {
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.file-preview-img,
+.file-preview-video {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: block;
+}
+.file-preview-icon {
+  width: 96px;
+  height: 72px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.file-preview-name {
+  font-size: 0.7rem;
+  color: var(--text);
+  text-align: center;
+  width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.file-preview-size {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 /* ── Batch Page — new input controls ──────────────────────────────────────── */
 /* Mode tabs */
 .batch-mode-tabs { display: flex; background: transparent; gap: 8px; margin-bottom: 24px; }
