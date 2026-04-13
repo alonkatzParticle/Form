@@ -177,7 +177,7 @@ function SuggestionReview({ suggestions, boardFields = [], currentTask = {}, onA
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function AIPanel({ boardType, boardFields = [], currentTask = {}, onResult, taskContext = {}, onReferenceContext, onNeedsClarification, disabled = false, department = "" }) {
+export default function AIPanel({ boardType, boardFields = [], currentTask = {}, onResult, taskContext = {}, onReferenceContext, onNeedsClarification, disabled = false, department = "", initialPrompt = "", onPromptConsumed }) {
   const [open, setOpen] = useState(false);
 
   // Whether full AI panel is available for the current department.
@@ -193,6 +193,13 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
   // Reset to safe mode when lock state changes
   useEffect(() => { if (!isGenLocked) setMode("autofill"); }, [isGenLocked]); // eslint-disable-line
 
+  // Pre-fill from external source (e.g. deep-link URL param)
+  useEffect(() => {
+    if (!initialPrompt) return;
+    setInput(initialPrompt);
+    setOpen(true);
+    onPromptConsumed?.();
+  }, [initialPrompt]); // eslint-disable-line
 
   const [mode, setMode] = useState("autofill");
   const [input, setInput] = useState("");

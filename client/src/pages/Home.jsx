@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
 import { useMonday } from "../hooks/useMonday.js";
 import DynamicForm from "../components/forms/DynamicForm.jsx";
@@ -32,6 +32,42 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
 
   // Step 1 state — persisted per board so users don’t have to re-fill after navigation
   const [step1Values, setStep1Values] = usePersistedState("home_step1Values", {});
+  const [initialPrompt, setInitialPrompt] = useState("");
+  const urlParamsApplied = useRef(false);
+
+  // On first mount: read URL query params and pre-fill form + AI prompt.
+  // Clears params from URL after consuming them so refresh doesn't re-apply.
+  useEffect(() => {
+    if (urlParamsApplied.current) return;
+    urlParamsApplied.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const board     = params.get("board");
+    const dept      = params.get("department");
+    const product   = params.get("product");
+    const type      = params.get("type");
+    const platform  = params.get("platform");
+    const prompt    = params.get("prompt");
+
+    if (!board && !dept && !product && !type && !platform && !prompt) return;
+
+    // Switch board if specified
+    if (board && boards.find(b => b.id === board)) setActiveBoardId(board);
+
+    // Pre-fill step1 fields
+    const prefill = {};
+    if (dept)     prefill.department = dept;
+    if (product)  prefill.product    = product;
+    if (type)     prefill.type       = type;
+    if (platform) prefill.platform   = platform;
+    if (Object.keys(prefill).length) setStep1Values(prefill);
+
+    // Pre-fill AI prompt box
+    if (prompt) setInitialPrompt(prompt);
+
+    // Clear params from URL without triggering a page reload
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [boards, setActiveBoardId, setStep1Values]);
 
   // Derive active board early so step1Keys can read field definitions from it
   const activeBoard = boards.find((b) => b.id === activeBoardId);
@@ -167,6 +203,8 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
                 onReferenceContext={setReferenceContext}
                 disabled={!step1Complete}
                 department={dept}
+                initialPrompt={initialPrompt}
+                onPromptConsumed={() => setInitialPrompt("")}
                 onNeedsClarification={(msg) => {
                   setWednesdaySeedMessage(msg);
                   setWednesdayOpen(true);
