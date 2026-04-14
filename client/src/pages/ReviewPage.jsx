@@ -278,6 +278,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       }
 
       // ── Step: uploading files ────────────────────────────────────────────────
+      let submittedFileCount = 0; // tracked for the done state
       if (itemId && taskFiles) {
         const entryFiles = taskFiles[entry.id] ?? {};
         const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
@@ -290,6 +291,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
         }
 
         if (allFiles.length > 0) {
+          submittedFileCount = allFiles.length;
           setSubmitProgress({ step: "files", fileIndex: 0, fileTotal: allFiles.length, fileName: "" });
           const failedFiles = [];
           for (let i = 0; i < allFiles.length; i++) {
@@ -311,7 +313,11 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
         onFilesUploaded?.(entry.id);
       }
 
+      // Show all-done state briefly before transitioning to success card
+      setSubmitProgress({ step: "done", fileIndex: 0, fileTotal: submittedFileCount, fileName: "" });
+      await new Promise((r) => setTimeout(r, 1000));
       setSubmitProgress(null);
+
       // Archive to submitted history before removing from pending
       if (onTaskSubmitted) {
         onTaskSubmitted({ ...entry, brief: briefToSubmit, mondayUrl: itemUrl });

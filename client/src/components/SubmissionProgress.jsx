@@ -3,7 +3,7 @@
  * in place of the task form while a task is being submitted to Monday.
  *
  * Props:
- *   step      — 'creating' | 'brief' | 'files' | null
+ *   step      — 'creating' | 'brief' | 'files' | 'done' | null
  *   fileIndex — which file is currently uploading (1-based)
  *   fileTotal — total number of files to upload
  *   fileName  — name of the file currently uploading
@@ -20,10 +20,12 @@ const STEPS = [
 const STEP_ORDER = STEPS.map((s) => s.key);
 
 export default function SubmissionProgress({ step, fileIndex = 0, fileTotal = 0, fileName = "" }) {
-  const currentIdx = STEP_ORDER.indexOf(step ?? "");
+  const isDone = step === "done";
+  // When done, treat currentIdx as beyond all steps so every step shows a checkmark
+  const currentIdx = isDone ? STEP_ORDER.length : STEP_ORDER.indexOf(step ?? "");
 
-  // Hide the files step entirely when there are no files
-  const visibleSteps = fileTotal > 0 ? STEPS : STEPS.slice(0, 2);
+  // Hide the files step when there are no files (unless we're done, then show all completed)
+  const visibleSteps = (fileTotal > 0 || isDone) ? STEPS : STEPS.slice(0, 2);
 
   return (
     <div style={{
@@ -39,17 +41,30 @@ export default function SubmissionProgress({ step, fileIndex = 0, fileTotal = 0,
         <div style={{
           width: 48, height: 48,
           borderRadius: "50%",
-          background: "var(--purple-dim, rgba(139,92,246,0.12))",
+          background: isDone
+            ? "rgba(34,197,94,0.12)"
+            : "var(--purple-dim, rgba(139,92,246,0.12))",
           display: "flex", alignItems: "center", justifyContent: "center",
           margin: "0 auto 14px",
+          transition: "background 0.4s ease",
         }}>
-          <span className="batch-gen-spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
+          {isDone ? (
+            <Check size={22} color="#22c55e" strokeWidth={2.5} />
+          ) : (
+            <span className="batch-gen-spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
+          )}
         </div>
-        <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "var(--text)" }}>
-          Submitting to Monday.com
+        <p style={{
+          margin: 0,
+          fontWeight: 700,
+          fontSize: "1rem",
+          color: isDone ? "#22c55e" : "var(--text)",
+          transition: "color 0.3s ease",
+        }}>
+          {isDone ? "Task submitted!" : "Submitting to Monday.com"}
         </p>
         <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-          Please don't close this tab
+          {isDone ? "Taking you to the summary…" : "Please don't close this tab"}
         </p>
       </div>
 
@@ -57,10 +72,10 @@ export default function SubmissionProgress({ step, fileIndex = 0, fileTotal = 0,
       <div style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 0 }}>
         {visibleSteps.map((s, i) => {
           const sIdx = STEP_ORDER.indexOf(s.key);
-          const isDone    = sIdx < currentIdx;
-          const isActive  = sIdx === currentIdx;
-          const isPending = sIdx > currentIdx;
-          const isLast    = i === visibleSteps.length - 1;
+          const isStepDone  = sIdx < currentIdx;
+          const isActive    = sIdx === currentIdx;
+          const isPending   = sIdx > currentIdx;
+          const isLast      = i === visibleSteps.length - 1;
 
           // Build the label — files step shows progress details
           let label = s.label;
@@ -74,30 +89,26 @@ export default function SubmissionProgress({ step, fileIndex = 0, fileTotal = 0,
 
           return (
             <div key={s.key}>
-              <div style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 14,
-              }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
                 {/* Icon */}
                 <div style={{
                   width: 28, height: 28,
                   borderRadius: "50%",
                   flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: isDone
+                  background: isStepDone
                     ? "var(--purple)"
                     : isActive
                       ? "rgba(139,92,246,0.12)"
                       : "var(--surface)",
-                  border: isDone
+                  border: isStepDone
                     ? "2px solid var(--purple)"
                     : isActive
                       ? "2px solid var(--purple)"
                       : "2px solid var(--border)",
                   transition: "all 0.3s ease",
                 }}>
-                  {isDone && <Check size={14} color="#fff" strokeWidth={2.5} />}
+                  {isStepDone && <Check size={14} color="#fff" strokeWidth={2.5} />}
                   {isActive && (
                     <span style={{
                       width: 12, height: 12,
@@ -141,7 +152,7 @@ export default function SubmissionProgress({ step, fileIndex = 0, fileTotal = 0,
               {!isLast && (
                 <div style={{
                   width: 2, height: 20,
-                  background: isDone ? "var(--purple)" : "var(--border)",
+                  background: isStepDone ? "var(--purple)" : "var(--border)",
                   marginLeft: 13,
                   marginTop: 2,
                   marginBottom: 2,
