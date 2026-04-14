@@ -148,6 +148,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
   const [editingBrief, setEditingBrief] = useState(null); // null = not yet loaded
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [wednesdayOpen, setWednesdayOpen] = useState(false);
+  const [fileUploadWarning, setFileUploadWarning] = useState(null);
   // Success state: null = not submitted yet, { url, isBatch } = done
   const [successState, setSuccessState] = useState(null);
 
@@ -277,6 +278,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       if (itemId && taskFiles) {
         const entryFiles = taskFiles[entry.id] ?? {};
         const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
+        const failedFiles = [];
         for (const field of fileFields) {
           const fileList = entryFiles[field.key];
           if (!fileList || fileList.length === 0) continue;
@@ -284,9 +286,15 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
             try {
               await uploadFileToMonday(itemId, field.mondayColumnId, file);
             } catch (e) {
-              console.warn("[Review] File upload failed (item was created):", e.message);
+              console.error("[Review] File upload failed:", e.message);
+              failedFiles.push(file.name);
             }
           }
+        }
+        if (failedFiles.length > 0) {
+          setFileUploadWarning(
+            `⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`
+          );
         }
         onFilesUploaded?.(entry.id);
       }
@@ -301,7 +309,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
 
       // Show success card for single-task flow
       if (!isBatchMode) {
-        setSuccessState({ url: itemUrl, warning: submitWarning });
+        setSuccessState({ url: itemUrl, warning: fileUploadWarning ?? submitWarning });
       }
 
       // In batch mode: update query params but don't show success yet until submitAll is done
