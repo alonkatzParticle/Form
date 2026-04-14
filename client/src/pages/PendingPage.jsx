@@ -211,6 +211,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       if (itemId && taskFiles) {
         const entryFiles = taskFiles[entry.id] ?? {};
         const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
+        const failedFiles = [];
         for (const field of fileFields) {
           const fileList = entryFiles[field.key];
           if (!fileList || fileList.length === 0) continue;
@@ -218,9 +219,13 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
             try {
               await uploadFileToMonday(itemId, field.mondayColumnId, file);
             } catch (e) {
-              console.warn("[Pending] File upload failed (item was created):", e.message);
+              console.error("[Pending] File upload failed:", e.message);
+              failedFiles.push(file.name);
             }
           }
+        }
+        if (failedFiles.length > 0) {
+          alert(`⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`);
         }
         onFilesUploaded?.(entry.id);
       }

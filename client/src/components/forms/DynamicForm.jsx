@@ -1062,17 +1062,12 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     setSubmitError(null);
   }, [board.id]);
 
-  // Sanitize AI/Wednesday result — ensure multiselect and people fields always stay arrays.
-  // The AI can return null, "", or a string for these fields, which would crash .map() in the UI.
+  // Sanitize AI/Wednesday result — ensure multiselect and people fields always stay arrays,
+  // and validate dropdown values against the options list.
+  // NOTE: step1 protection is handled separately in each caller, not here.
   function sanitizeResult(result, prev) {
     const sanitized = { ...result };
     for (const field of board.fields) {
-      // Step 1 fields (department, product, type, platform, etc.) are user-chosen
-      // and must NEVER be overwritten by AI results. Preserve the existing value.
-      if (field.step1 && sanitized[field.key] !== undefined) {
-        sanitized[field.key] = prev[field.key];
-        continue;
-      }
       // Arrays must stay arrays
       if (field.type === "multiselect" || field.type === "people" || field.type === "hooks") {
         if (!Array.isArray(sanitized[field.key])) {
@@ -1091,14 +1086,27 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     return sanitized;
   }
 
-  // Merge AI result into form state when it arrives, and autosave it
+  // Collect the keys of all step1 fields for quick lookup
+  const step1Keys = board.fields.filter(f => f.step1).map(f => f.key);
+
+  // Returns a copy of `merged` with all step1 fields restored to their values in `prev`.
+  // Used after applying AI/Wednesday results to ensure user-chosen values are never clobbered.
+  function preserveStep1(merged, prev) {
+    const out = { ...merged };
+    for (const key of step1Keys) {
+      if (prev[key] !== undefined) out[key] = prev[key];
+    }
+    return out;
+  }
+
+  // Merge AI result into form state when it arrives, and autosave it.
+  // Step1 fields are explicitly restored after merge so AI can never clobber them.
   useEffect(() => {
     if (aiResult) {
-      // Extract and clear the server-side duration estimate before merging into form state
       const { _estimatedDuration, ...fields } = aiResult;
       if (_estimatedDuration !== undefined) setAiDuration(_estimatedDuration);
       setTask((prev) => {
-        const updated = { ...prev, ...sanitizeResult(fields, prev) };
+        const updated = preserveStep1({ ...prev, ...sanitizeResult(fields, prev) }, prev);
         try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
         return updated;
       });
@@ -1106,11 +1114,11 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     }
   }, [aiResult]);
 
-  // Apply Wednesday's field changes (selective update)
+  // Apply Wednesday's field changes — step1 fields are restored after merge.
   useEffect(() => {
     if (wednesdayResult) {
       setTask((prev) => {
-        const updated = { ...prev, ...sanitizeResult(wednesdayResult, prev) };
+        const updated = preserveStep1({ ...prev, ...sanitizeResult(wednesdayResult, prev) }, prev);
         try { localStorage.setItem(DRAFT_KEY, JSON.stringify(updated)); } catch {}
         return updated;
       });
@@ -1118,11 +1126,12 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
     }
   }, [wednesdayResult]);
 
-  // Apply Step 1 context field values whenever they change
+  // Apply Step 1 context field values whenever they change.
+  // Applied directly (no sanitizeResult) — these are always valid user-selected values.
   useEffect(() => {
     if (!step1Values || Object.keys(step1Values).length === 0) return;
     setTask((prev) => {
-      const merged = { ...prev, ...sanitizeResult(step1Values, prev) };
+      const merged = { ...prev, ...step1Values };
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify(merged)); } catch {}
       return merged;
     });
@@ -1159,10 +1168,14 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
 
   async function handleReview(e) {
     e.preventDefault();
+    // Safety-merge step1Values into the task snapshot so step1 fields are
+    // always present even if the state sync had a timing gap.
+    const fullTask = step1Values ? { ...task, ...step1Values } : { ...task };
+
     const missingField = board.fields
-      .filter((f) => f.required && isVisible(f, task, hiddenFieldKeys))
+      .filter((f) => f.required && isVisible(f, fullTask, hiddenFieldKeys))
       .find((f) => {
-        const val = task[f.key];
+        const val = fullTask[f.key];
         if (Array.isArray(val)) return val.length === 0;
         return !val && val !== 0;
       });
@@ -1171,14 +1184,14 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
       return;
     }
     setSubmitError(null);
-    const itemName = buildAutoName(board, task);
+    const itemName = buildAutoName(board, fullTask);
 
     setGeneratingBrief(true);
     try {
-      const { html: briefHtml, finalEstimate } = await generateBriefHtml(board, task, users);
+      const { html: briefHtml, finalEstimate } = await generateBriefHtml(board, fullTask, users);
       const taskWithEstimate = finalEstimate
-        ? { ...task, _elevenLabsEstimate: finalEstimate }
-        : task;
+        ? { ...fullTask, _elevenLabsEstimate: finalEstimate }
+        : fullTask;
       const columnValues = buildColumnValues(board.fields, taskWithEstimate);
       onReview({ task: taskWithEstimate, itemName, columnValues, briefHtml });
     } finally {
