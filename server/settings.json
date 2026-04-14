@@ -417,6 +417,7 @@
             "Gentleman Today",
             "Other"
           ],
+          "showWhen": { "field": "department", "excludes": "Website" },
           "step1": true
         },
         {
