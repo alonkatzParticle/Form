@@ -23,12 +23,17 @@ const router = express.Router();
 // callbacks in a single endpoint.
 router.post("/blob-token", async (req, res) => {
   try {
+    // On Vercel, SSL is terminated at the edge — req.protocol is 'http'
+    // but the callbackUrl must be HTTPS or Vercel Blob will fail the callback.
+    const proto = req.headers["x-forwarded-proto"] || req.protocol;
+    const host  = req.headers["x-forwarded-host"]  || req.get("host");
+
     const jsonResponse = await handleUpload({
       body: req.body,
       request: {
         // handleUpload needs a headers.get() interface (Web API style)
         headers: { get: (h) => req.headers[h.toLowerCase()] ?? null },
-        url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+        url: `${proto}://${host}${req.originalUrl}`,
       },
       onBeforeGenerateToken: async (_pathname) => ({
         allowedContentTypes: [
@@ -50,18 +55,21 @@ router.post("/blob-token", async (req, res) => {
 
 // Fetches a Vercel Blob URL with exponential backoff retry.
 // Needed because the CDN edge node serving the serverless function may not
-// have the blob immediately after upload (propagation race condition).
-async function fetchBlobWithRetry(url, maxRetries = 4, baseDelayMs = 500) {
+// have the blob immediately after upload (propagation race / callback timing).
+async function fetchBlobWithRetry(url, maxRetries = 6, baseDelayMs = 200) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const res = await fetch(url);
-    if (res.ok) return res;
+    if (res.ok) {
+      console.log(`[blob-forward] Blob available on attempt ${attempt}`);
+      return res;
+    }
     if (res.status === 404 && attempt < maxRetries) {
-      const delay = baseDelayMs * Math.pow(2, attempt - 1); // 500, 1000, 2000, 4000ms
-      console.warn(`[blob-forward] 404 on attempt ${attempt}, retrying in ${delay}ms…`);
+      const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), 8000); // 200,400,800,1600,3200,8000ms
+      console.warn(`[blob-forward] 404 on attempt ${attempt}/${maxRetries}, retrying in ${delay}ms…`);
       await new Promise((r) => setTimeout(r, delay));
       continue;
     }
-    throw new Error(`Failed to fetch blob: ${res.status}`);
+    throw new Error(`Failed to fetch blob after ${attempt} attempt(s): ${res.status}`);
   }
 }
 

@@ -278,7 +278,8 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       }
 
       // ── Step: uploading files ────────────────────────────────────────────────
-      let submittedFileCount = 0; // tracked for the done state
+      let submittedFileCount = 0;
+      let filesActuallyFailed = false;
       if (itemId && taskFiles) {
         const entryFiles = taskFiles[entry.id] ?? {};
         const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
@@ -305,6 +306,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
             }
           }
           if (failedFiles.length > 0) {
+            filesActuallyFailed = true;
             setFileUploadWarning(
               `⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`
             );
@@ -313,9 +315,9 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
         onFilesUploaded?.(entry.id);
       }
 
-      // Show all-done state briefly before transitioning to success card
-      setSubmitProgress({ step: "done", fileIndex: 0, fileTotal: submittedFileCount, fileName: "" });
-      await new Promise((r) => setTimeout(r, 1000));
+      // Show all-done state briefly (X on files step if any failed)
+      setSubmitProgress({ step: "done", fileIndex: 0, fileTotal: submittedFileCount, fileName: "", filesFailed: filesActuallyFailed });
+      await new Promise((r) => setTimeout(r, filesActuallyFailed ? 2000 : 1000));
       setSubmitProgress(null);
 
       // Archive to submitted history before removing from pending
@@ -528,6 +530,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                       fileIndex={submitProgress.fileIndex}
                       fileTotal={submitProgress.fileTotal}
                       fileName={submitProgress.fileName}
+                      filesFailed={submitProgress.filesFailed ?? false}
                     />
                   )}
                   {selected.task && selected.status !== "submitting" && (
