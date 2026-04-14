@@ -53,24 +53,35 @@ router.post("/blob-token", async (req, res) => {
   }
 });
 
-// Fetches a Vercel Blob URL with exponential backoff retry.
-// Needed because the CDN edge node serving the serverless function may not
-// have the blob immediately after upload (propagation race / callback timing).
-async function fetchBlobWithRetry(url, maxRetries = 6, baseDelayMs = 200) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const res = await fetch(url);
-    if (res.ok) {
-      console.log(`[blob-forward] Blob available on attempt ${attempt}`);
-      return res;
-    }
-    if (res.status === 404 && attempt < maxRetries) {
-      const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), 8000); // 200,400,800,1600,3200,8000ms
-      console.warn(`[blob-forward] 404 on attempt ${attempt}/${maxRetries}, retrying in ${delay}ms…`);
-      await new Promise((r) => setTimeout(r, delay));
-      continue;
-    }
-    throw new Error(`Failed to fetch blob after ${attempt} attempt(s): ${res.status}`);
+// Fetches a Vercel Blob by its public URL.
+//
+// KEY INSIGHT: When using handleUpload client uploads, the blob may be in a
+// "pending" state on the public CDN until the upload callback is confirmed.
+// Fetching with the BLOB_READ_WRITE_TOKEN Authorization header hits Vercel's
+// ORIGIN storage API directly — this always works regardless of CDN state
+// or callback timing.
+async function fetchBlobAuthenticated(url) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  // First attempt: authenticated origin fetch (most reliable)
+  console.log(`[blob-forward] Fetching blob (authenticated): ${url}`);
+  const res = await fetch(url, { headers });
+  if (res.ok) {
+    console.log(`[blob-forward] Blob fetched OK (${res.status}), size: ${res.headers.get("content-length") ?? "unknown"} bytes`);
+    return res;
   }
+  console.warn(`[blob-forward] Authenticated fetch got ${res.status}, falling back to unauthenticated…`);
+
+  // Second attempt: unauthenticated (in case token was wrong/absent)
+  const res2 = await fetch(url);
+  if (res2.ok) {
+    console.log(`[blob-forward] Unauthenticated fetch succeeded (${res2.status})`);
+    return res2;
+  }
+
+  throw new Error(`Failed to fetch blob: authenticated=${res.status}, unauthenticated=${res2.status} (url=${url})`);
 }
 
 // ── Vercel Blob → Monday forward ─────────────────────────────────────────────
@@ -87,9 +98,8 @@ router.post("/blob-forward", async (req, res) => {
   const apiKey = req.headers["x-monday-api-key"] || null;
 
   try {
-    // 1. Fetch the blob — retry up to 4× to handle CDN propagation delays
-    console.log(`[blob-forward] Fetching blob: ${blobUrl}`);
-    const blobRes = await fetchBlobWithRetry(blobUrl);
+    // 1. Fetch the blob using authenticated origin API (bypasses CDN pending state)
+    const blobRes = await fetchBlobAuthenticated(blobUrl);
     const buffer = Buffer.from(await blobRes.arrayBuffer());
     console.log(`[blob-forward] Fetched ${buffer.length} bytes, forwarding to Monday…`);
 
