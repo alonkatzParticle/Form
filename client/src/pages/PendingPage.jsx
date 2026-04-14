@@ -103,13 +103,18 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
   const [wednesdayOpen, setWednesdayOpen] = useState(false);
   const [successState, setSuccessState] = useState(null);
   
-  // Board isolation for Queue (Defaults to first available board)
+  // Board isolation for Queue. Auto-selects the first board that has tasks.
+  // Falls back to first available board if no tasks are queued yet.
   const [activeBoardId, setActiveBoardId] = usePersistedState("pending_board_filter", "");
   useEffect(() => {
-    if (!activeBoardId && boards?.length > 0) {
-      setActiveBoardId(boards[0].id);
+    if (!boards?.length) return;
+    const boardsWithTasks = boards.filter(b => tasks.some(t => t.boardType === b.id));
+    const target = boardsWithTasks.length > 0 ? boardsWithTasks[0] : boards[0];
+    // Only switch if the current selection has no tasks (or is unset)
+    if (!activeBoardId || !tasks.some(t => t.boardType === activeBoardId)) {
+      setActiveBoardId(target.id);
     }
-  }, [boards, activeBoardId, setActiveBoardId]);
+  }, [boards, tasks, activeBoardId, setActiveBoardId]);
 
   const visibleTasks = tasks
     .filter(t => t.boardType === activeBoardId)
