@@ -48,6 +48,23 @@ router.post("/blob-token", async (req, res) => {
   }
 });
 
+// Fetches a Vercel Blob URL with exponential backoff retry.
+// Needed because the CDN edge node serving the serverless function may not
+// have the blob immediately after upload (propagation race condition).
+async function fetchBlobWithRetry(url, maxRetries = 4, baseDelayMs = 500) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const res = await fetch(url);
+    if (res.ok) return res;
+    if (res.status === 404 && attempt < maxRetries) {
+      const delay = baseDelayMs * Math.pow(2, attempt - 1); // 500, 1000, 2000, 4000ms
+      console.warn(`[blob-forward] 404 on attempt ${attempt}, retrying in ${delay}ms…`);
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
+    throw new Error(`Failed to fetch blob: ${res.status}`);
+  }
+}
+
 // ── Vercel Blob → Monday forward ─────────────────────────────────────────────
 // After the browser uploads a file to Vercel Blob, it calls this endpoint.
 // We fetch the blob (server-to-server, fast), send it to Monday via
@@ -62,10 +79,11 @@ router.post("/blob-forward", async (req, res) => {
   const apiKey = req.headers["x-monday-api-key"] || null;
 
   try {
-    // 1. Fetch the blob (Vercel datacenter → Vercel Blob, very fast)
-    const blobRes = await fetch(blobUrl);
-    if (!blobRes.ok) throw new Error(`Failed to fetch blob: ${blobRes.status}`);
+    // 1. Fetch the blob — retry up to 4× to handle CDN propagation delays
+    console.log(`[blob-forward] Fetching blob: ${blobUrl}`);
+    const blobRes = await fetchBlobWithRetry(blobUrl);
     const buffer = Buffer.from(await blobRes.arrayBuffer());
+    console.log(`[blob-forward] Fetched ${buffer.length} bytes, forwarding to Monday…`);
 
     // 2. Upload to Monday (server-to-server, no CORS, no body limit)
     await uploadFileToColumn(itemId, columnId, buffer, fileName, mimeType, apiKey);
