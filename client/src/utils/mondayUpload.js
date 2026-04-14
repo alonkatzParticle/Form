@@ -1,86 +1,72 @@
 /**
- * Direct browser-to-Monday file upload.
+ * File upload to Monday via Vercel Blob intermediary.
  *
- * Uploads a File object to a Monday.com file column without routing through
- * the server, bypassing Vercel's 4.5 MB serverless request body limit.
+ * Problem solved: Monday's /v2/file API does not send CORS headers, so browsers
+ * can never call it directly. Vercel serverless functions have a 4.5 MB body
+ * limit, so we can't proxy through them either.
  *
- * Uses the same multipart format as the server-side uploadFileToColumn:
- *   - "query"   → the GraphQL mutation
- *   - "map"     → maps the "file" variable to the multipart part
- *   - "file"    → the actual binary file
+ * Solution — 3-step flow:
+ *   1. Browser requests a signed upload token from our server (blob-token)
+ *   2. Browser uploads the file directly to Vercel Blob (CORS supported, no cap)
+ *   3. Browser tells our server the blobUrl; server fetches it and forwards
+ *      to Monday (server-to-server, no CORS issue, no body limit), then
+ *      deletes the blob.
  *
- * Note: API-Version header is intentionally omitted from the file upload
- * endpoint because it can cause CORS preflight failures.
+ * Effective limit: 100 MB per file (enforced client-side and in blob-token).
  */
 
+import { upload } from "@vercel/blob/client";
 import axios from "axios";
 
-let _cachedToken = null;
-
-async function getUploadToken() {
-  if (_cachedToken) return _cachedToken;
-  const { data } = await axios.get("/api/monday/upload-token");
-  _cachedToken = data.token;
-  return _cachedToken;
-}
+const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
 
 /**
  * Upload a single File to a Monday item's file column.
  * @param {string|number} itemId   - Monday item ID
  * @param {string}        columnId - Monday column ID (e.g. "files")
  * @param {File}          file     - Browser File object
- * @returns {Promise<object>}      - Monday API response data
+ * @returns {Promise<void>}
  */
 export async function uploadFileToMonday(itemId, columnId, file) {
-  const token = await getUploadToken();
+  // Client-side size guard — show a clear error before any network call
+  if (file.size > MAX_FILE_BYTES) {
+    throw new Error(
+      `"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB — ` +
+      `files over 100 MB cannot be uploaded. Please attach it directly in Monday.`
+    );
+  }
 
-  const mutation = `
-    mutation ($file: File!) {
-      add_file_to_column(item_id: ${itemId}, column_id: "${columnId}", file: $file) {
-        id
-      }
-    }
-  `;
-
-  // Use the same multipart format as the server (GraphQL multipart spec)
-  const fd = new FormData();
-  fd.append("query", mutation);
-  fd.append("map", JSON.stringify({ file: ["variables.file"] }));
-  fd.append("file", file, file.name);
-
-  let response;
+  // Step 1 + 2: Upload directly from browser to Vercel Blob.
+  // The `upload()` helper handles the token handshake with /api/monday/blob-token
+  // internally and then PUTs the file straight to Vercel's CDN (CORS-safe).
+  let blobUrl;
   try {
-    response = await fetch("https://api.monday.com/v2/file", {
-      method: "POST",
-      headers: {
-        // Only Authorization — no API-Version, no Content-Type
-        // (Content-Type is set automatically by fetch for FormData with the boundary)
-        Authorization: token,
-      },
-      body: fd,
+    const blob = await upload(file.name, file, {
+      access: "public",
+      handleUploadUrl: "/api/monday/blob-token",
     });
-  } catch (networkErr) {
-    // Likely a CORS error — the browser blocked the request
+    blobUrl = blob.url;
+  } catch (err) {
     throw new Error(
-      `Monday file upload blocked (possible CORS issue). File: "${file.name}". ` +
-      `Error: ${networkErr.message}`
+      `Failed to upload "${file.name}" to staging storage: ${err.message}`
     );
   }
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => "(unreadable body)");
+  // Step 3: Tell the server to forward the blob to Monday and clean up.
+  // The server fetches from Vercel Blob (datacenter-speed) and calls
+  // add_file_to_column, then deletes the blob.
+  try {
+    await axios.post("/api/monday/blob-forward", {
+      blobUrl,
+      itemId: String(itemId),
+      columnId,
+      fileName: file.name,
+      mimeType: file.type || "application/octet-stream",
+    });
+  } catch (err) {
+    const detail = err.response?.data?.error ?? err.message;
     throw new Error(
-      `Monday file upload failed (HTTP ${response.status}). ` +
-      `File: "${file.name}". Response: ${body}`
+      `"${file.name}" reached staging but Monday rejected it: ${detail}`
     );
   }
-
-  const json = await response.json();
-  if (json.errors?.length) {
-    throw new Error(
-      `Monday rejected the file upload for "${file.name}": ${json.errors.map(e => e.message).join("; ")}`
-    );
-  }
-
-  return json.data;
 }

@@ -1,11 +1,15 @@
 // Monday.com API routes.
-// POST /api/monday/create-item  — create a new board item
-// GET  /api/monday/users        — fetch all users for dropdowns
-// GET  /api/monday/examples     — fetch recent items for AI context
-// GET  /api/monday/columns      — fetch board columns (for setup/debugging)
+// POST /api/monday/create-item   — create a new board item
+// GET  /api/monday/users         — fetch all users for dropdowns
+// GET  /api/monday/examples      — fetch recent items for AI context
+// GET  /api/monday/columns       — fetch board columns (for setup/debugging)
+// POST /api/monday/blob-token    — generate Vercel Blob client upload token
+// POST /api/monday/blob-forward  — fetch blob and upload to Monday, then delete blob
 
 import express from "express";
 import multer from "multer";
+import { handleUpload } from "@vercel/blob/client";
+import { del } from "@vercel/blob";
 import { createItem, createUpdate, getMe, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
 import { getSettings } from "../services/settingsService.js";
 
@@ -13,10 +17,72 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
-// Returns the effective Monday API key so the browser can upload files
-// directly to Monday's API, bypassing Vercel's 4.5 MB request limit.
-// The user's personal key (from x-monday-api-key header) takes priority;
-// falls back to the shared env key.
+// ── Vercel Blob upload token ─────────────────────────────────────────────────
+// Called by the browser to get a signed token for direct Vercel Blob upload.
+// Uses handleUpload which handles both token generation and upload-completed
+// callbacks in a single endpoint.
+router.post("/blob-token", async (req, res) => {
+  try {
+    const jsonResponse = await handleUpload({
+      body: req.body,
+      request: {
+        // handleUpload needs a headers.get() interface (Web API style)
+        headers: { get: (h) => req.headers[h.toLowerCase()] ?? null },
+        url: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+      },
+      onBeforeGenerateToken: async (_pathname) => ({
+        allowedContentTypes: [
+          "image/*", "video/*", "application/pdf",
+          "application/zip", "application/x-zip-compressed",
+        ],
+        maximumSizeInBytes: 100 * 1024 * 1024, // 100 MB client-side cap
+      }),
+      onUploadCompleted: async () => {
+        // Nothing to do — blob-forward handles Monday upload and cleanup
+      },
+    });
+    res.json(jsonResponse);
+  } catch (err) {
+    console.error("[blob-token]", err);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── Vercel Blob → Monday forward ─────────────────────────────────────────────
+// After the browser uploads a file to Vercel Blob, it calls this endpoint.
+// We fetch the blob (server-to-server, fast), send it to Monday via
+// add_file_to_column, then delete the blob (cleanup).
+// Body: { blobUrl, itemId, columnId, fileName, mimeType, mondayApiKey? }
+router.post("/blob-forward", async (req, res) => {
+  const { blobUrl, itemId, columnId, fileName, mimeType } = req.body;
+  if (!blobUrl || !itemId || !columnId) {
+    return res.status(400).json({ error: "blobUrl, itemId, and columnId are required" });
+  }
+
+  const apiKey = req.headers["x-monday-api-key"] || null;
+
+  try {
+    // 1. Fetch the blob (Vercel datacenter → Vercel Blob, very fast)
+    const blobRes = await fetch(blobUrl);
+    if (!blobRes.ok) throw new Error(`Failed to fetch blob: ${blobRes.status}`);
+    const buffer = Buffer.from(await blobRes.arrayBuffer());
+
+    // 2. Upload to Monday (server-to-server, no CORS, no body limit)
+    await uploadFileToColumn(itemId, columnId, buffer, fileName, mimeType, apiKey);
+
+    // 3. Delete the blob (fire-and-forget — don't fail the request on cleanup error)
+    del(blobUrl).catch((e) => console.warn("[blob-forward] del failed:", e.message));
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[blob-forward]", err);
+    // Attempt cleanup even on failure
+    del(blobUrl).catch(() => {});
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Legacy: direct Monday API key for old client upload (kept for backward compat)
 router.get("/upload-token", (req, res) => {
   const key = req.headers["x-monday-api-key"] || process.env.MONDAY_API_KEY || null;
   if (!key) return res.status(503).json({ error: "No Monday API key configured" });
