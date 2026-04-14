@@ -21,19 +21,34 @@ const router = express.Router();
 // Called by the browser to get a signed token for direct Vercel Blob upload.
 // Uses handleUpload which handles both token generation and upload-completed
 // callbacks in a single endpoint.
+//
+// CRITICAL (@vercel/blob v2.x): In v2.x, handleUpload determines the callbackUrl
+// from Vercel system env vars (VERCEL_PROJECT_PRODUCTION_URL), NOT from the
+// `request.url` we pass. If that env var is absent, callbackUrl is `undefined`
+// → blob stays in "pending" state → CDN always returns 404.
+//
+// Fix: return `callbackUrl` explicitly from onBeforeGenerateToken. v2.x
+// will use this value directly, bypassing env-var detection entirely.
 router.post("/blob-token", async (req, res) => {
   try {
-    // On Vercel, SSL is terminated at the edge — req.protocol is 'http'
-    // but the callbackUrl must be HTTPS or Vercel Blob will fail the callback.
-    const proto = req.headers["x-forwarded-proto"] || req.protocol;
-    const host  = req.headers["x-forwarded-host"]  || req.get("host");
+    // Build the absolute callback URL that Vercel Blob will POST to after upload.
+    // Priority: x-forwarded-host (real hostname behind Vercel's proxy)
+    //           → VERCEL_PROJECT_PRODUCTION_URL (Vercel system env)
+    //           → VERCEL_URL (deployment URL)
+    //           → request Host header (local dev)
+    const host =
+      req.headers["x-forwarded-host"]?.split(",")[0].trim() ||
+      process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+      process.env.VERCEL_URL ||
+      req.get("host");
+    const callbackUrl = `https://${host}${req.originalUrl}`;
+    console.log("[blob-token] Using callbackUrl:", callbackUrl);
 
     const jsonResponse = await handleUpload({
       body: req.body,
       request: {
-        // handleUpload needs a headers.get() interface (Web API style)
         headers: { get: (h) => req.headers[h.toLowerCase()] ?? null },
-        url: `${proto}://${host}${req.originalUrl}`,
+        url: callbackUrl, // path extraction in v2.x
       },
       onBeforeGenerateToken: async (_pathname) => ({
         allowedContentTypes: [
@@ -41,6 +56,8 @@ router.post("/blob-token", async (req, res) => {
           "application/zip", "application/x-zip-compressed",
         ],
         maximumSizeInBytes: 100 * 1024 * 1024, // 100 MB client-side cap
+        addRandomSuffix: true,
+        callbackUrl, // ← v2.x: explicit override so the blob is confirmed correctly
       }),
       onUploadCompleted: async () => {
         // Nothing to do — blob-forward handles Monday upload and cleanup
