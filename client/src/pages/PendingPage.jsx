@@ -4,6 +4,7 @@ import { uploadFileToMonday } from "../utils/mondayUpload.js";
 import { Field, renderInput, isVisible, buildAutoName, buildColumnValues } from "../components/forms/DynamicForm.jsx";
 import TaskFormSections from "../components/forms/TaskFormSections.jsx";
 import InlineDurationEstimator from "../components/InlineDurationEstimator.jsx";
+import SubmissionProgress from "../components/SubmissionProgress.jsx";
 
 import WednesdayPanel from "../components/WednesdayPanel.jsx";
 import { useMonday } from "../hooks/useMonday.js";
@@ -102,6 +103,8 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [wednesdayOpen, setWednesdayOpen] = useState(false);
   const [successState, setSuccessState] = useState(null);
+  const [submitProgress, setSubmitProgress] = useState(null);
+  // null | { step: 'creating'|'brief'|'files', fileIndex, fileTotal, fileName }
   
   // Board isolation for Queue. Auto-selects the first board that has tasks.
   // Falls back to first available board if no tasks are queued yet.
@@ -184,6 +187,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
     if (!entry || entry.status === "submitting" || !entry.task) return;
     
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "submitting" } : t));
+    setSubmitProgress({ step: "creating", fileIndex: 0, fileTotal: 0, fileName: "" });
     const briefToSubmit = id === selectedId ? editingBrief : (entry.editedBrief ?? entry.brief);
     
     try {
@@ -203,6 +207,8 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       if (!itemId) throw new Error("Monday returned no item ID — task kept in queue");
       const itemUrl = createRes.data?.url ?? null;
 
+      // ── Step: posting brief
+      setSubmitProgress({ step: "brief", fileIndex: 0, fileTotal: 0, fileName: "" });
       // Non-fatal: item is already created — don't block task removal on these
       if (itemId && briefToSubmit) {
         try {
@@ -212,15 +218,22 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
         }
       }
 
-      // Non-fatal: upload files if any
+      // ── Step: uploading files
       if (itemId && taskFiles) {
         const entryFiles = taskFiles[entry.id] ?? {};
         const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
-        const failedFiles = [];
+        const allFiles = [];
         for (const field of fileFields) {
-          const fileList = entryFiles[field.key];
-          if (!fileList || fileList.length === 0) continue;
-          for (const file of Array.from(fileList)) {
+          for (const file of Array.from(entryFiles[field.key] ?? [])) {
+            allFiles.push({ file, field });
+          }
+        }
+        if (allFiles.length > 0) {
+          setSubmitProgress({ step: "files", fileIndex: 0, fileTotal: allFiles.length, fileName: "" });
+          const failedFiles = [];
+          for (let i = 0; i < allFiles.length; i++) {
+            const { file, field } = allFiles[i];
+            setSubmitProgress({ step: "files", fileIndex: i + 1, fileTotal: allFiles.length, fileName: file.name });
             try {
               await uploadFileToMonday(itemId, field.mondayColumnId, file);
             } catch (e) {
@@ -228,13 +241,14 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
               failedFiles.push(file.name);
             }
           }
-        }
-        if (failedFiles.length > 0) {
-          alert(`⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`);
+          if (failedFiles.length > 0) {
+            alert(`⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`);
+          }
         }
         onFilesUploaded?.(entry.id);
       }
 
+      setSubmitProgress(null);
       // Archive to submitted history
       if (onTaskSubmitted) {
         onTaskSubmitted({ ...entry, brief: briefToSubmit, mondayUrl: itemUrl });
@@ -251,6 +265,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       // Only reaches here if create-item itself failed (no item created yet)
       const msg = err.response?.data?.error || err.message || "Submission failed";
       console.error("[Pending] Submit error:", msg);
+      setSubmitProgress(null);
       setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "error", errorMsg: msg } : t));
     }
   }
@@ -418,6 +433,14 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
 
               <div className="batch-split-view" style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                 <div className="batch-split-left" style={{ flex: 1, overflowY: "auto", borderRight: "1px solid var(--border)" }}>
+                  {selected.task && selected.status === "submitting" && submitProgress && (
+                    <SubmissionProgress
+                      step={submitProgress.step}
+                      fileIndex={submitProgress.fileIndex}
+                      fileTotal={submitProgress.fileTotal}
+                      fileName={submitProgress.fileName}
+                    />
+                  )}
                   {selected.task && selected.status !== "submitting" && (
                     <div key={selected.id} className="batch-form-wrapper" style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
                       <TaskFormSections
