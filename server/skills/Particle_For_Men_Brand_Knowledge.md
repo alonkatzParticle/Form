@@ -155,7 +155,8 @@ No. Particle Face Cream is completely absorbed into the skin. It leaves no sheen
 Men 35–65+, beginning to notice eye bags, wrinkles, dark spots, or dull skin. Men who want results without a complex multi-step routine. Suits all skin types.
 **Product URL:** https://www.particleformen.com/product/particle-face-cream/
 
-## Particle 43 Anti-Aging Shaving Gel
+## Shaving Gel
+*(Also marketed as: Particle 43 Anti-Aging Shaving Gel — always use "Shaving Gel" as the product field value)*
 
 Firm and tighten your skin with every shave in just 43 seconds.
 

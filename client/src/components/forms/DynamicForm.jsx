@@ -1067,6 +1067,12 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
   function sanitizeResult(result, prev) {
     const sanitized = { ...result };
     for (const field of board.fields) {
+      // Step 1 fields (department, product, type, platform, etc.) are user-chosen
+      // and must NEVER be overwritten by AI results. Preserve the existing value.
+      if (field.step1 && sanitized[field.key] !== undefined) {
+        sanitized[field.key] = prev[field.key];
+        continue;
+      }
       // Arrays must stay arrays
       if (field.type === "multiselect" || field.type === "people" || field.type === "hooks") {
         if (!Array.isArray(sanitized[field.key])) {
