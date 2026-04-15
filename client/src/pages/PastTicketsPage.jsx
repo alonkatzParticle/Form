@@ -270,20 +270,6 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
                         {formatTimeAgo(t.submittedAt ?? t.createdAt)}
                       </span>
                     </div>
-                    {t.mondayUrl && (
-                      <a
-                        href={t.mondayUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        title="Open in Monday.com"
-                        style={{ color: "var(--purple)", flexShrink: 0, padding: "2px 4px", opacity: 0.7, transition: "opacity 0.15s" }}
-                        onMouseOver={e => e.currentTarget.style.opacity = "1"}
-                        onMouseOut={e => e.currentTarget.style.opacity = "0.7"}
-                      >
-                        <ExternalLink size={13} />
-                      </a>
-                    )}
                   </li>
                 );
               })}
@@ -326,18 +312,23 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
                       href={selected.mondayUrl}
                       target="_blank"
                       rel="noreferrer"
+                      title="Open in Monday.com"
                       style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "10px 18px", borderRadius: "var(--radius-sm)",
-                        background: "var(--purple)", color: "#fff",
-                        textDecoration: "none", fontWeight: 600, fontSize: "0.88rem",
-                        flexShrink: 0, transition: "opacity 0.15s"
+                        display: "inline-flex", alignItems: "center", gap: 3,
+                        padding: "8px 12px", borderRadius: "var(--radius-sm)",
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid var(--border)",
+                        textDecoration: "none", flexShrink: 0,
+                        transition: "background 0.15s, transform 0.1s",
+                        cursor: "pointer",
                       }}
-                      onMouseOver={e => e.currentTarget.style.opacity = "0.85"}
-                      onMouseOut={e => e.currentTarget.style.opacity = "1"}
+                      onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "scale(1.05)"; }}
+                      onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = "scale(1)"; }}
                     >
-                      <ExternalLink size={14} />
-                      Open in Monday
+                      {/* Monday.com brand dots: coral · yellow · blue */}
+                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FF3D57", display: "block", flexShrink: 0 }} />
+                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FAB005", display: "block", flexShrink: 0 }} />
+                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#0073EA", display: "block", flexShrink: 0 }} />
                     </a>
                   )}
                   {onRequeue && (
