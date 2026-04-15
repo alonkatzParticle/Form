@@ -245,7 +245,10 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       const entryBoard = boards?.find((b) => b.id === entry.boardType);
       if (!entryBoard) throw new Error("Board config missing for type: " + entry.boardType);
 
-      const itemName = entry.task.manualName || buildAutoName(entryBoard, entry.task) || "Unnamed Task";
+      // Find whichever field is the item name (mondayValueType: "item_name") — differs per board.
+      // Video board uses "manualName", Design board uses "taskName".
+      const nameField = entryBoard.fields.find((f) => f.mondayValueType === "item_name");
+      const itemName = (nameField && entry.task[nameField.key]) || buildAutoName(entryBoard, entry.task) || "Unnamed Task";
       const columnValues = buildColumnValues(entryBoard.fields, entry.task);
 
       const createRes = await axios.post("/api/monday/create-item", {

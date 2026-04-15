@@ -55,6 +55,7 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
   const [selectedId, setSelectedId] = useState(submittedTasks?.[0]?.id ?? null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [boardFilter, setBoardFilter] = useState("all");
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -67,23 +68,26 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
   const activeBoard = boards?.find(b => b.id === selected?.boardType) ?? boards?.[0];
   const { users } = useMonday(activeBoard?.boardId);
 
-  // Sort newest first, then filter by search query
+  // Sort newest first, then filter by board type + search query
   const sorted = [...(submittedTasks ?? [])].sort((a, b) => (b.submittedAt ?? b.createdAt ?? 0) - (a.submittedAt ?? a.createdAt ?? 0));
+  const boardFiltered = boardFilter === "all" ? sorted : sorted.filter(t => t.boardType === boardFilter);
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
-    ? sorted.filter(t => {
+    ? boardFiltered.filter(t => {
         const board = boards?.find(b => b.id === t.boardType);
         const { title, sub } = getSidebarLabel(t, board);
         return (title + " " + sub).toLowerCase().includes(q);
       })
-    : sorted;
+    : boardFiltered;
 
-  // Auto-select first match when query changes
+  // Auto-select first match when query or board filter changes
   useEffect(() => {
     if (filtered.length > 0 && !filtered.find(t => t.id === selectedId)) {
       setSelectedId(filtered[0].id);
+    } else if (filtered.length === 0) {
+      setSelectedId(null);
     }
-  }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, boardFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleFields = activeBoard?.fields?.filter(f =>
     selected?.task && isVisible(f, selected.task) && f.type !== "file" && f.mondayValueType !== "item_name"
@@ -145,6 +149,39 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
             <div className="batch-sidebar-label" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span>Submitted ({filtered.length})</span>
             </div>
+
+            {/* Board type toggle */}
+            {(boards?.length ?? 0) > 1 && (
+              <div style={{ display: "flex", padding: "6px 12px 2px", gap: 4 }}>
+                {[{ id: "all", label: "All" }, ...(boards ?? [])].map(b => {
+                  const isActive = boardFilter === b.id;
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={() => setBoardFilter(b.id)}
+                      style={{
+                        flex: 1,
+                        padding: "5px 6px",
+                        fontSize: "0.75rem",
+                        fontWeight: isActive ? 600 : 400,
+                        color: isActive ? "var(--purple)" : "var(--text-muted)",
+                        background: "transparent",
+                        border: "none",
+                        borderBottom: isActive ? "2px solid var(--purple)" : "2px solid transparent",
+                        borderRadius: 0,
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {b.id === "all" ? "All" : b.label?.replace(" Projects - 2.0", "").replace(" Projects", "")}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Search input */}
             <div style={{ padding: "8px 12px 4px" }}>

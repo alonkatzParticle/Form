@@ -195,7 +195,9 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       if (!entryBoard) throw new Error("Board configuration not found for task type: " + entry.boardType);
 
       // Generate the expected Monday API payload format from the working task dict
-      const itemName = entry.task.manualName || buildAutoName(entryBoard, entry.task) || "Unnamed Task";
+      // Find whichever field is the item name (mondayValueType: "item_name") — differs per board.
+      const nameField = entryBoard.fields.find((f) => f.mondayValueType === "item_name");
+      const itemName = (nameField && entry.task[nameField.key]) || buildAutoName(entryBoard, entry.task) || "Unnamed Task";
       const columnValues = buildColumnValues(entryBoard.fields, entry.task);
 
       const createRes = await axios.post("/api/monday/create-item", {
