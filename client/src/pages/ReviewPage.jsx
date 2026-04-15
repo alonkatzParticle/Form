@@ -155,6 +155,17 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
   // Success state: null = not submitted yet, { url, isBatch } = done
   const [successState, setSuccessState] = useState(null);
 
+  // Clear stale session state when entering a new review (queryIds changed).
+  // ReviewPage is always mounted, so successState / warnings persist across navigations.
+  // Without this, returning from Home after submitting shows the old success card.
+  useEffect(() => {
+    if (queryIds.length > 0) {
+      setSuccessState(null);
+      setFileUploadWarning(null);
+      setSubmitProgress(null);
+    }
+  }, [queryIds]); // queryIds reference is stable between renders (useMemo on pathname)
+
   // Auto-select first task when review initializes or changes
   useEffect(() => {
     if (reviewTasks.length === 0 && queryIds.length > 0) {
