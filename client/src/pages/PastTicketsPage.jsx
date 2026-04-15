@@ -325,10 +325,10 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
                       onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "scale(1.05)"; }}
                       onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = "scale(1)"; }}
                     >
-                      {/* Monday.com brand dots: pink · yellow · green */}
-                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FF5AC4", display: "block", flexShrink: 0 }} />
-                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FFCB00", display: "block", flexShrink: 0 }} />
-                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#00C875", display: "block", flexShrink: 0 }} />
+                      {/* Monday.com status colors: green · yellow · red */}
+                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#00CA72", display: "block", flexShrink: 0 }} />
+                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FFCC00", display: "block", flexShrink: 0 }} />
+                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FB275D", display: "block", flexShrink: 0 }} />
                     </a>
                   )}
                   {onRequeue && (
