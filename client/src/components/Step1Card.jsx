@@ -9,6 +9,10 @@ import { Field, renderInput } from "./forms/DynamicForm.jsx";
 function meetsCondition(field, formTask) {
   if (!field?.showWhen) return true;
   const val = formTask[field.showWhen.field];
+  if (field.showWhen.excludes !== undefined) {
+    if (Array.isArray(val)) return !val.includes(field.showWhen.excludes);
+    return val !== field.showWhen.excludes;
+  }
   if (Array.isArray(val)) return val.includes(field.showWhen.includes);
   return val === field.showWhen.includes;
 }
