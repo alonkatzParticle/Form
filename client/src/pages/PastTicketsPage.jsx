@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isVisible, buildAutoName } from "../components/forms/DynamicForm.jsx";
 import { useMonday } from "../hooks/useMonday.js";
 import { ExternalLink, Clock, Inbox, RotateCcw } from "lucide-react";
@@ -54,6 +54,7 @@ function ReadOnlyField({ label, value }) {
 export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onRefresh }) {
   const [selectedId, setSelectedId] = useState(submittedTasks?.[0]?.id ?? null);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -66,8 +67,23 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
   const activeBoard = boards?.find(b => b.id === selected?.boardType) ?? boards?.[0];
   const { users } = useMonday(activeBoard?.boardId);
 
-  // Sort newest first
+  // Sort newest first, then filter by search query
   const sorted = [...(submittedTasks ?? [])].sort((a, b) => (b.submittedAt ?? b.createdAt ?? 0) - (a.submittedAt ?? a.createdAt ?? 0));
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = q
+    ? sorted.filter(t => {
+        const board = boards?.find(b => b.id === t.boardType);
+        const { title, sub } = getSidebarLabel(t, board);
+        return (title + " " + sub).toLowerCase().includes(q);
+      })
+    : sorted;
+
+  // Auto-select first match when query changes
+  useEffect(() => {
+    if (filtered.length > 0 && !filtered.find(t => t.id === selectedId)) {
+      setSelectedId(filtered[0].id);
+    }
+  }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleFields = activeBoard?.fields?.filter(f =>
     selected?.task && isVisible(f, selected.task) && f.type !== "file" && f.mondayValueType !== "item_name"
@@ -95,7 +111,9 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
           <span className="batch-header-title">Past Tickets</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 8 }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{sorted.length} submitted</span>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+            {filtered.length !== sorted.length ? `${filtered.length} of ${sorted.length}` : `${sorted.length}`} submitted
+          </span>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -124,9 +142,36 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
         <div className="batch-review">
           {/* Left sidebar list */}
           <aside className="batch-sidebar">
-            <div className="batch-sidebar-label">Submitted ({sorted.length})</div>
+            <div className="batch-sidebar-label" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>Submitted ({filtered.length})</span>
+            </div>
+
+            {/* Search input */}
+            <div style={{ padding: "8px 12px 4px" }}>
+              <input
+                type="search"
+                placeholder="Search tickets…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "7px 10px",
+                  borderRadius: "var(--radius-sm, 8px)",
+                  border: "1px solid var(--border)",
+                  background: "var(--bg)",
+                  color: "var(--text)",
+                  fontSize: "0.82rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  transition: "border-color 0.15s",
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = "var(--purple)"}
+                onBlur={e => e.currentTarget.style.borderColor = "var(--border)"}
+              />
+            </div>
+
             <ul className="batch-task-list">
-              {sorted.map(t => {
+              {filtered.map(t => {
                 const board = boards?.find(b => b.id === t.boardType);
                 const { title, sub } = getSidebarLabel(t, board);
                 return (
@@ -162,6 +207,13 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
                 );
               })}
             </ul>
+
+            {/* No-results message */}
+            {filtered.length === 0 && q && (
+              <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.82rem" }}>
+                No tickets match "{searchQuery}"
+              </div>
+            )}
           </aside>
 
           {/* Right detail pane */}
