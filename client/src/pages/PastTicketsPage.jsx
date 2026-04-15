@@ -19,16 +19,22 @@ function formatTimeAgo(ts) {
 function getSidebarLabel(t, board) {
   const task = t.task;
   if (!task) return { title: "Submitted Task", sub: "" };
-  const concept = task.conceptIdea || task.videoConceptLabel || task.manualName || "";
+
   const autoName = buildAutoName(board, task) || "";
-  if (concept && concept !== autoName) {
-    return { title: concept, sub: [task.product, task.type].filter(Boolean).join(" · ") };
+  if (autoName) {
+    const segments = autoName.split(" | ");
+    if (segments.length > 1) {
+      // Title = everything after the last "|" (the task name)
+      // Sub   = everything before it (brand · platform · type etc.)
+      return { title: segments[segments.length - 1], sub: segments.slice(0, -1).join(" · ") };
+    }
+    return { title: autoName, sub: "" };
   }
-  const segments = autoName.split(" | ");
-  if (segments.length > 1) {
-    return { title: segments[segments.length - 1], sub: segments.slice(0, -1).join(" · ") };
-  }
-  return { title: autoName || "Submitted Task", sub: [task.product, task.type].filter(Boolean).join(" · ") };
+
+  // Fallback: use the item_name field value directly
+  const nameField = board?.fields?.find(f => f.mondayValueType === "item_name");
+  const name = (nameField && task[nameField.key]) || "Submitted Task";
+  return { title: name, sub: [task.product, task.type, task.department].filter(Boolean).join(" · ") };
 }
 
 function ReadOnlyField({ label, value }) {
@@ -260,7 +266,15 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
                 <div className="batch-main-header">
                   <div style={{ flex: 1, minWidth: 0, marginRight: 16 }}>
                     <h2 style={{ margin: "0 0 4px", fontSize: "1.05rem", fontWeight: 600, color: "var(--text)" }}>
-                      {selected.task?.manualName ?? buildAutoName(activeBoard, selected.task)}
+                      {(() => {
+                        const autoName = buildAutoName(activeBoard, selected.task) || "";
+                        if (autoName) {
+                          const segs = autoName.split(" | ");
+                          return segs[segs.length - 1];
+                        }
+                        const nf = activeBoard?.fields?.find(f => f.mondayValueType === "item_name");
+                        return (nf && selected.task?.[nf.key]) || "Untitled Task";
+                      })()}
                     </h2>
                     <p className="batch-main-sub" style={{ paddingLeft: 0, margin: 0 }}>
                       Submitted {formatTimeAgo(selected.submittedAt ?? selected.createdAt)} · {activeBoard?.label ?? ""}
