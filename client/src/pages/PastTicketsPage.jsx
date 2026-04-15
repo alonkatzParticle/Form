@@ -62,6 +62,7 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [boardFilter, setBoardFilter] = useState("all");
+  const [creatorFilter, setCreatorFilter] = useState("all");
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -74,26 +75,30 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
   const activeBoard = boards?.find(b => b.id === selected?.boardType) ?? boards?.[0];
   const { users } = useMonday(activeBoard?.boardId);
 
-  // Sort newest first, then filter by board type + search query
+  // Sort newest first, then filter by board type, creator, and search query
   const sorted = [...(submittedTasks ?? [])].sort((a, b) => (b.submittedAt ?? b.createdAt ?? 0) - (a.submittedAt ?? a.createdAt ?? 0));
   const boardFiltered = boardFilter === "all" ? sorted : sorted.filter(t => t.boardType === boardFilter);
+  const creatorFiltered = creatorFilter === "all" ? boardFiltered : boardFiltered.filter(t => (t.createdBy ?? "Unknown") === creatorFilter);
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
-    ? boardFiltered.filter(t => {
+    ? creatorFiltered.filter(t => {
         const board = boards?.find(b => b.id === t.boardType);
         const { title, sub } = getSidebarLabel(t, board);
         return (title + " " + sub).toLowerCase().includes(q);
       })
-    : boardFiltered;
+    : creatorFiltered;
 
-  // Auto-select first match when query or board filter changes
+  // Unique creator names derived from all tickets (not just filtered)
+  const allCreators = [...new Set((submittedTasks ?? []).map(t => t.createdBy ?? "Unknown"))].sort();
+
+  // Auto-select first match when any filter or query changes
   useEffect(() => {
     if (filtered.length > 0 && !filtered.find(t => t.id === selectedId)) {
       setSelectedId(filtered[0].id);
     } else if (filtered.length === 0) {
       setSelectedId(null);
     }
-  }, [q, boardFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, boardFilter, creatorFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visibleFields = activeBoard?.fields?.filter(f =>
     selected?.task && isVisible(f, selected.task) && f.type !== "file" && f.mondayValueType !== "item_name"
@@ -212,6 +217,39 @@ export default function PastTicketsPage({ submittedTasks, boards, onRequeue, onR
                 onBlur={e => e.currentTarget.style.borderColor = "var(--border)"}
               />
             </div>
+
+            {/* Creator filter */}
+            {allCreators.length > 1 && (
+              <div style={{ padding: "4px 12px 6px" }}>
+                <select
+                  value={creatorFilter}
+                  onChange={e => setCreatorFilter(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "6px 10px",
+                    borderRadius: "var(--radius-sm, 8px)",
+                    border: "1px solid var(--border)",
+                    background: "var(--bg)",
+                    color: creatorFilter === "all" ? "var(--text-muted)" : "var(--text)",
+                    fontSize: "0.82rem",
+                    outline: "none",
+                    cursor: "pointer",
+                    boxSizing: "border-box",
+                    appearance: "none",
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 10px center",
+                    paddingRight: 28,
+                  }}
+                >
+                  <option value="all">All creators</option>
+                  {allCreators.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
 
             <ul className="batch-task-list">
               {filtered.map(t => {
