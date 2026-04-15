@@ -161,7 +161,9 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       // All tasks gone — handled by success state, don't auto-nav
       return;
     }
-    if (!selectedId && reviewTasks.length > 0) {
+    // Auto-select when: no task selected OR selected ID is stale (not in current reviewTasks)
+    const isSelectedValid = reviewTasks.some(t => t.id === selectedId);
+    if ((!selectedId || !isSelectedValid) && reviewTasks.length > 0) {
       const first = reviewTasks.find(t => t.status !== "generating") ?? reviewTasks[0];
       setSelectedId(first.id);
       setEditingBrief(first.editedBrief ?? first.brief ?? null);
