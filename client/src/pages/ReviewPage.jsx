@@ -267,7 +267,8 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       const createRes = await axios.post("/api/monday/create-item", {
         boardId: entryBoard.boardId,
         itemName,
-        columnValues
+        columnValues,
+        createdBy: entry.createdBy ?? localStorage.getItem("user_monday_name") ?? "",
       });
       const itemId = createRes.data?.itemId;
       if (!itemId) throw new Error("Monday returned no item ID — task kept in queue");

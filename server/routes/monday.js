@@ -142,21 +142,42 @@ router.get("/upload-token", (req, res) => {
   res.json({ token: key });
 });
 
+// Returns true when a Monday API error is an authorization failure.
+// Used to detect when a user's personal key lacks board-write permission.
+function isUnauthorized(err) {
+  const msg = err.message?.toLowerCase() ?? "";
+  return msg.includes("unauthorized") || msg.includes("not authorized") || msg.includes("access denied");
+}
+
 // Create a new task on a Monday board, then post a summary update on it.
 // Body: { boardId, itemName, columnValues, updateBody? }
 router.post("/create-item", async (req, res) => {
   try {
-    const { boardId, itemName, columnValues, updateBody } = req.body;
+    const { boardId, itemName, columnValues, updateBody, createdBy } = req.body;
     if (!boardId || !itemName) {
       return res.status(400).json({ error: "boardId and itemName are required" });
     }
-    // Use per-user key if provided, otherwise falls back to env MONDAY_API_KEY
-    const apiKey = req.headers["x-monday-api-key"] || null;
-    const result = await createItem(boardId, itemName, columnValues || {}, apiKey);
+    const userKey  = req.headers["x-monday-api-key"] || null;
+    const adminKey = null; // null → mondayService falls back to process.env.MONDAY_API_KEY
+
+    // Try with the user's personal key first (preserves Monday authorship).
+    // If Monday rejects it (board write permission), fall back to admin key.
+    let result;
+    try {
+      result = await createItem(boardId, itemName, columnValues || {}, userKey);
+    } catch (authErr) {
+      if (isUnauthorized(authErr) && userKey) {
+        console.warn(`[create-item] Personal key unauthorized — retrying with admin key. Creator: ${createdBy || "unknown"}`);
+        result = await createItem(boardId, itemName, columnValues || {}, adminKey);
+      } else {
+        throw authErr;
+      }
+    }
+
     const itemId = result?.create_item?.id;
     const url = result?.create_item?.url ?? null;
     if (itemId && updateBody) {
-      await createUpdate(itemId, updateBody, apiKey).catch((err) =>
+      await createUpdate(itemId, updateBody, adminKey).catch((err) =>
         console.warn("Update post failed (item still created):", err.message)
       );
     }
@@ -168,7 +189,7 @@ router.post("/create-item", async (req, res) => {
 
     if (isDeactivatedLabel) {
       const { boardId, columnValues, itemName, updateBody } = req.body;
-      const apiKey = req.headers["x-monday-api-key"] || null;
+      const apiKey = null; // deactivated-label retry always uses admin key
       const settings = getSettings();
       const board = settings.boards?.find((b) => b.boardId === boardId);
 
@@ -287,8 +308,18 @@ router.post("/create-update", async (req, res) => {
     if (!itemId || !body) {
       return res.status(400).json({ error: "itemId and body are required" });
     }
-    const apiKey = req.headers["x-monday-api-key"] || null;
-    const result = await createUpdate(itemId, body, apiKey);
+    const userKey = req.headers["x-monday-api-key"] || null;
+    let result;
+    try {
+      result = await createUpdate(itemId, body, userKey);
+    } catch (authErr) {
+      if (isUnauthorized(authErr) && userKey) {
+        console.warn("[create-update] Personal key unauthorized — retrying with admin key");
+        result = await createUpdate(itemId, body, null);
+      } else {
+        throw authErr;
+      }
+    }
     res.json(result);
   } catch (err) {
     console.error("Create update error:", err.message);
@@ -301,18 +332,21 @@ router.post("/create-update", async (req, res) => {
 router.post("/upload-file", upload.single("file"), async (req, res) => {
   try {
     const { itemId, columnId } = req.body;
-    const apiKey = req.headers["x-monday-api-key"] || null;
+    const userKey = req.headers["x-monday-api-key"] || null;
     if (!itemId || !columnId || !req.file) {
       return res.status(400).json({ error: "itemId, columnId and file are required" });
     }
-    const result = await uploadFileToColumn(
-      itemId,
-      columnId,
-      req.file.buffer,
-      req.file.originalname,
-      req.file.mimetype,
-      apiKey,
-    );
+    let result;
+    try {
+      result = await uploadFileToColumn(itemId, columnId, req.file.buffer, req.file.originalname, req.file.mimetype, userKey);
+    } catch (authErr) {
+      if (isUnauthorized(authErr) && userKey) {
+        console.warn("[upload-file] Personal key unauthorized — retrying with admin key");
+        result = await uploadFileToColumn(itemId, columnId, req.file.buffer, req.file.originalname, req.file.mimetype, null);
+      } else {
+        throw authErr;
+      }
+    }
     res.json(result);
   } catch (err) {
     console.error("File upload error:", err.message);
