@@ -7,3 +7,4 @@ server/node_modules/
 server/frequencyCache.json
 server/autoRenameState.json
 server/data/
+SERVER.md
