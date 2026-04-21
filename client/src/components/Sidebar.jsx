@@ -78,6 +78,26 @@ export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick, 
           </span>
           Profile
         </button>
+        <div style={{
+          marginTop: 12,
+          paddingTop: 10,
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "center",
+        }}>
+          <span style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "10px",
+            letterSpacing: "0.08em",
+            color: "var(--text-muted)",
+            opacity: 0.45,
+            background: "var(--surface-hover, rgba(255,255,255,0.04))",
+            padding: "2px 8px",
+            borderRadius: "999px",
+            border: "1px solid var(--border)",
+            userSelect: "none",
+          }}>v1.0.0</span>
+        </div>
       </div>
     </aside>
   );
