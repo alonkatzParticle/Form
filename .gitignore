@@ -10,3 +10,4 @@ server/data/
 SERVER.md
 deploy_vps.py
 deploy_root.py
+VPS_MIGRATION_GUIDE.md
