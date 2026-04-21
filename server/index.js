@@ -6,12 +6,16 @@ import app from "./app.js";
 import { getSettings } from "./services/settingsService.js";
 import { getBoardColumns } from "./services/mondayService.js";
 import { getState as getAutoRenameState, runAutoRename } from "./services/autoRenameService.js";
+import { refreshAllBoards } from "./services/frequencyService.js";
 
 const PORT = process.env.PORT || 3001;
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   runSyncCheck();
+
   // Auto-rename: run every 5 minutes if enabled.
   setInterval(() => {
     if (getAutoRenameState().enabled) {
@@ -20,7 +24,14 @@ app.listen(PORT, () => {
       );
     }
   }, 5 * 60 * 1000);
-  // Frequency order is a static pre-built JSON — no startup fetch needed.
+
+  // Frequency refresh: replaces the Vercel cron (vercel.json runs this weekly).
+  // On VPS there is no Vercel cron, so we schedule it here instead.
+  setInterval(() => {
+    refreshAllBoards().catch((err) =>
+      console.warn("[frequency] Scheduled refresh failed:", err.message)
+    );
+  }, WEEK_MS);
 });
 
 // On startup, compare each board's configured columns against live Monday columns.
