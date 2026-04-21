@@ -3,14 +3,37 @@ services:
     build: .
     ports:
       - "3002:3001"
-    # Loads all environment variables from .env at the project root
     env_file:
       - .env
+    environment:
+      # Override DATABASE_URL to point to the local postgres container
+      DATABASE_URL: postgresql://appuser:apppass@db:5432/taskdb
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
-    # Healthcheck — Docker will restart the container if the API stops responding
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 15s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
+      POSTGRES_DB: taskdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "appuser", "-d", "taskdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
       start_period: 10s
+
+volumes:
+  pgdata:
