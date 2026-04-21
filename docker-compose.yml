@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "3001:3001"
+      - "3002:3001"
     # Loads all environment variables from .env at the project root
     env_file:
       - .env
