@@ -1,21 +1,17 @@
 /**
- * File upload to Monday via Vercel Blob intermediary.
+ * File upload to Monday via direct server proxy.
  *
- * Problem solved: Monday's /v2/file API does not send CORS headers, so browsers
- * can never call it directly. Vercel serverless functions have a 4.5 MB body
- * limit, so we can't proxy through them either.
+ * VPS-compatible replacement for the Vercel Blob intermediary flow.
  *
- * Solution — 3-step flow:
- *   1. Browser requests a signed upload token from our server (blob-token)
- *   2. Browser uploads the file directly to Vercel Blob (CORS supported, no cap)
- *   3. Browser tells our server the blobUrl; server fetches it and forwards
- *      to Monday (server-to-server, no CORS issue, no body limit), then
- *      deletes the blob.
+ * Flow:
+ *   1. Browser POSTs the file as multipart/form-data to /api/monday/upload-file
+ *   2. Server (multer, memoryStorage) receives it and forwards to Monday
+ *      via add_file_to_column (server-to-server, no CORS issue)
  *
- * Effective limit: 100 MB per file (enforced client-side and in blob-token).
+ * No external storage needed. Max file size enforced client-side (100 MB)
+ * and by nginx (500 MB client_max_body_size).
  */
 
-import { upload } from "@vercel/blob/client";
 import axios from "axios";
 
 const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
@@ -25,10 +21,11 @@ const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
  * @param {string|number} itemId   - Monday item ID
  * @param {string}        columnId - Monday column ID (e.g. "files")
  * @param {File}          file     - Browser File object
+ * @param {string}        [apiKey] - Optional Monday API key (from localStorage)
  * @returns {Promise<void>}
  */
-export async function uploadFileToMonday(itemId, columnId, file) {
-  // Client-side size guard — show a clear error before any network call
+export async function uploadFileToMonday(itemId, columnId, file, apiKey) {
+  // Client-side size guard
   if (file.size > MAX_FILE_BYTES) {
     throw new Error(
       `"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB — ` +
@@ -36,37 +33,28 @@ export async function uploadFileToMonday(itemId, columnId, file) {
     );
   }
 
-  // Step 1 + 2: Upload directly from browser to Vercel Blob.
-  // The `upload()` helper handles the token handshake with /api/monday/blob-token
-  // internally and then PUTs the file straight to Vercel's CDN (CORS-safe).
-  let blobUrl;
-  try {
-    const blob = await upload(file.name, file, {
-      access: "public",
-      handleUploadUrl: "/api/monday/blob-token",
-    });
-    blobUrl = blob.url;
-  } catch (err) {
-    throw new Error(
-      `Failed to upload "${file.name}" to staging storage: ${err.message}`
-    );
-  }
+  const formData = new FormData();
+  formData.append("itemId", String(itemId));
+  formData.append("columnId", columnId);
+  formData.append("file", file, file.name);
 
-  // Step 3: Tell the server to forward the blob to Monday and clean up.
-  // The server fetches from Vercel Blob (datacenter-speed) and calls
-  // add_file_to_column, then deletes the blob.
+  const headers = {};
+  if (apiKey) headers["x-monday-api-key"] = apiKey;
+
   try {
-    await axios.post("/api/monday/blob-forward", {
-      blobUrl,
-      itemId: String(itemId),
-      columnId,
-      fileName: file.name,
-      mimeType: file.type || "application/octet-stream",
+    await axios.post("/api/monday/upload-file", formData, {
+      headers,
+      // Don't set Content-Type manually — axios sets it with boundary for multipart
+      timeout: 120_000, // 2 min timeout for large files
+      onUploadProgress: (evt) => {
+        if (evt.total) {
+          const pct = Math.round((evt.loaded / evt.total) * 100);
+          console.log(`[upload] ${file.name}: ${pct}%`);
+        }
+      },
     });
   } catch (err) {
     const detail = err.response?.data?.error ?? err.message;
-    throw new Error(
-      `"${file.name}" reached staging but Monday rejected it: ${detail}`
-    );
+    throw new Error(`Failed to upload "${file.name}" to Monday: ${detail}`);
   }
 }
