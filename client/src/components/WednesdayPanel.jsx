@@ -72,18 +72,20 @@ function ChangeCard({ changes, changeType, status, onConfirm, onCancel }) {
 
   return (
     <div className={`wed-card wed-card--${status}`}>
-      <table className="wed-card-table">
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td className="wed-card-field">{r.label}</td>
-              <td className="wed-card-from">{r.from}</td>
-              <td className="wed-card-arrow">→</td>
-              <td className="wed-card-to">{r.to}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="wed-card-rows">
+        {rows.map((r, i) => (
+          <div key={i} className="wed-card-row">
+            <div className="wed-card-field">{r.label}</div>
+            <div className="wed-card-change">
+              {r.from !== "[empty]" && (
+                <span className="wed-card-from">{r.from}</span>
+              )}
+              {r.from !== "[empty]" && <span className="wed-card-arrow">→</span>}
+              <span className="wed-card-to">{r.to}</span>
+            </div>
+          </div>
+        ))}
+      </div>
       {status === "pending" && (
         <div className="wed-card-actions">
           <button className="wed-card-confirm" onClick={onConfirm}>Apply</button>

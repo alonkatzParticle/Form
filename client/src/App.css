@@ -3383,40 +3383,59 @@ body {
   overflow: hidden;
   font-size: 0.82rem;
   width: 100%;
-  max-width: 300px;
 }
 
-.wed-card-table {
-  width: 100%;
-  border-collapse: collapse;
-  padding: 8px;
+.wed-card-rows {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
 }
 
-.wed-card-table td {
-  padding: 5px 8px;
-  vertical-align: top;
+.wed-card-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wed-card-row:last-child {
+  border-bottom: none;
 }
 
 .wed-card-field {
   font-weight: 600;
   color: var(--text-muted);
-  white-space: nowrap;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wed-card-change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .wed-card-from {
   color: var(--text-muted);
   text-decoration: line-through;
   font-size: 0.78rem;
+  word-break: break-word;
 }
 
 .wed-card-arrow {
   color: var(--text-muted);
-  padding: 5px 2px;
+  flex-shrink: 0;
 }
 
 .wed-card-to {
   color: var(--text);
   font-weight: 500;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
 }
 
 .wed-card-actions {
