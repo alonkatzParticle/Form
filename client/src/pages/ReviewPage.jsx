@@ -258,14 +258,14 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       const entryBoard = boards?.find((b) => b.id === entry.boardType);
       if (!entryBoard) throw new Error("Board config missing for type: " + entry.boardType);
 
-      // Build the item name. When the board has autoName segments configured,
-      // buildAutoName already includes the user's taskName as its last segment
-      // (e.g. "Face Cream | Meta | How to Be Confident - Comedy Script").
-      // Using the raw nameField value alone would strip the prefix.
+      // Priority:
+      // 1. manualName — user explicitly edited the name in the review screen
+      // 2. buildAutoName — auto-prefixed full name (e.g. "Face Cream | Meta | Task Name")
+      // 3. raw nameField (taskName) — last resort fallback
       const nameField = entryBoard.fields.find((f) => f.mondayValueType === "item_name");
-      const itemName = (entryBoard.autoName ? buildAutoName(entryBoard, entry.task) : null)
+      const itemName = entry.task.manualName
+        || (entryBoard.autoName ? buildAutoName(entryBoard, entry.task) : null)
         || (nameField && entry.task[nameField.key])
-        || buildAutoName(entryBoard, entry.task)
         || "Unnamed Task";
       const columnValues = buildColumnValues(entryBoard.fields, entry.task);
 

@@ -161,6 +161,7 @@ router.post("/create-item", async (req, res) => {
       return res.status(400).json({ error: "boardId and itemName are required" });
     }
     const userKey  = req.headers["x-monday-api-key"] || null;
+    console.log(`[create-item] boardId=${boardId} itemName="${itemName}"`);
     const adminKey = null; // null → mondayService falls back to process.env.MONDAY_API_KEY
 
     // Try with the user's personal key first (preserves Monday authorship).
