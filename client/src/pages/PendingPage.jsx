@@ -9,7 +9,7 @@ import SubmissionProgress from "../components/SubmissionProgress.jsx";
 import WednesdayPanel from "../components/WednesdayPanel.jsx";
 import { useMonday } from "../hooks/useMonday.js";
 import { usePersistedState } from "../hooks/usePersistedState.js";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle, ExternalLink, Plus, RefreshCw, Trash2, MessageSquare, ChevronRight } from "lucide-react";
 
 function formatTimeAgo(ts) {
@@ -105,6 +105,16 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
   const [successState, setSuccessState] = useState(null);
   const [submitProgress, setSubmitProgress] = useState(null);
   // null | { step: 'creating'|'brief'|'files', fileIndex, fileTotal, fileName }
+
+  // PendingPage is always mounted (display:none/block), so successState persists
+  // across navigations. Clear it whenever the user navigates back to /pending.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (pathname === "/pending") {
+      setSuccessState(null);
+      setSubmitProgress(null);
+    }
+  }, [pathname]);
   
   // Board isolation for Queue. Auto-selects the first board that has tasks.
   // Falls back to first available board if no tasks are queued yet.
