@@ -25,7 +25,6 @@ export const FIELD_DEFINITIONS = {
 - product: The specific product being featured. MUST be one of the exact options — do NOT add "Particle" as a prefix (use "Shaving Gel" not "Particle Shaving Gel", "Face Cream" not "Particle Face Cream", etc.). Valid options: Power Shower Set, Ab Firming Cream, Shampoo, Gravité, Face Mask, Face Wash, Body Wash, Multiple Products, Not a Product Task, Sunscreen, Gift Bundle, Infinite Male, Deodorant, Anti Gray Serum, Hair Gummies, Starter Bundle, Skin Gummies, Lady Killer Kit, Golfer's Bundle, Varros, Shaving Gel, Test Product, Face Cream, Hand Cream, Dark Spot Remover Set, Smooth Skin Set, Head Turner Set, Advanced Bundle, Lip Balm, Essential Bundle, Ultimate Men's Gift Bundle, Men's Gift Bundle, Neck Cream, Gravite Bundle, Bold Moves Bundle, Instant Eye Firming Cream, Hair Revival Kit.
 - platform: One of: Meta, GT | Meta, Applovin, Youtube | Google, GIF | Meta. Infer from context: "Facebook", "Instagram", or "Meta" → Meta. Only fill if inferable.
 - videoConcept: 1-2 sentences max describing the overall idea or story. Do not write the script here.
-- visuals: Optional. Describe the visual language and key imagery for the video — NOT shot-by-shot direction, just the vibe and what the viewer sees at each beat. Write one sentence per section using exactly these labels on separate lines: "Hook: ..." / "Problem: ..." / "Solution: ..." / "Social Proof: ..." / "CTA: ...". Only include sections relevant to the video type. Leave empty if the type doesn't call for visuals (GIF, Motion Design, Iterations, etc.).
 - hooks: Array of hook variation strings — alternative opening lines for the video to A/B test.
   These are SEPARATE from the script body. Each hook grabs attention in a different way (different angle, emotion, or claim).
   Default: generate 3 hooks unless the user specifies a different number or says to leave hooks empty. Max 5.
@@ -296,7 +295,6 @@ Sizes Needed: 9x16
 Video Concept: A fast-paced, animated explainer that dives into the science behind Particle's Anti-Gray Serum, demystifying how it naturally restores hair color + UGC content & transformations
 Hook Variations: 1. Going gray at 35 isn't aging — it's biology. 2. Most men give up on their hair color. Smart ones don't. 3. Your follicles aren't dead. They just need the right signal.
 Script/Message: Nothing on the market was actually built to fix it. Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level. Over 1,000,000 men already trust Particle. There's a reason it sells out. Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.
-Visuals: Hook: Close-up of a man running his hand through his hair in the mirror, noticing the gray. Problem: Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic. Solution: Product hero shot, dropper applying serum to scalp. Social Proof: Real before/after photos, five-star reviews stacking on screen. CTA: Clean white background, bottle center frame, URL bold underneath.
 
 EXAMPLE OUTPUT:
 <p><b>Product:</b> Anti-Gray Serum &nbsp;|&nbsp; <b>Type:</b> Script (&lt;1 min) &nbsp;|&nbsp; <b>Priority:</b> Medium &nbsp;|&nbsp; <b>Est. Duration:</b> 28–32 seconds &nbsp;|&nbsp; <b>Versions:</b> 2 &nbsp;|&nbsp; <b>Sizes:</b> 9x16 &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy, Aviad Eilam</p>
@@ -310,10 +308,7 @@ EXAMPLE OUTPUT:
 <p><b>3.</b> Your follicles aren't dead. They just need the right signal.</p>
 
 <h3>Script</h3>
-<p><span style="color:#D97706">Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A">Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED">Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB">Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>
-
-<h3>Visuals</h3>
-<p><span style="color:#E8412A">Close-up of a man running his hand through his hair in the mirror, noticing the gray.</span><br/><span style="color:#D97706">Side-by-side comparison of gray vs. pigmented hair follicle — clean science graphic.</span><br/><span style="color:#16A34A">Product hero shot, dropper applying serum to scalp.</span><br/><span style="color:#7C3AED">Real before/after photos, five-star reviews stacking on screen.</span><br/><span style="color:#2563EB">Clean white background, bottle center frame, URL bold underneath.</span></p>`,
+<p><span style="color:#D97706">Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A">Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED">Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB">Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>`,`
 
           systemPrompt: `You are writing a creative task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by editors, videographers, and designers.
 
@@ -335,8 +330,8 @@ If hooks is a non-empty array, render a "Hook Variations" section BEFORE the scr
 ... one <p> per hook.
 If hooks is empty or absent, skip this section entirely.
 
-SCRIPT & VISUALS COLOR CODING:
-For the Script/Message and Visuals fields, output each section as a single <span style="color:COLOR"> wrapping ALL the text for that section (multiple sentences joined). No labels — the color alone identifies the section. Connect sections with <br/> only — never use separate <p> tags or blank lines between sections within the same field.
+SCRIPT COLOR CODING:
+For the Script/Message field, output each section as a single <span style="color:COLOR"> wrapping ALL the text for that section (multiple sentences joined). No labels — the color alone identifies the section. Connect sections with <br/> only — never use separate <p> tags or blank lines between sections within the same field.
 Section colors: Problem=#D97706, Solution=#16A34A, Social Proof=#7C3AED, CTA=#2563EB.
 (Hook color #E8412A is used only for the hooks array above, not inside scriptMessage.)
 Only include sections that have content. Follow the example output exactly.
@@ -358,7 +353,6 @@ Sizes Needed: 16x9
 Estimated Duration: 30 seconds
 Video Concept: A cinematic spot showing a man's transformation — from self-conscious about gray hair to confident after using Particle.
 Script/Message: [VO]: Every man ages. Not every man does it the same way. Particle Anti-Gray Serum — made for the man who refuses to let time decide how he looks. [SUPER: particle.com]
-Visuals: Open on a man at 45 looking in the mirror. Time-lapse of daily routine with Particle. Close on fuller, darker hair. End card: product shot + URL.
 
 EXAMPLE OUTPUT:
 <p><b>Product:</b> Anti-Gray Serum &nbsp;|&nbsp; <b>Type:</b> :30 Commercial &nbsp;|&nbsp; <b>Priority:</b> High &nbsp;|&nbsp; <b>Est. Duration:</b> 30 seconds &nbsp;|&nbsp; <b>Versions:</b> 1 &nbsp;|&nbsp; <b>Sizes:</b> 16x9 &nbsp;|&nbsp; <b>Requestor:</b> Anton Shpakovskiy</p>
@@ -367,10 +361,7 @@ EXAMPLE OUTPUT:
 <p>A cinematic spot showing a man's transformation — from self-conscious about gray hair to confident after using Particle.</p>
 
 <h3>Script</h3>
-<p>[VO]: Every man ages. Not every man does it the same way. Particle Anti-Gray Serum — made for the man who refuses to let time decide how he looks. [SUPER: particle.com]</p>
-
-<h3>Visuals / Direction</h3>
-<p>Open on a man at 45 looking in the mirror. Time-lapse of daily routine with Particle. Close on fuller, darker hair. End card: product shot + URL.</p>`,
+<p>[VO]: Every man ages. Not every man does it the same way. Particle Anti-Gray Serum — made for the man who refuses to let time decide how he looks. [SUPER: particle.com]</p>`,`
 
           systemPrompt: `You are writing a TV commercial task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by editors, videographers, and directors.
 
@@ -386,7 +377,6 @@ FORMATTING RULES:
 TV BRIEF STRUCTURE:
 - Video Concept → <h3>Video Concept</h3>
 - Script/Message → <h3>Script</h3> (plain text, no color coding — TV scripts use [VO], [SUPER], [SFX] notation if present)
-- Visuals → <h3>Visuals / Direction</h3>
 - Hook Variations, if present → <h3>Hook / Opening Line</h3> before the script
 
 Do NOT apply colored spans to any text. TV briefs use plain readable text throughout.
@@ -429,7 +419,6 @@ FORMATTING RULES:
 WEBSITE BRIEF STRUCTURE:
 - Video Concept / Goal → <h3>Goal</h3>
 - Script/Message / Copy → <h3>Copy</h3>
-- Visuals → <h3>Visual Direction</h3>
 - Hook Variations, if present → include them under <h3>Key Messages</h3>
 
 Do NOT apply colored spans to any text.

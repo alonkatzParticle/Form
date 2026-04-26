@@ -97,30 +97,15 @@ export async function generateBrief({ formValues, boardType, estimatedDurationTe
       .join(" &nbsp; ");
     const scriptLegend = `<p style="font-size:14px;margin:2px 0 10px 0;">${legendItems}</p>`;
 
-    // Visuals legend includes Hook (red) since visuals use "Hook: ..." labels
-    const visualsLegendItems = [
-      `<span style="color:#E8412A;font-weight:700;">■</span> Hook`,
-      ...Object.entries(sections).map(([name, { color }]) => `<span style="color:${color};font-weight:700;">■</span> ${name}`)
-    ].join(" &nbsp; ");
-    const visualsLegend = `<p style="font-size:14px;margin:2px 0 10px 0;">${visualsLegendItems}</p>`;
-
     // Inject legend after Script heading
     if (html.includes("Script")) {
       html = html.replace(/(<h3[^>]*>[^<]*[Ss]cript[^<]*<\/h3>)/, `$1${scriptLegend}`);
     }
 
-    // Inject legend after Visuals heading
-    if (html.includes("Visual")) {
-      html = html.replace(/(<h3[^>]*>[^<]*[Vv]isual[^<]*<\/h3>)/, `$1${visualsLegend}`);
-    }
-
-    // Color-code "Label: text" lines inside the Visuals section
-    // Matches lines like "Hook: ..." "Problem: ..." etc. and wraps them in section colors
+    // Color-code "Label: text" lines inside the Script section
     const sectionColors = Object.fromEntries(
       Object.entries(sections).map(([name, { color }]) => [name.toLowerCase(), color])
     );
-    // Fallback: catch any uncolored "Label: text" blocks the AI may not have wrapped.
-    // Strips the label text — color alone identifies the section.
     html = html.replace(
       /\b(Hook|Problem|Solution|Social Proof|CTA):\s*([\s\S]*?)(?=\b(?:Hook|Problem|Solution|Social Proof|CTA):|<\/p>|<h\d)/gi,
       (_, label, text) => {

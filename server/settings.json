@@ -161,7 +161,9 @@
           "type": "textarea",
           "hint": "Optional \u2014 visual language and ideas for each section of the video",
           "placeholder": "AI will suggest visuals aligned to the script sections\u2026",
-          "rows": 4
+          "rows": 4,
+          "hidden": true,
+          "skipBrief": true
         },
         {
           "key": "hooks",
