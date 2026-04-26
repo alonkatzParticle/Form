@@ -308,7 +308,7 @@ EXAMPLE OUTPUT:
 <p><b>3.</b> Your follicles aren't dead. They just need the right signal.</p>
 
 <h3>Script</h3>
-<p><span style="color:#D97706">Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A">Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED">Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB">Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>`,`
+<p><span style="color:#D97706">Nothing on the market was actually built to fix it.</span><br/><span style="color:#16A34A">Particle's Anti-Gray Serum targets this exact process. Powered by active peptides and catalase enzymes, it helps reactivate the natural production of pigment at the follicle level.</span><br/><span style="color:#7C3AED">Over 1,000,000 men already trust Particle. There's a reason it sells out.</span><br/><span style="color:#2563EB">Try Particle Anti-Gray Serum today — risk-free, 30-day money-back guarantee.</span></p>`,
 
           systemPrompt: `You are writing a creative task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by editors, videographers, and designers.
 
@@ -361,7 +361,7 @@ EXAMPLE OUTPUT:
 <p>A cinematic spot showing a man's transformation — from self-conscious about gray hair to confident after using Particle.</p>
 
 <h3>Script</h3>
-<p>[VO]: Every man ages. Not every man does it the same way. Particle Anti-Gray Serum — made for the man who refuses to let time decide how he looks. [SUPER: particle.com]</p>`,`
+<p>[VO]: Every man ages. Not every man does it the same way. Particle Anti-Gray Serum — made for the man who refuses to let time decide how he looks. [SUPER: particle.com]</p>`,
 
           systemPrompt: `You are writing a TV commercial task brief for the Particle for Men marketing team. This brief will be posted as a Monday.com update and read by editors, videographers, and directors.
 
