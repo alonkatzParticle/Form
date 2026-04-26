@@ -96,7 +96,7 @@ export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick, 
             borderRadius: "999px",
             border: "1px solid var(--border)",
             userSelect: "none",
-          }}>v1.0.0</span>
+          }}>v1.0.1</span>
         </div>
       </div>
     </aside>
