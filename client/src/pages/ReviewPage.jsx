@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { uploadFileToMonday } from "../utils/mondayUpload.js";
 import { Field, renderInput, isVisible, buildAutoName, buildColumnValues } from "../components/forms/DynamicForm.jsx";
@@ -160,6 +160,10 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
   const [briefIsStale, setBriefIsStale]           = useState(false);
   const [showStaleBriefWarning, setShowStaleBriefWarning] = useState(false);
 
+  // Brief editor ref — set innerHTML imperatively to avoid cursor-jump on re-renders
+  const briefRef = useRef(null);
+  const briefUserEditingRef = useRef(false);
+
   // Clear stale session state when entering a new review (queryIds changed).
   // ReviewPage is always mounted, so successState / warnings persist across navigations.
   // Without this, returning from Home after submitting shows the old success card.
@@ -203,6 +207,14 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       setShowStaleBriefWarning(false);
     }
   }, [selectedId, selected?.brief]);  // re-run when selected ID changes or brief populates
+
+  // Sync brief DOM content imperatively — avoids cursor-jump caused by
+  // dangerouslySetInnerHTML resetting the DOM on every keystroke re-render.
+  useEffect(() => {
+    if (briefRef.current && !briefUserEditingRef.current) {
+      briefRef.current.innerHTML = editingBrief ?? "";
+    }
+  }, [editingBrief]);
 
   const activeBoard = boards?.find((b) => b.id === selected?.boardType) ?? boards?.[0];
   const { users } = useMonday(activeBoard?.boardId);
@@ -659,11 +671,13 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                   <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
                     {editingBrief ? (
                       <div
+                        ref={briefRef}
                         className="batch-brief-content"
                         contentEditable={selected.status !== "submitting" && !isRegenerating}
                         suppressContentEditableWarning
+                        onFocus={() => { briefUserEditingRef.current = true; }}
+                        onBlur={() => { briefUserEditingRef.current = false; }}
                         onInput={(e) => setEditingBrief(e.currentTarget.innerHTML)}
-                        dangerouslySetInnerHTML={{ __html: editingBrief }}
                         style={{ opacity: isRegenerating ? 0.5 : 1, transition: "opacity 0.2s", border: "none", padding: 0, minHeight: "100%", background: "transparent" }}
                       />
                     ) : (

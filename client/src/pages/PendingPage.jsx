@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { uploadFileToMonday } from "../utils/mondayUpload.js";
 import { Field, renderInput, isVisible, buildAutoName, buildColumnValues } from "../components/forms/DynamicForm.jsx";
@@ -111,6 +111,11 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
   const [briefIsStale, setBriefIsStale]           = useState(false);
   const [showStaleBriefWarning, setShowStaleBriefWarning] = useState(false);
 
+  // Brief editor ref — used to set innerHTML imperatively so React re-renders
+  // never reset the cursor position in the contentEditable div.
+  const briefRef = useRef(null);
+  const briefUserEditingRef = useRef(false); // true while user has the editor focused
+
   // PendingPage is always mounted (display:none/block), so successState persists
   // across navigations. Clear it whenever the user navigates back to /pending.
   const { pathname } = useLocation();
@@ -157,6 +162,15 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
 
   const activeBoard = boards?.find((b) => b.id === selected?.boardType) ?? boards?.[0];
   const { users } = useMonday(activeBoard?.boardId);
+
+  // Sync brief DOM content when editingBrief changes from an external source
+  // (task switch, regeneration). Skip when the user is actively typing to
+  // prevent cursor-jump on every keystroke.
+  useEffect(() => {
+    if (briefRef.current && !briefUserEditingRef.current) {
+      briefRef.current.innerHTML = editingBrief ?? "";
+    }
+  }, [editingBrief]);
 
   function selectTask(id) {
     if (selectedId) {
@@ -567,14 +581,16 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                   
                   <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
                     {selected.brief ? (
-                      <div
-                        className="batch-brief-content"
-                        contentEditable={selected.status !== "submitting" && !isRegenerating}
-                        suppressContentEditableWarning
-                        onInput={(e) => setEditingBrief(e.currentTarget.innerHTML)}
-                        dangerouslySetInnerHTML={{ __html: editingBrief }}
-                        style={{ opacity: isRegenerating ? 0.5 : 1, transition: "opacity 0.2s", border: "none", padding: 0, minHeight: "100%", background: "transparent" }}
-                      />
+                       <div
+                         ref={briefRef}
+                         className="batch-brief-content"
+                         contentEditable={selected.status !== "submitting" && !isRegenerating}
+                         suppressContentEditableWarning
+                         onFocus={() => { briefUserEditingRef.current = true; }}
+                         onBlur={() => { briefUserEditingRef.current = false; }}
+                         onInput={(e) => setEditingBrief(e.currentTarget.innerHTML)}
+                         style={{ opacity: isRegenerating ? 0.5 : 1, transition: "opacity 0.2s", border: "none", padding: 0, minHeight: "100%", background: "transparent" }}
+                       />
                     ) : (
                       <div className="batch-empty-state batch-generating-state">
                         <span className="batch-gen-spinner" />
