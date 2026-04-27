@@ -7,6 +7,7 @@ import WednesdayPanel from "../components/WednesdayPanel.jsx";
 import HistoryDrawer from "../components/HistoryDrawer.jsx";
 import Step1Card, { getStep1Keys, isStep1Complete } from "../components/Step1Card.jsx";
 import { usePersistedState } from "../hooks/usePersistedState.js";
+import BrainstormModal from "../components/BrainstormModal.jsx";
 
 // Departments that have full AI panel support per board.
 // If the selected department is NOT in this list, the AI panel is hidden entirely.
@@ -34,6 +35,7 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
   const [step1Values, setStep1Values] = usePersistedState("home_step1Values", {});
   const [initialPrompt, setInitialPrompt] = useState("");
   const urlParamsApplied = useRef(false);
+  const [brainstormOpen, setBrainstormOpen] = useState(false);
 
   // On first mount: read URL query params and pre-fill form + AI prompt.
   // Clears params from URL after consuming them so refresh doesn't re-apply.
@@ -157,6 +159,7 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
   // No loading/error screens here anymore since App.jsx manages it now.
 
   return (
+    <>
     <div className={`home${wednesdayOpen ? " home--wednesday-open" : ""}`}>
       <header className="app-header">
         <h1>Task Creator</h1>
@@ -209,6 +212,7 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
                   setWednesdaySeedMessage(msg);
                   setWednesdayOpen(true);
                 }}
+                onBrainstorm={() => setBrainstormOpen(true)}
               />
             )}
 
@@ -257,5 +261,21 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
       )}
 
     </div>
+
+    <BrainstormModal
+      isOpen={brainstormOpen}
+      onClose={() => setBrainstormOpen(false)}
+      step1Context={{
+        product:    mergedStep1.product    ?? "",
+        department: mergedStep1.department ?? "",
+        type:       mergedStep1.type       ?? "",
+        platform:   mergedStep1.platform   ?? "",
+      }}
+      onFillForm={(fields) => {
+        // Apply creative fields from brainstorm to the home form
+        setAiResult(fields);
+      }}
+    />
+  </>
   );
 }

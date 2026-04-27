@@ -8,6 +8,7 @@ import { getSkillContent, getBrandKnowledge } from "../services/skillLoader.js";
 import { getSettings } from "../services/settingsService.js";
 
 const router = express.Router();
+const MAX_HISTORY = 20;
 
 let _client = null;
 function getClient() {
@@ -147,4 +148,74 @@ router.post("/chat", async (req, res) => {
   }
 });
 
+// POST /api/wednesday/brainstorm
+// Body: { messages, step1Context, isInternal? }
+// Returns: SSE stream — same pattern as /chat but uses brainstorm agent
+router.post("/brainstorm", async (req, res) => {
+  const { messages = [], step1Context = {}, isInternal = false } = req.body;
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  try {
+    const agent = AI_AGENTS.brainstorm;
+    const brandKnowledge = getBrandKnowledge();
+    const skillKnowledge = getSkillContent("video"); // brainstorm is always video-focused
+    const skillSection = (skillKnowledge || brandKnowledge)
+      ? `${brandKnowledge}${skillKnowledge ? `\n\n---\n\n## CREATIVE KNOWLEDGE\n\n${skillKnowledge}` : ""}`
+      : "";
+
+    // Format step1Context for the system prompt
+    const contextLines = Object.entries(step1Context)
+      .filter(([, v]) => v)
+      .map(([k, v]) => `- ${k}: ${v}`)
+      .join("\n");
+    const step1Section = contextLines || "- (no context provided)";
+
+    const system = agent.systemPrompt
+      .replaceAll("{{SKILL_KNOWLEDGE}}", skillSection)
+      .replaceAll("{{STEP1_CONTEXT}}", step1Section);
+
+    const history = messages.slice(-MAX_HISTORY);
+
+    let stream;
+    let attempts = 0;
+    while (true) {
+      attempts++;
+      try {
+        stream = await getClient().messages.stream({
+          model: agent.model,
+          max_tokens: agent.maxTokens,
+          system,
+          messages: history,
+        });
+        break;
+      } catch (err) {
+        const retryable = err?.status === 529 || err?.status === 429 ||
+          err?.error?.type === "overloaded_error" || err?.error?.type === "rate_limit_error";
+        if (!retryable || attempts >= 3) throw err;
+        const delay = 2000 * Math.pow(2, attempts - 1);
+        console.warn(`[Brainstorm] Overloaded, retrying in ${delay}ms…`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+
+    for await (const chunk of stream) {
+      if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
+        res.write(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`);
+      }
+    }
+
+    res.write("data: [DONE]\n\n");
+    res.end();
+  } catch (err) {
+    console.error("[brainstorm] Error:", err.message);
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+    res.end();
+  }
+});
+
 export default router;
+

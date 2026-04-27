@@ -177,7 +177,7 @@ function SuggestionReview({ suggestions, boardFields = [], currentTask = {}, onA
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function AIPanel({ boardType, boardFields = [], currentTask = {}, onResult, taskContext = {}, onReferenceContext, onNeedsClarification, disabled = false, department = "", initialPrompt = "", onPromptConsumed }) {
+export default function AIPanel({ boardType, boardFields = [], currentTask = {}, onResult, taskContext = {}, onReferenceContext, onNeedsClarification, disabled = false, department = "", initialPrompt = "", onPromptConsumed, onBrainstorm }) {
   const [open, setOpen] = useState(false);
 
   // Whether full AI panel is available for the current department.
@@ -486,6 +486,32 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
               onDiscard={handleDiscardSuggestions}
             />
           )}
+          {/* ── Brainstorm with Wednesday ── */}
+          <div style={{ borderTop: "1px solid var(--border)", marginTop: "16px", paddingTop: "14px" }}>
+            <button
+              className="btn-ai"
+              onClick={() => onBrainstorm?.()}
+              disabled={disabled}
+              title={disabled ? "Complete Step 1 to unlock" : "Open a full brainstorming session with Wednesday"}
+              style={{
+                width: "100%",
+                background: disabled ? undefined : "linear-gradient(135deg, #6d28d9, #7c3aed)",
+                opacity: disabled ? 0.45 : 1,
+                cursor: disabled ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+              }}
+            >
+              <span style={{ fontSize: "1rem" }}>✦</span>
+              Brainstorm with Wednesday
+            </button>
+            <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center" }}>
+              {disabled ? "Complete Step 1 to unlock" : "Full creative session — concept, hooks, script"}
+            </p>
+          </div>
+
         </div>
       )}
     </div>
