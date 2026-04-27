@@ -159,6 +159,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
   const [briefTaskSnapshot, setBriefTaskSnapshot] = useState(null);
   const [briefIsStale, setBriefIsStale]           = useState(false);
   const [showStaleBriefWarning, setShowStaleBriefWarning] = useState(false);
+  const [showApiKeyWarning, setShowApiKeyWarning] = useState(false);
 
   // Brief editor ref — set innerHTML imperatively to avoid cursor-jump on re-renders
   const briefRef = useRef(null);
@@ -275,6 +276,12 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
   async function handleSubmitOne(id, force = false) {
     const entry = tasks.find((t) => t.id === id);
     if (!entry || entry.status === "submitting" || !entry.task) return;
+
+    // API key gate
+    if (!localStorage.getItem("user_monday_api_key")) {
+      setShowApiKeyWarning(true);
+      return;
+    }
 
     // Stale brief gate — only warn for the currently selected task
     if (id === selectedId && briefIsStale && !force) {
@@ -564,6 +571,32 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                   </button>
                 </div>
               </div>
+
+              {/* API key missing warning */}
+              {showApiKeyWarning && (
+                <div style={{
+                  margin: "0 0 12px",
+                  padding: "10px 16px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(239,68,68,0.08)",
+                  border: "1px solid rgba(239,68,68,0.35)",
+                  fontSize: "0.82rem",
+                  color: "#ef4444",
+                  lineHeight: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                }}>
+                  <span style={{ flex: 1 }}>🔑 To submit a ticket, please add your Monday API key — click the <strong>folder icon</strong> at the bottom of the sidebar.</span>
+                  <button
+                    onClick={() => setShowApiKeyWarning(false)}
+                    style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.4)", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: "0.8rem" }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
 
               {/* Stale brief warning */}
               {showStaleBriefWarning && (
