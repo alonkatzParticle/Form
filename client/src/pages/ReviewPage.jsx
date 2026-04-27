@@ -155,6 +155,11 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
   // Success state: null = not submitted yet, { url, isBatch } = done
   const [successState, setSuccessState] = useState(null);
 
+  // Stale brief tracking — set snapshot when brief is generated, detect changes in onChange
+  const [briefTaskSnapshot, setBriefTaskSnapshot] = useState(null);
+  const [briefIsStale, setBriefIsStale]           = useState(false);
+  const [showStaleBriefWarning, setShowStaleBriefWarning] = useState(false);
+
   // Clear stale session state when entering a new review (queryIds changed).
   // ReviewPage is always mounted, so successState / warnings persist across navigations.
   // Without this, returning from Home after submitting shows the old success card.
@@ -163,6 +168,9 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       setSuccessState(null);
       setFileUploadWarning(null);
       setSubmitProgress(null);
+      setBriefTaskSnapshot(null);
+      setBriefIsStale(false);
+      setShowStaleBriefWarning(false);
     }
   }, [queryIds]); // queryIds reference is stable between renders (useMemo on pathname)
 
@@ -188,6 +196,12 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
     if (!selected) return;
     const freshBrief = selected.editedBrief ?? selected.brief ?? null;
     setEditingBrief(freshBrief);
+    // Snapshot the task whenever we load a new task's brief — establishes the baseline
+    if (freshBrief && selected.task) {
+      setBriefTaskSnapshot(JSON.stringify(selected.task));
+      setBriefIsStale(false);
+      setShowStaleBriefWarning(false);
+    }
   }, [selectedId, selected?.brief]);  // re-run when selected ID changes or brief populates
 
   const activeBoard = boards?.find((b) => b.id === selected?.boardType) ?? boards?.[0];
@@ -218,6 +232,10 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       setEditingBrief(newBriefHtml);
       const taskPatch = finalEstimate ? { _elevenLabsEstimate: finalEstimate } : {};
       setTasks(prev => prev.map(t => t.id === selectedId ? { ...t, brief: newBriefHtml, editedBrief: newBriefHtml, task: { ...t.task, ...taskPatch } } : t));
+      // Snapshot the freshly-generated task — clears staleness
+      setBriefTaskSnapshot(JSON.stringify({ ...selected.task, ...taskPatch }));
+      setBriefIsStale(false);
+      setShowStaleBriefWarning(false);
     } catch (err) {
       console.error("[Review] Regenerate error:", err);
     } finally {
@@ -242,9 +260,15 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
     }
   }
 
-  async function handleSubmitOne(id) {
+  async function handleSubmitOne(id, force = false) {
     const entry = tasks.find((t) => t.id === id);
     if (!entry || entry.status === "submitting" || !entry.task) return;
+
+    // Stale brief gate — only warn for the currently selected task
+    if (id === selectedId && briefIsStale && !force) {
+      setShowStaleBriefWarning(true);
+      return;
+    }
     
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "submitting" } : t));
     setSubmitProgress({ step: "creating", fileIndex: 0, fileTotal: 0, fileName: "" });
@@ -529,6 +553,40 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                 </div>
               </div>
 
+              {/* Stale brief warning */}
+              {showStaleBriefWarning && (
+                <div style={{
+                  margin: "0 0 12px",
+                  padding: "10px 16px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(234,179,8,0.08)",
+                  border: "1px solid rgba(234,179,8,0.35)",
+                  fontSize: "0.82rem",
+                  color: "#ca8a04",
+                  lineHeight: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                }}>
+                  <span style={{ flex: 1 }}>⚠️ You edited the form but haven't regenerated the brief — it may be out of date.</span>
+                  <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                    <button
+                      onClick={() => { setShowStaleBriefWarning(false); handleRegenerateBrief(); }}
+                      style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #ca8a04", background: "transparent", color: "#ca8a04", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
+                    >
+                      Regenerate first
+                    </button>
+                    <button
+                      onClick={() => { setShowStaleBriefWarning(false); setBriefIsStale(false); handleSubmitOne(selected.id, true); }}
+                      style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#ca8a04", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
+                    >
+                      Submit anyway
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {selected.status === "error" && selected.errorMsg && (
                 <div style={{
                   margin: "0 0 12px",
@@ -568,7 +626,15 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                           if (field?.type === "file") {
                             onFileChange?.(selected.id, key, val);
                           } else {
-                            setTasks((prev) => prev.map((t) => t.id === selected.id ? { ...t, task: { ...t.task, [key]: val } } : t));
+                            setTasks((prev) => prev.map((t) => {
+                              if (t.id !== selected.id) return t;
+                              const updatedTask = { ...t.task, [key]: val };
+                              // Mark brief as stale if task differs from snapshot
+                              if (briefTaskSnapshot && JSON.stringify(updatedTask) !== briefTaskSnapshot) {
+                                setBriefIsStale(true);
+                              }
+                              return { ...t, task: updatedTask };
+                            }));
                           }
                         }}
                       />

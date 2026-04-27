@@ -106,6 +106,11 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
   const [submitProgress, setSubmitProgress] = useState(null);
   // null | { step: 'creating'|'brief'|'files', fileIndex, fileTotal, fileName }
 
+  // Stale brief tracking
+  const [briefTaskSnapshot, setBriefTaskSnapshot] = useState(null);
+  const [briefIsStale, setBriefIsStale]           = useState(false);
+  const [showStaleBriefWarning, setShowStaleBriefWarning] = useState(false);
+
   // PendingPage is always mounted (display:none/block), so successState persists
   // across navigations. Clear it whenever the user navigates back to /pending.
   const { pathname } = useLocation();
@@ -113,6 +118,9 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
     if (pathname === "/pending") {
       setSuccessState(null);
       setSubmitProgress(null);
+      setBriefTaskSnapshot(null);
+      setBriefIsStale(false);
+      setShowStaleBriefWarning(false);
     }
   }, [pathname]);
   
@@ -157,7 +165,13 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
     const next = tasks.find((t) => t.id === id);
     setSelectedId(id);
     setEditingBrief(next?.editedBrief ?? next?.brief ?? "");
-    setWednesdayOpen(false); // Close Wednesday when switching tasks to avoid context confusion
+    setWednesdayOpen(false);
+    // Snapshot the task for staleness detection
+    if (next?.task) {
+      setBriefTaskSnapshot(JSON.stringify(next.task));
+      setBriefIsStale(false);
+      setShowStaleBriefWarning(false);
+    }
   }
 
   async function handleRegenerateBrief() {
@@ -177,6 +191,10 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
         ? { ...t, brief: newBriefHtml, editedBrief: newBriefHtml, task: { ...t.task, ...taskPatch } }
         : t
       ));
+      // Snapshot fresh task — clears staleness
+      setBriefTaskSnapshot(JSON.stringify({ ...selected.task, ...taskPatch }));
+      setBriefIsStale(false);
+      setShowStaleBriefWarning(false);
     } catch (err) {
       console.error("[Pending] Regenerate error:", err);
     } finally {
@@ -192,9 +210,15 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
     setTasks(prev => prev.filter(t => t.id !== id));
   }
 
-  async function handleSubmitOne(id) {
+  async function handleSubmitOne(id, force = false) {
     const entry = tasks.find((t) => t.id === id);
     if (!entry || entry.status === "submitting" || !entry.task) return;
+
+    // Stale brief gate
+    if (id === selectedId && briefIsStale && !force) {
+      setShowStaleBriefWarning(true);
+      return;
+    }
     
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "submitting" } : t));
     setSubmitProgress({ step: "creating", fileIndex: 0, fileTotal: 0, fileName: "" });
@@ -439,6 +463,41 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                   </button>
                 </div>
               </div>
+
+              {/* Stale brief warning */}
+              {showStaleBriefWarning && (
+                <div style={{
+                  margin: "0 0 12px",
+                  padding: "10px 16px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(234,179,8,0.08)",
+                  border: "1px solid rgba(234,179,8,0.35)",
+                  fontSize: "0.82rem",
+                  color: "#ca8a04",
+                  lineHeight: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                }}>
+                  <span style={{ flex: 1 }}>⚠️ You edited the form but haven't regenerated the brief — it may be out of date.</span>
+                  <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                    <button
+                      onClick={() => { setShowStaleBriefWarning(false); handleRegenerateBrief(); }}
+                      style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #ca8a04", background: "transparent", color: "#ca8a04", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
+                    >
+                      Regenerate first
+                    </button>
+                    <button
+                      onClick={() => { setShowStaleBriefWarning(false); setBriefIsStale(false); handleSubmitOne(selected.id, true); }}
+                      style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "#ca8a04", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
+                    >
+                      Submit anyway
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {selected.status === "error" && selected.errorMsg && (
                 <div style={{
                   margin: "0 0 12px",
@@ -478,7 +537,14 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                           if (field?.type === "file") {
                             onFileChange?.(selected.id, key, val);
                           } else {
-                            setTasks((prev) => prev.map((t) => t.id === selected.id ? { ...t, task: { ...t.task, [key]: val } } : t));
+                            setTasks((prev) => prev.map((t) => {
+                              if (t.id !== selected.id) return t;
+                              const updatedTask = { ...t.task, [key]: val };
+                              if (briefTaskSnapshot && JSON.stringify(updatedTask) !== briefTaskSnapshot) {
+                                setBriefIsStale(true);
+                              }
+                              return { ...t, task: updatedTask };
+                            }));
                           }
                         }}
                       />
