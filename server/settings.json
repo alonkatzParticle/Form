@@ -135,6 +135,22 @@
           "step1": true
         },
         {
+          "key": "campaign",
+          "label": "Campaign",
+          "type": "select",
+          "required": false,
+          "half": true,
+          "mondayColumnId": "color_mm2v5q62",
+          "mondayValueType": "status",
+          "options": ["None", "Easter", "New Years", "Memorial Day"],
+          "mondayOptionIndices": {
+            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2
+          },
+          "default": "None",
+          "step1": true,
+          "showWhen": { "field": "department", "includes": "Marketing/Media" }
+        },
+        {
           "key": "taskName",
           "label": "Task Name",
           "type": "text",
@@ -440,6 +456,22 @@
             "field": "department",
             "includes": "Website"
           }
+        },
+        {
+          "key": "campaign",
+          "label": "Campaign",
+          "type": "select",
+          "required": false,
+          "half": true,
+          "mondayColumnId": "color_mm2wcjdy",
+          "mondayValueType": "status",
+          "options": ["None", "Easter", "New Years", "Memorial Day"],
+          "mondayOptionIndices": {
+            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2
+          },
+          "default": "None",
+          "step1": true,
+          "showWhen": { "field": "department", "includes": "Marketing" }
         },
         {
           "key": "taskName",

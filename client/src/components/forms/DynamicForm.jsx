@@ -58,6 +58,11 @@ export function buildAutoName(board, task) {
       if (seg.onlyWhenField && task[seg.onlyWhenField] !== seg.onlyWhenValue) return null;
       if (seg.onlyValues && !seg.onlyValues.includes(val)) return null;
       if (seg.skipValues && seg.skipValues.includes(val)) return null;
+      // requireFieldEmpty: skip this segment when another field has a non-empty, non-None value
+      if (seg.requireFieldEmpty) {
+        const guard = task[seg.requireFieldEmpty];
+        if (guard && guard !== "None" && guard !== "") return null;
+      }
       if (seg.valueMap && seg.valueMap[val]) val = seg.valueMap[val];
       return val;
     })
