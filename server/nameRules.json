@@ -2,8 +2,8 @@
   "video": {
     "segments": [
       { "field": "product" },
-      { "field": "campaign", "skipValues": ["None", ""] },
-      { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" } },
+      { "field": "campaign", "skipValues": ["None", ""], "aliasWhenValue": {"Other": "campaignCustom"} },
+      { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" }, "aliasWhenValue": {"Other": "platformCustom"} },
       { "field": "howDidYouMake", "requireFieldEmpty": "campaign" },
       { "field": "type", "onlyValues": ["AI Creator"], "requireFieldEmpty": "campaign" },
       { "field": "taskName" }
@@ -12,8 +12,8 @@
   "design": {
     "segments": [
       { "field": "productBundle" },
-      { "field": "campaign", "skipValues": ["None", ""] },
-      { "field": "platform", "skipValues": ["Other"], "valueMap": { "Gentleman Today": "META | GT" } },
+      { "field": "campaign", "skipValues": ["None", ""], "aliasWhenValue": {"Other": "campaignCustom"} },
+      { "field": "platform", "skipValues": ["Other"], "valueMap": { "Gentleman Today": "META | GT" }, "aliasWhenValue": {"Other": "platformCustom"} },
       { "field": "department", "onlyValues": ["Website"], "requireFieldEmpty": "campaign" },
       { "field": "websiteType", "onlyWhenField": "department", "onlyWhenValue": "Website", "skipValues": ["Other", "Test Products"], "requireFieldEmpty": "campaign" },
       { "field": "howDidYouCreate", "requireFieldEmpty": "campaign" },

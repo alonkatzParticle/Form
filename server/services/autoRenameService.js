@@ -46,6 +46,10 @@ function isFormatted(name) {
   return (name.match(/\|/g) || []).length >= 2;
 }
 
+function toTitleCase(str) {
+  return str.trim().replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
 // Same logic as applyNameRules in routes/monday.js — kept here to avoid circular imports.
 function applyNameRules(board, task) {
   if (!board.autoName) return task.taskName || "";
@@ -60,6 +64,11 @@ function applyNameRules(board, task) {
       if (seg.requireFieldEmpty) {
         const guard = task[seg.requireFieldEmpty];
         if (guard && guard !== "None" && guard !== "") return null;
+      }
+      if (seg.aliasWhenValue && seg.aliasWhenValue[val]) {
+        const aliasVal = task[seg.aliasWhenValue[val]];
+        if (aliasVal) return toTitleCase(String(aliasVal));
+        return null;
       }
       if (seg.valueMap && seg.valueMap[val]) val = seg.valueMap[val];
       return val;

@@ -419,6 +419,10 @@ router.get("/history", async (req, res) => {
 
 // ── Name suggestion helpers (mirrors client-side buildAutoName) ───────────────
 
+function toTitleCase(str) {
+  return str.trim().replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
 function applyNameRules(board, task) {
   if (!board.autoName) return task.taskName || "";
   return board.autoName.segments
@@ -432,6 +436,11 @@ function applyNameRules(board, task) {
       if (seg.requireFieldEmpty) {
         const guard = task[seg.requireFieldEmpty];
         if (guard && guard !== "None" && guard !== "") return null;
+      }
+      if (seg.aliasWhenValue && seg.aliasWhenValue[val]) {
+        const aliasVal = task[seg.aliasWhenValue[val]];
+        if (aliasVal) return toTitleCase(String(aliasVal));
+        return null;
       }
       if (seg.valueMap && seg.valueMap[val]) val = seg.valueMap[val];
       return val;

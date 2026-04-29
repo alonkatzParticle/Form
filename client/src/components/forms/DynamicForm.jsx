@@ -48,6 +48,11 @@ export function isVisible(field, task, hiddenKeys = []) {
 
 // ─── Auto name builder ────────────────────────────────────────────────────────
 
+// Title-case a string: each word capitalised, rest lowercase.
+function toTitleCase(str) {
+  return str.trim().replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
 export function buildAutoName(board, task) {
   if (!board.autoName) return task.taskName || "";
   return board.autoName.segments
@@ -62,6 +67,12 @@ export function buildAutoName(board, task) {
       if (seg.requireFieldEmpty) {
         const guard = task[seg.requireFieldEmpty];
         if (guard && guard !== "None" && guard !== "") return null;
+      }
+      // aliasWhenValue: if the field value matches a key, use a different field's text (title-cased)
+      if (seg.aliasWhenValue && seg.aliasWhenValue[val]) {
+        const aliasVal = task[seg.aliasWhenValue[val]];
+        if (aliasVal) return toTitleCase(String(aliasVal));
+        return null; // alias key set but text field empty — skip segment
       }
       if (seg.valueMap && seg.valueMap[val]) val = seg.valueMap[val];
       return val;

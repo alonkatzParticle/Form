@@ -90,13 +90,27 @@
             "Gentleman Today",
             "Applovin",
             "Youtube | Google",
-            "GIF | Meta"
+            "GIF | Meta",
+            "Other"
           ],
           "showWhen": {
             "field": "department",
             "includes": "Marketing/Media"
           },
           "step1": true
+        },
+        {
+          "key": "platformCustom",
+          "label": "Platform Name",
+          "type": "text",
+          "required": true,
+          "half": true,
+          "placeholder": "e.g. TikTok",
+          "hint": "Will be title-cased and used in the task name.",
+          "mondayColumnId": null,
+          "skipBrief": true,
+          "step1": true,
+          "showWhen": { "field": "platform", "includes": "Other" }
         },
         {
           "key": "type",
@@ -142,13 +156,26 @@
           "half": true,
           "mondayColumnId": "color_mm2v5q62",
           "mondayValueType": "status",
-          "options": ["None", "Easter", "New Years", "Memorial Day"],
+          "options": ["None", "Easter", "New Years", "Memorial Day", "Other"],
           "mondayOptionIndices": {
             "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2
           },
           "default": "None",
           "step1": true,
           "showWhen": { "field": "department", "includes": "Marketing/Media" }
+        },
+        {
+          "key": "campaignCustom",
+          "label": "Campaign Name",
+          "type": "text",
+          "required": true,
+          "half": true,
+          "placeholder": "e.g. Back To School",
+          "hint": "Will be title-cased and used in the task name. Not stored in Monday's Campaign column.",
+          "mondayColumnId": null,
+          "skipBrief": true,
+          "step1": true,
+          "showWhen": { "field": "campaign", "includes": "Other" }
         },
         {
           "key": "taskName",
@@ -435,8 +462,22 @@
             "Gentleman Today",
             "Other"
           ],
+          "mondayOptionIndices": { "Other": 5 },
           "showWhen": { "field": "department", "includes": "Marketing" },
           "step1": true
+        },
+        {
+          "key": "platformCustom",
+          "label": "Platform Name",
+          "type": "text",
+          "required": true,
+          "half": true,
+          "placeholder": "e.g. TikTok",
+          "hint": "Will be title-cased and used in the task name.",
+          "mondayColumnId": null,
+          "skipBrief": true,
+          "step1": true,
+          "showWhen": { "field": "platform", "includes": "Other" }
         },
         {
           "key": "websiteType",
@@ -465,13 +506,26 @@
           "half": true,
           "mondayColumnId": "color_mm2wcjdy",
           "mondayValueType": "status",
-          "options": ["None", "Easter", "New Years", "Memorial Day"],
+          "options": ["None", "Easter", "New Years", "Memorial Day", "Other"],
           "mondayOptionIndices": {
             "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2
           },
           "default": "None",
           "step1": true,
           "showWhen": { "field": "department", "includes": "Marketing" }
+        },
+        {
+          "key": "campaignCustom",
+          "label": "Campaign Name",
+          "type": "text",
+          "required": true,
+          "half": true,
+          "placeholder": "e.g. Back To School",
+          "hint": "Will be title-cased and used in the task name. Not stored in Monday's Campaign column.",
+          "mondayColumnId": null,
+          "skipBrief": true,
+          "step1": true,
+          "showWhen": { "field": "campaign", "includes": "Other" }
         },
         {
           "key": "taskName",
