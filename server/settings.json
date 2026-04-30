@@ -91,10 +91,11 @@
             "Applovin",
             "Youtube | Google",
             "GIF | Meta",
+            "VSL",
             "Other"
           ],
           "mondayOptionIndices": {
-            "Meta": 0, "Gentleman Today": 1, "Applovin": 2, "Youtube | Google": 3, "GIF | Meta": 7, "Other": 5
+            "Meta": 0, "Gentleman Today": 1, "Applovin": 2, "Youtube | Google": 3, "GIF | Meta": 7, "VSL": 4, "Other": 5
           },
           "showWhen": {
             "field": "department",
