@@ -227,6 +227,9 @@ export async function generateBriefHtml(board, task, users) {
         display = filled.map((h, i) => `${i + 1}. ${h}`).join("\n");
       } else if (Array.isArray(val)) {
         display = val.join(", ");
+      } else if (f.type === "textarea") {
+        // Send line breaks as <br/> so the AI preserves them structurally
+        display = String(val).replace(/\n/g, "<br/>");
       } else {
         display = String(val);
       }

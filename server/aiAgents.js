@@ -336,10 +336,13 @@ Section colors: Problem=#D97706, Solution=#16A34A, Social Proof=#7C3AED, CTA=#25
 (Hook color #E8412A is used only for the hooks array above, not inside scriptMessage.)
 Only include sections that have content. Follow the example output exactly.
 
+VERBATIM FIELDS — CRITICAL: The following fields must be copied EXACTLY as written — word for word, character for character. Do NOT summarize, paraphrase, simplify, or rewrite them in any way. Simply include them as-is, converting line breaks (\n or actual newlines) to <br/> tags:
+  • Video Concept  • Script/Message  • Hook Variations  • Supporting Text
+These are user-authored creative content written with precise intent. Any rewording is a critical error.
+
 {{BRIEF_EXAMPLE}}`,
         },
-
-        // ── TV — placeholder; to be expanded with full TV brief rules ──────────
+ — placeholder; to be expanded with full TV brief rules ──────────
         "TV": {
           colorCode: false,
           example: `EXAMPLE INPUT:
@@ -380,6 +383,8 @@ TV BRIEF STRUCTURE:
 - Hook Variations, if present → <h3>Hook / Opening Line</h3> before the script
 
 Do NOT apply colored spans to any text. TV briefs use plain readable text throughout.
+
+VERBATIM FIELDS — CRITICAL: Copy Video Concept, Script/Message, and Hook / Opening Line EXACTLY as written — word for word. Do NOT paraphrase or rewrite them. Convert line breaks to <br/> tags.
 
 {{BRIEF_EXAMPLE}}`,
         },
@@ -423,10 +428,13 @@ WEBSITE BRIEF STRUCTURE:
 
 Do NOT apply colored spans to any text.
 
+VERBATIM FIELDS — CRITICAL: Copy Video Concept / Goal, Script/Message / Copy, and Hook Variations EXACTLY as written — word for word. Do NOT paraphrase or rewrite them. Convert line breaks to <br/> tags.
+
 {{BRIEF_EXAMPLE}}`,
         },
 
-        // ── Default — all other Video departments (Socials, SP, Retention, Creative, Amazon, Ulta, etc.)
+        // ── Default — all other Video departments
+ (Socials, SP, Retention, Creative, Amazon, Ulta, etc.)
         "_default": {
           colorCode: false,
           example: `EXAMPLE INPUT:
@@ -463,11 +471,14 @@ FORMATTING RULES:
 
 Do NOT apply colored spans to any text. Present all content as clean plain HTML.
 
+VERBATIM FIELDS — CRITICAL: Copy Video Concept, Script/Message, and Hook Variations EXACTLY as written — word for word. Do NOT paraphrase or rewrite them. Convert line breaks to <br/> tags.
+
 {{BRIEF_EXAMPLE}}`,
         },
       },
 
-      // ── Design board ──────────────────────────────────────────────────────────
+      // ── Design board
+ ──────────────────────────────────────────────────────────
       design: {
 
         // ── Marketing — existing design brief (concept + metadata) ─────────────
@@ -499,6 +510,8 @@ FORMATTING RULES:
 3. Any additional creative fields get their own <h3> heading.
 4. Only include fields that have actual content — skip anything empty.
 5. Do NOT apply colored spans. Plain HTML only.
+
+VERBATIM FIELDS — CRITICAL: The Concept field (and any other creative text fields) must be copied EXACTLY as written — word for word. Do NOT paraphrase, summarize, or rewrite it. Convert line breaks to <br/> tags.
 
 {{BRIEF_EXAMPLE}}`,
         },
@@ -533,10 +546,13 @@ FORMATTING RULES:
 4. Only include fields that have actual content — skip anything empty.
 5. Do NOT apply colored spans. Plain HTML only.
 
+VERBATIM FIELDS — CRITICAL: The Concept field must be copied EXACTLY as written — word for word. Do NOT paraphrase or rewrite it. Convert line breaks to <br/> tags.
+
 {{BRIEF_EXAMPLE}}`,
         },
 
-        // ── Default — all other Design departments ─────────────────────────────
+        // ── Default — all other Design departments
+ ─────────────────────────────
         "_default": {
           colorCode: false,
           example: `EXAMPLE INPUT:
