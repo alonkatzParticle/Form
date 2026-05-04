@@ -103,6 +103,10 @@ export function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = n
         .join(", ");
     }
     if (Array.isArray(val)) return val.join(", ");
+    // Preserve newlines for multi-line text fields
+    if (field.type === "textarea" || field.type === "text") {
+      return String(val).replace(/\n/g, "<br>");
+    }
     return String(val);
   }
 
