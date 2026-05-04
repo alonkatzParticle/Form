@@ -342,7 +342,8 @@ These are user-authored creative content written with precise intent. Any reword
 
 {{BRIEF_EXAMPLE}}`,
         },
- — placeholder; to be expanded with full TV brief rules ──────────
+
+        // ── TV — placeholder; to be expanded with full TV brief rules ──────────
         "TV": {
           colorCode: false,
           example: `EXAMPLE INPUT:
@@ -433,8 +434,7 @@ VERBATIM FIELDS — CRITICAL: Copy Video Concept / Goal, Script/Message / Copy, 
 {{BRIEF_EXAMPLE}}`,
         },
 
-        // ── Default — all other Video departments
- (Socials, SP, Retention, Creative, Amazon, Ulta, etc.)
+        // ── Default — all other Video departments (Socials, SP, Retention, Creative, Amazon, Ulta, etc.)
         "_default": {
           colorCode: false,
           example: `EXAMPLE INPUT:
@@ -477,8 +477,7 @@ VERBATIM FIELDS — CRITICAL: Copy Video Concept, Script/Message, and Hook Varia
         },
       },
 
-      // ── Design board
- ──────────────────────────────────────────────────────────
+      // ── Design board ──────────────────────────────────────────────────────────
       design: {
 
         // ── Marketing — existing design brief (concept + metadata) ─────────────
@@ -551,8 +550,7 @@ VERBATIM FIELDS — CRITICAL: The Concept field must be copied EXACTLY as writte
 {{BRIEF_EXAMPLE}}`,
         },
 
-        // ── Default — all other Design departments
- ─────────────────────────────
+        // ── Default — all other Design departments ─────────────────────────────
         "_default": {
           colorCode: false,
           example: `EXAMPLE INPUT:
