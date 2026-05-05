@@ -130,6 +130,36 @@ export async function generateBrief({ formValues, boardType, estimatedDurationTe
   return html;
 }
 
+// Color-codes a Marketing/Media script into section-colored HTML spans.
+// Returns ONLY the span elements — no wrapper tags — ready to inject into the brief.
+// Input: raw script text. Output: "<span style="color:...">text</span><br/>..."
+export async function colorCodeScript(scriptText) {
+  const system = `You are a marketing script formatter. Color-code the script by section.
+Return ONLY HTML spans — no wrapper elements, no explanation, no markdown.
+
+Section colors:
+- Problem (the pain point the viewer relates to): color #D97706
+- Solution (where the product is introduced): color #16A34A
+- Social Proof (results, stats, testimonials): color #7C3AED
+- CTA (call to action — click, visit, try): color #2563EB
+
+Format: <span style="color:COLOR">section text here</span>
+Connect sections with <br/> only. No labels in the output — color alone identifies sections.
+If sections are unclear, wrap everything in <span style="color:#000000">text</span>.`;
+
+  const msg = await withRetry(() => getClient().messages.create({
+    model: "claude-haiku-4-5",
+    max_tokens: 600,
+    system,
+    messages: [{ role: "user", content: scriptText }],
+  }));
+
+  let html = msg.content[0].text.trim();
+  // Strip any accidental code fences
+  html = html.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return html;
+}
+
 // ─── Script duration helpers ──────────────────────────────────────────────────
 
 // Returns the target seconds range based on video type and optional user override.

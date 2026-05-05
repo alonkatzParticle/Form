@@ -135,7 +135,9 @@ export function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = n
         return `<${tag}${attrs} data-rm="1"></${tag}>`;   // marked, not yet deleted
       }
       const filled = inner.replace(/\{\{(\w+)\}\}/g, (_, k) => getVal(k) ?? "");
-      return `<${tag}${attrs}>${filled}</${tag}>`;
+      // Add data-field for single-key blocks so callers can locate them post-processing
+      const dataAttr = keys.length === 1 ? ` data-field="${keys[0]}"` : "";
+      return `<${tag}${attrs}${dataAttr}>${filled}</${tag}>`;
     }
   );
   result = result.replace(/\{\{(\w+)\}\}/g, (_, k) => getVal(k) ?? "");
@@ -210,84 +212,94 @@ export function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = n
   return scratch.innerHTML;
 }
 
-// ─── AI Brief Generator Utility ───────────────────────────────────────────────
+// ─── Hybrid Brief Generator ───────────────────────────────────────────────────
+// Template builds the full brief verbatim (no AI cost).
+// AI is called ONLY for Marketing/Media to color-code the Script/Message.
 
 export async function generateBriefHtml(board, task, users) {
-  const formValues = board.fields
-    .filter((f) => isVisible(f, task) && f.type !== "file" && f.mondayValueType !== "item_name" && !f.skipBrief)
-    .map((f) => {
-      const val = task[f.key];
-      if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.length === 0)) return null;
-      let display;
-      if (f.type === "people") {
-        display = val.map((id) => users.find((u) => String(u.id) === String(id))?.name ?? id).join(", ");
-      } else if (f.type === "hooks" && Array.isArray(val)) {
-        const filled = val.filter(Boolean);
-        if (filled.length === 0) return null;
-        display = filled.map((h, i) => `${i + 1}. ${h}`).join("\n");
-      } else if (Array.isArray(val)) {
-        display = val.join(", ");
-      } else if (f.type === "textarea") {
-        // Send line breaks as <br/> so the AI preserves them structurally
-        display = String(val).replace(/\n/g, "<br/>");
-      } else {
-        display = String(val);
-      }
-      return { label: f.label, value: display };
-    })
-    .filter(Boolean);
-
-  // ── Duration Estimation (syllable-based) ──
-  // Only meaningful for Marketing/Media department on the video board.
+  // ── Duration estimate ──────────────────────────────────────────────────────
   const isMarketingMedia = board.id === "video" && task.department === "Marketing/Media" && task.type !== "TV";
   const scriptField = isMarketingMedia ? board.fields.find((f) => f.durationEstimator) : null;
   const currentScript = scriptField ? task[scriptField.key] : null;
-
-  // ELEVENLABS_DISABLED — uncomment to restore TTS-based estimation:
-  // let finalEstimate = task._elevenLabsEstimate;
-  // if (currentScript && currentScript.trim().length > 0) {
-  //   if (!finalEstimate || task._estimatedScript !== currentScript) {
-  //     try {
-  //       const { data } = await axios.post("/api/elevenlabs/duration", { script: currentScript });
-  //       finalEstimate = data.estimatedSeconds + 3;
-  //     } catch { finalEstimate = null; }
-  //   }
-  // }
-
-  // Syllable-based math estimation (always runs, instant, no API needed)
   const finalEstimate = estimateDuration(currentScript);
 
-  // Push the estimate into formValues so the AI brief receives it
-  if (finalEstimate && !isNaN(finalEstimate)) {
-    const s = parseInt(finalEstimate, 10);
-    formValues.push({
-      label: "Estimated Duration",
-      value: `${Math.max(0, s - 2)}\u2013${s + 2} seconds`
-    });
+  // ── Build brief from template (verbatim, no AI) ────────────────────────────
+  const template = board.updateTemplate ?? DEFAULT_UPDATE_TEMPLATES[board.id] ?? null;
+  let html = buildUpdateBody(board.fields, task, users, template);
+
+  // ── Auto-append fields not referenced in the template ─────────────────────
+  // Handles new fields (Campaign, Priority, etc.) added after the template was written.
+  if (template) {
+    const templateKeys = new Set([...template.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]));
+    const extras = board.fields
+      .filter((f) => {
+        if (templateKeys.has(f.key)) return false;
+        if (!isVisible(f, task)) return false;
+        if (f.type === "file") return false;
+        if (f.mondayValueType === "item_name") return false;
+        if (f.skipBrief) return false;
+        const val = task[f.key];
+        return val !== null && val !== undefined && val !== "" && !(Array.isArray(val) && val.length === 0);
+      })
+      .map((f) => {
+        const val = task[f.key];
+        if (f.type === "people") {
+          const names = val.map((id) => users.find((u) => String(u.id) === String(id))?.name ?? id).join(", ");
+          return `<p><b>${f.label}:</b> ${names}</p>`;
+        }
+        if (f.type === "hooks" && Array.isArray(val)) {
+          const filled = val.filter(Boolean);
+          if (!filled.length) return null;
+          return `<h3>${f.label}</h3>${filled.map((h, i) => `<p><b>${i + 1}.</b> ${h}</p>`).join("")}`;
+        }
+        if (Array.isArray(val)) return `<p><b>${f.label}:</b> ${val.join(", ")}</p>`;
+        const display = (f.type === "textarea" || f.type === "text")
+          ? String(val).replace(/\n/g, "<br>") : String(val);
+        return `<p><b>${f.label}:</b> ${display}</p>`;
+      })
+      .filter(Boolean)
+      .join("");
+    if (extras) html += extras;
   }
 
-  // Safety net: inject duration directly into HTML even if AI skips the field
-  function injectDurationIntoHtml(html, estimateSeconds) {
-    if (!estimateSeconds || isNaN(estimateSeconds)) return html;
+  // ── Inject duration estimate ───────────────────────────────────────────────
+  function injectDurationIntoHtml(rawHtml, estimateSeconds) {
+    if (!estimateSeconds || isNaN(estimateSeconds)) return rawHtml;
     const s = parseInt(estimateSeconds, 10);
     const durationText = `${Math.max(0, s - 2)}\u2013${s + 2} sec`;
-    if (html.includes("Duration")) return html; // already present in any form — skip injection
-    const idx = html.indexOf("</p>");
-    if (idx === -1) return html + `<p><b>Est. Duration:</b> ${durationText}</p>`;
-    return html.slice(0, idx) + ` &nbsp;|&nbsp; <b>Est. Duration:</b> ${durationText}` + html.slice(idx);
+    if (rawHtml.includes("Duration")) return rawHtml;
+    const idx = rawHtml.indexOf("</p>");
+    if (idx === -1) return rawHtml + `<p><b>Est. Duration:</b> ${durationText}</p>`;
+    return rawHtml.slice(0, idx) + ` &nbsp;|&nbsp; <b>Est. Duration:</b> ${durationText}` + rawHtml.slice(idx);
+  }
+  html = injectDurationIntoHtml(html, finalEstimate);
+
+  // ── Marketing/Media only: color-code the script via a tiny AI call ─────────
+  if (isMarketingMedia && currentScript?.trim()) {
+    try {
+      const { data } = await axios.post("/api/ai/color-script", { script: currentScript });
+      if (data.html) {
+        // Find the script paragraph by its data-field marker and inject colored spans
+        const dom = document.createElement("div");
+        dom.innerHTML = html;
+        const scriptEl = dom.querySelector("[data-field='scriptMessage']");
+        if (scriptEl) {
+          scriptEl.removeAttribute("data-field");
+          scriptEl.innerHTML = data.html;
+          // Also upgrade the preceding label-only <p> into an <h3> heading
+          const prev = scriptEl.previousElementSibling;
+          if (prev && prev.tagName === "P") {
+            const h3 = document.createElement("h3");
+            h3.textContent = "Script";
+            prev.replaceWith(h3);
+          }
+        }
+        html = dom.innerHTML;
+      }
+    } catch { /* keep plain text on failure */ }
   }
 
-  try {
-    const { data } = await axios.post("/api/ai/brief", { formValues, boardType: board.id });
-    const html = injectDurationIntoHtml(data.html, finalEstimate);
-    return { html, finalEstimate };
-  } catch {
-    const html = injectDurationIntoHtml(
-      buildUpdateBody(board.fields, task, users, board.updateTemplate ?? DEFAULT_UPDATE_TEMPLATES[board.id] ?? null),
-      finalEstimate
-    );
-    return { html, finalEstimate };
-  }
+  return { html, finalEstimate };
 }
 
 // ─── Monday value serializer ──────────────────────────────────────────────────

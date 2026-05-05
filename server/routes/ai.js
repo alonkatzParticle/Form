@@ -4,7 +4,8 @@
 // Returns: JSON matching the VideoTask or DesignTask shape
 
 import express from "express";
-import { assistWithTask, generateBrief, trimScriptToTarget } from "../services/aiService.js";
+import { assistWithTask, generateBrief, trimScriptToTarget, colorCodeScript } from "../services/aiService.js";
+
 import { analyzeReference, generateImage } from "../services/geminiService.js";
 import { AI_AGENTS } from "../aiAgents.js";
 import { estimateDuration, formatDurationRange } from "../utils/durationEstimate.js";
@@ -109,6 +110,21 @@ router.post("/brief", async (req, res) => {
     res.json({ html });
   } catch (err) {
     console.error("AI brief error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Color-code a Marketing/Media script — returns only the colored <span> blocks.
+// Body: { script: string }
+// Returns: { html: "<span style=...>...</span><br/>..." }
+router.post("/color-script", async (req, res) => {
+  try {
+    const { script } = req.body;
+    if (!script) return res.status(400).json({ error: "script is required" });
+    const html = await colorCodeScript(script);
+    res.json({ html });
+  } catch (err) {
+    console.error("AI color-script error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
