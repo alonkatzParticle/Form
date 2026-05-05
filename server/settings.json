@@ -160,9 +160,9 @@
           "half": true,
           "mondayColumnId": "color_mm2v5q62",
           "mondayValueType": "status",
-          "options": ["None", "Easter", "New Years", "Memorial Day", "Other"],
+          "options": ["None", "Easter", "New Years", "Memorial Day", "Father's Day", "Other"],
           "mondayOptionIndices": {
-            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2
+            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2, "Father's Day": 3
           },
           "default": "None",
           "step1": true,
@@ -510,9 +510,9 @@
           "half": true,
           "mondayColumnId": "color_mm2wcjdy",
           "mondayValueType": "status",
-          "options": ["None", "Easter", "New Years", "Memorial Day", "Other"],
+          "options": ["None", "Easter", "New Years", "Memorial Day", "Father's Day", "Other"],
           "mondayOptionIndices": {
-            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2
+            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2, "Father's Day": 3
           },
           "default": "None",
           "step1": true,
