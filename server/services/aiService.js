@@ -149,7 +149,7 @@ If sections are unclear, wrap everything in <span style="color:#000000">text</sp
 
   const msg = await withRetry(() => getClient().messages.create({
     model: "claude-haiku-4-5",
-    max_tokens: 600,
+    max_tokens: 1200,
     system,
     messages: [{ role: "user", content: scriptText }],
   }));
@@ -157,6 +157,12 @@ If sections are unclear, wrap everything in <span style="color:#000000">text</sp
   let html = msg.content[0].text.trim();
   // Strip any accidental code fences
   html = html.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/, "").trim();
+  // Sanitize: remove any <p>/<div> wrapper tags the AI might add (keep their content)
+  html = html.replace(/<\/?(?:p|div)[^>]*>/gi, "");
+  // Collapse multiple consecutive <br> variants into a single <br/>
+  html = html.replace(/(\s*<br\s*\/?>\s*){2,}/gi, "<br/>");
+  // Trim leading/trailing whitespace and stray line breaks
+  html = html.replace(/^\s*(<br\s*\/?>\s*)+/i, "").replace(/(\s*<br\s*\/?>\s*)+$/i, "").trim();
   return html;
 }
 
