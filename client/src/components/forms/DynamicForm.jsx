@@ -57,6 +57,9 @@ export function buildAutoName(board, task) {
   if (!board.autoName) return task.taskName || "";
   return board.autoName.segments
     .map((seg) => {
+      // Skip segment entirely if the field is hidden by showWhen conditions
+      const fieldDef = board.fields?.find((f) => f.key === seg.field);
+      if (fieldDef && !isVisible(fieldDef, task)) return null;
       let val = task[seg.field];
       if (!val && seg.fallback) val = task[seg.fallback];
       if (!val) return null;
@@ -379,6 +382,8 @@ export function buildColumnValues(fields, task) {
 
   for (const field of fields) {
     if (!field.mondayColumnId) continue;
+    // Skip hidden fields — their stale values must not reach Monday
+    if (!isVisible(field, buildTask)) continue;
     const mondayVal = toMondayValue(field, buildTask[field.key]);
     if (mondayVal !== null && mondayVal !== undefined) {
       vals[field.mondayColumnId] = mondayVal;
