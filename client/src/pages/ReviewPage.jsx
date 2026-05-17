@@ -349,14 +349,9 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       const entryFilesCheck = taskFiles?.[entry.id] ?? {};
       const hasActualFiles = Object.values(entryFilesCheck).some((fl) => fl && fl.length > 0);
       if (expectedFileNames.length > 0 && !hasActualFiles) {
-        const proceed = window.confirm(
-          `⚠️ This task had ${expectedFileNames.length} file(s) attached:\n${expectedFileNames.join("\n")}\n\nThey\'re no longer available — the page may have been refreshed.\n\nSubmit without files? You\'ll need to attach them manually in Monday.`
-        );
-        if (!proceed) {
-          setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "draft" } : t));
-          setSubmitProgress(null);
-          return;
-        }
+        setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "error", errorMsg: "There is an issue with your files, please upload them again." } : t));
+        setSubmitProgress(null);
+        return;
       }
 
       let submittedFileCount = 0;
