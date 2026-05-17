@@ -127,7 +127,8 @@ function SuccessCard({ itemUrl, isBatch, onCreateAnother, onGoHome }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange }) {
+export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange, taskFileNames }) {
+
   const navigate = useNavigate();
   const pathname = usePathname();
   
@@ -343,6 +344,21 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       }
 
       // ── Step: uploading files ────────────────────────────────────────────────
+      // Pre-flight: if file names were recorded but actual files are gone (page refresh), warn user
+      const expectedFileNames = Object.values(taskFileNames?.[entry.id] ?? {}).flat();
+      const entryFilesCheck = taskFiles?.[entry.id] ?? {};
+      const hasActualFiles = Object.values(entryFilesCheck).some((fl) => fl && fl.length > 0);
+      if (expectedFileNames.length > 0 && !hasActualFiles) {
+        const proceed = window.confirm(
+          `⚠️ This task had ${expectedFileNames.length} file(s) attached:\n${expectedFileNames.join("\n")}\n\nThey\'re no longer available — the page may have been refreshed.\n\nSubmit without files? You\'ll need to attach them manually in Monday.`
+        );
+        if (!proceed) {
+          setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "draft" } : t));
+          setSubmitProgress(null);
+          return;
+        }
+      }
+
       let submittedFileCount = 0;
       let filesActuallyFailed = false;
       if (itemId && taskFiles) {
@@ -360,6 +376,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
           submittedFileCount = allFiles.length;
           setSubmitProgress({ step: "files", fileIndex: 0, fileTotal: allFiles.length, fileName: "" });
           const failedFiles = [];
+          let fileWarningMsg = null;
           for (let i = 0; i < allFiles.length; i++) {
             const { file, field } = allFiles[i];
             setSubmitProgress({ step: "files", fileIndex: i + 1, fileTotal: allFiles.length, fileName: file.name });
@@ -372,9 +389,8 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
           }
           if (failedFiles.length > 0) {
             filesActuallyFailed = true;
-            setFileUploadWarning(
-              `⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`
-            );
+            fileWarningMsg = `⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`;
+            setFileUploadWarning(fileWarningMsg);
           }
         }
         onFilesUploaded?.(entry.id);
@@ -395,7 +411,8 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
 
       // Show success card for single-task flow
       if (!isBatchMode) {
-        setSuccessState({ url: itemUrl, warning: fileUploadWarning ?? submitWarning });
+        setSuccessState({ url: itemUrl, warning: fileWarningMsg ?? submitWarning });
+
       }
 
       // In batch mode: update query params but don't show success yet until submitAll is done

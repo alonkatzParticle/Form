@@ -96,7 +96,8 @@ function SuccessCard({ itemUrl, onCreateAnother }) {
   );
 }
 
-export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange }) {
+export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange, taskFileNames }) {
+
   const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState(null);
   const [editingBrief, setEditingBrief] = usePersistedState("pending_editingBrief", "");
@@ -279,6 +280,21 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       }
 
       // ── Step: uploading files
+      // Pre-flight: if file names were recorded but actual files are gone (page refresh), warn user
+      const expectedFileNames = Object.values(taskFileNames?.[entry.id] ?? {}).flat();
+      const entryFilesCheck = taskFiles?.[entry.id] ?? {};
+      const hasActualFiles = Object.values(entryFilesCheck).some((fl) => fl && fl.length > 0);
+      if (expectedFileNames.length > 0 && !hasActualFiles) {
+        const proceed = window.confirm(
+          `⚠️ This task had ${expectedFileNames.length} file(s) attached:\n${expectedFileNames.join("\n")}\n\nThey\'re no longer available — the page may have been refreshed.\n\nSubmit without files? You\'ll need to attach them manually in Monday.`
+        );
+        if (!proceed) {
+          setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: "draft" } : t));
+          setSubmitProgress(null);
+          return;
+        }
+      }
+
       let submittedFileCount = 0;
       let filesActuallyFailed = false;
       if (itemId && taskFiles) {
@@ -294,6 +310,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
           submittedFileCount = allFiles.length;
           setSubmitProgress({ step: "files", fileIndex: 0, fileTotal: allFiles.length, fileName: "" });
           const failedFiles = [];
+          let fileWarningMsg = null;
           for (let i = 0; i < allFiles.length; i++) {
             const { file, field } = allFiles[i];
             setSubmitProgress({ step: "files", fileIndex: i + 1, fileTotal: allFiles.length, fileName: file.name });
@@ -306,7 +323,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
           }
           if (failedFiles.length > 0) {
             filesActuallyFailed = true;
-            alert(`⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`);
+            fileWarningMsg = `⚠️ Task created in Monday, but ${failedFiles.length} file(s) failed to upload: ${failedFiles.join(", ")}. Please attach them manually in Monday.`;
           }
         }
         onFilesUploaded?.(entry.id);
@@ -328,7 +345,8 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
         setEditingBrief("");
       }
       setTasks((prev) => prev.filter((t) => t.id !== id));
-      setSuccessState({ url: itemUrl });
+      setSuccessState({ url: itemUrl, warning: fileWarningMsg ?? null });
+
     } catch (err) {
       // Only reaches here if create-item itself failed (no item created yet)
       const msg = err.response?.data?.error || err.message || "Submission failed";

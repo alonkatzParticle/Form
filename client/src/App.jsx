@@ -37,6 +37,8 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   // Non-persisted: holds FileList objects (not JSON-serializable) keyed by taskId
   const [taskFiles, setTaskFiles] = useState({});
+  // Persisted: holds file names keyed by taskId — survives page refresh so we can detect lost files
+  const [taskFileNames, setTaskFileNames] = usePersistedState("app_task_file_names", {});
 
   // Extract file fields from a task, store them in taskFiles, return { cleanTask, hasFiles }
   function extractFiles(taskId, taskObj, board) {
@@ -52,7 +54,15 @@ export default function App() {
       clean[field.key] = null;
     }
     const hasFiles = Object.keys(files).length > 0;
-    if (hasFiles) setTaskFiles((prev) => ({ ...prev, [taskId]: files }));
+    if (hasFiles) {
+      setTaskFiles((prev) => ({ ...prev, [taskId]: files }));
+      // Persist just the names so we can detect file loss after a page refresh
+      const names = {};
+      for (const [key, fileList] of Object.entries(files)) {
+        names[key] = Array.from(fileList).map((f) => f.name);
+      }
+      setTaskFileNames((prev) => ({ ...prev, [taskId]: names }));
+    }
     return { cleanTask: clean, hasFiles };
   }
 
@@ -60,6 +70,7 @@ export default function App() {
 
   function clearTaskFiles(taskId) {
     setTaskFiles((prev) => { const n = { ...prev }; delete n[taskId]; return n; });
+    setTaskFileNames((prev) => { const n = { ...prev }; delete n[taskId]; return n; });
   }
 
   // Called when a file field changes in Pending or Review
@@ -68,6 +79,20 @@ export default function App() {
       ...prev,
       [taskId]: { ...(prev[taskId] ?? {}), [fieldKey]: files },
     }));
+    // Keep persisted names in sync
+    const names = files ? Array.from(files).map((f) => f.name) : [];
+    setTaskFileNames((prev) => {
+      const taskNames = { ...(prev[taskId] ?? {}) };
+      if (names.length > 0) {
+        taskNames[fieldKey] = names;
+      } else {
+        delete taskNames[fieldKey];
+      }
+      if (Object.keys(taskNames).length === 0) {
+        const n = { ...prev }; delete n[taskId]; return n;
+      }
+      return { ...prev, [taskId]: taskNames };
+    });
   }
 
   // Fetch all shared tickets from server and replace local cache
@@ -232,7 +257,9 @@ export default function App() {
             taskFiles={taskFiles}
             onFilesUploaded={clearTaskFiles}
             onFileChange={handleFileChange}
+            taskFileNames={taskFileNames}
           />
+
         </div>
 
         <div style={{ display: isReview ? "block" : "none" }}>
@@ -245,7 +272,9 @@ export default function App() {
             taskFiles={taskFiles}
             onFilesUploaded={clearTaskFiles}
             onFileChange={handleFileChange}
+            taskFileNames={taskFileNames}
           />
+
         </div>
 
         <div style={{ display: isPastTickets ? "block" : "none" }}>
