@@ -161,6 +161,8 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
   const [briefIsStale, setBriefIsStale]           = useState(false);
   const [showStaleBriefWarning, setShowStaleBriefWarning] = useState(false);
   const [showApiKeyWarning, setShowApiKeyWarning] = useState(false);
+  // Fallback: if task never arrives after 3s, show a recoverable error instead of spinning forever
+  const [sessionStuck, setSessionStuck] = useState(false);
 
   // Brief editor ref — set innerHTML imperatively to avoid cursor-jump on re-renders
   const briefRef = useRef(null);
@@ -178,7 +180,17 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       setBriefIsStale(false);
       setShowStaleBriefWarning(false);
     }
-  }, [queryIds]); // queryIds reference is stable between renders (useMemo on pathname)
+  }, [queryIds]);
+
+  // Stuck-session detector: if queryIds has IDs but no tasks appear after 3s, surface an error
+  useEffect(() => {
+    if (queryIds.length === 0 || reviewTasks.length > 0) {
+      setSessionStuck(false);
+      return;
+    }
+    const timer = setTimeout(() => setSessionStuck(true), 3000);
+    return () => clearTimeout(timer);
+  }, [queryIds, reviewTasks.length]);
 
   // Auto-select first task when review initializes or changes
   useEffect(() => {
@@ -482,7 +494,14 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
 
       {reviewTasks.length === 0 ? (
         <div className="batch-input-phase" style={{ textAlign: "center", padding: "40px" }}>
-          <p style={{ color: "var(--text-muted)" }}>Initializing review session…</p>
+          {sessionStuck ? (
+            <>
+              <p style={{ color: "var(--text-muted)", marginBottom: 12 }}>Something went wrong loading this task.</p>
+              <button className="btn-submit" style={{ maxWidth: 200 }} onClick={() => navigate("/")}>← Go Back</button>
+            </>
+          ) : (
+            <p style={{ color: "var(--text-muted)" }}>Initializing review session…</p>
+          )}
         </div>
       ) : (
         <div className="batch-review">

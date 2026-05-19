@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { flushSync } from "react-dom";
+
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Home from "./pages/Home.jsx";
@@ -229,7 +231,11 @@ export default function App() {
               const { cleanTask: cleanTaskData, hasFiles } = extractFiles(task.id, task.task, board);
               const brief = hasFiles ? (task.brief || "") + FILES_NOTE : (task.brief || "");
               const cleanTask = { ...task, task: cleanTaskData, brief, editedBrief: brief };
-              setPendingTasks((prev) => [...prev, cleanTask]);
+              // flushSync guarantees the state update is committed before navigate(),
+              // preventing the race where queryIds has the new ID but tasks doesn't yet.
+              flushSync(() => {
+                setPendingTasks((prev) => [...prev, cleanTask]);
+              });
               navigate(`/review?ids=${task.id}`);
             }}
           />
