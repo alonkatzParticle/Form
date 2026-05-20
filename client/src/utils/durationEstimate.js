@@ -8,8 +8,15 @@
 // 280 syllables/min is the midpoint of the 270–300 SPM range for fast UGC delivery.
 const UGC_SPM = 280; // syllables per minute
 
-// Extra seconds added to account for visual-only hook that runs without voiceover.
+// Extra seconds for the visual-only hook at the start.
 const HOOK_BUFFER_SECONDS = 3;
+
+// Accounts for visual pauses between lines (scene cuts, reaction moments, footage).
+// Each newline-separated segment represents a visual beat with footage/silence between it.
+// Formula: pause = K × numLines² / syllables
+// — more lines with shorter content → proportionally more visual time
+// — calibrated to 105 so a 10-line/133-syl script lands at ~109s.
+const VISUAL_PAUSE_K = 105;
 
 /**
  * Count the number of syllables in a single English word.
@@ -67,8 +74,11 @@ function countScriptSyllables(script) {
 export function estimateDuration(script) {
   if (!script || !script.trim()) return null;
   const syllables = countScriptSyllables(script);
+  if (syllables === 0) return null;
+  const numLines = script.trim().split(/\n+/).filter((l) => l.trim().length > 0).length;
   const spokenSeconds = (syllables / UGC_SPM) * 60;
-  return Math.round(spokenSeconds) + HOOK_BUFFER_SECONDS;
+  const visualPauseSeconds = (VISUAL_PAUSE_K * numLines * numLines) / syllables;
+  return Math.round(spokenSeconds + visualPauseSeconds) + HOOK_BUFFER_SECONDS;
 }
 
 /**

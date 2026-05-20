@@ -20,10 +20,16 @@ function countSyllables(word) {
   return Math.max(1, count);
 }
 
+const VISUAL_PAUSE_K = 105;
+
 export function estimateDuration(script) {
   if (!script || !script.trim()) return null;
   const syllables = script.trim().split(/\s+/).reduce((sum, w) => sum + countSyllables(w), 0);
-  return Math.round((syllables / UGC_SPM) * 60) + HOOK_BUFFER_SECONDS;
+  if (syllables === 0) return null;
+  const numLines = script.trim().split(/\n+/).filter((l) => l.trim().length > 0).length;
+  const spokenSeconds = (syllables / UGC_SPM) * 60;
+  const visualPauseSeconds = (VISUAL_PAUSE_K * numLines * numLines) / syllables;
+  return Math.round(spokenSeconds + visualPauseSeconds) + HOOK_BUFFER_SECONDS;
 }
 
 export function formatDurationRange(seconds) {
