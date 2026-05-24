@@ -5,16 +5,20 @@
 
 import { Field, renderInput } from "./forms/DynamicForm.jsx";
 
-// Check whether a field's showWhen condition is satisfied.
+// Check whether a field's showWhen condition(s) are satisfied.
+// Supports both a single condition object and an array of conditions (all must pass).
 function meetsCondition(field, formTask) {
   if (!field?.showWhen) return true;
-  const val = formTask[field.showWhen.field];
-  if (field.showWhen.excludes !== undefined) {
-    if (Array.isArray(val)) return !val.includes(field.showWhen.excludes);
-    return val !== field.showWhen.excludes;
-  }
-  if (Array.isArray(val)) return val.includes(field.showWhen.includes);
-  return val === field.showWhen.includes;
+  const conditions = Array.isArray(field.showWhen) ? field.showWhen : [field.showWhen];
+  return conditions.every((cond) => {
+    const val = formTask[cond.field];
+    if (cond.excludes !== undefined) {
+      if (Array.isArray(val)) return !val.includes(cond.excludes);
+      return val !== cond.excludes;
+    }
+    if (Array.isArray(val)) return val.includes(cond.includes);
+    return val === cond.includes;
+  });
 }
 
 // Returns the list of step1 field keys for a given board's field definitions.
