@@ -272,3 +272,57 @@ export async function getBoardColumns(boardId) {
   const data = await mondayQuery(query, { boardId });
   return data.boards[0]?.columns || [];
 }
+
+// Fetch the settings_str for a specific column on a board.
+// Returns the parsed settings object, or null if not found.
+export async function getColumnSettings(boardId, columnId) {
+  const query = `
+    query GetColSettings($boardId: ID!) {
+      boards(ids: [$boardId]) {
+        columns { id settings_str }
+      }
+    }
+  `;
+  const data = await mondayQuery(query, { boardId });
+  const col = data.boards[0]?.columns?.find((c) => c.id === columnId);
+  if (!col) return null;
+  try { return JSON.parse(col.settings_str); } catch { return null; }
+}
+
+// Add a new label to a Monday dropdown column.
+// Fetches current labels, skips if already present, then calls change_column_metadata.
+export async function addLabelToDropdown(boardId, columnId, labelName) {
+  const settings = await getColumnSettings(boardId, columnId);
+  if (!settings) throw new Error(`Column ${columnId} not found on board ${boardId}`);
+
+  // labels may be an array [{id, name}] or an object {id: name}
+  const rawLabels = settings.labels ?? [];
+  const labelsArr = Array.isArray(rawLabels)
+    ? rawLabels
+    : Object.entries(rawLabels).map(([id, name]) => ({ id: parseInt(id), name }));
+
+  // Skip if already exists
+  if (labelsArr.some((l) => l.name === labelName)) return;
+
+  // Build {id: name} map and find next ID
+  const labelsMap = {};
+  let maxId = 0;
+  for (const l of labelsArr) {
+    labelsMap[String(l.id)] = l.name;
+    if (l.id > maxId) maxId = l.id;
+  }
+  labelsMap[String(maxId + 1)] = labelName;
+
+  const mutation = `
+    mutation AddDropdownLabel($boardId: ID!, $columnId: String!, $value: String!) {
+      change_column_metadata(board_id: $boardId, column_id: $columnId, column_property: labels, value: $value) {
+        id
+      }
+    }
+  `;
+  await mondayQuery(mutation, {
+    boardId,
+    columnId,
+    value: JSON.stringify(labelsMap),
+  });
+}

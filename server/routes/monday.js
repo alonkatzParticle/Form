@@ -10,7 +10,8 @@ import express from "express";
 import multer from "multer";
 import { handleUpload } from "@vercel/blob/client";
 import { del } from "@vercel/blob";
-import { createItem, createUpdate, getMe, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
+import { createItem, createUpdate, getMe, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem, addLabelToDropdown } from "../services/mondayService.js";
+
 import { getSettings, addFieldOption } from "../services/settingsService.js";
 
 
@@ -524,15 +525,35 @@ router.post("/rename-item", async (req, res) => {
 
 // ── Add a new option to a creatable-select field in settings.json ─────────────
 // Called by the client after the user types a new campaign value.
+// 1. Saves the new option to settings.json for future sessions.
+// 2. Creates the label in Monday's dropdown column(s) so submission doesn't fail.
 // Body: { fieldKey, option }
-router.post("/add-campaign-option", (req, res) => {
+router.post("/add-campaign-option", async (req, res) => {
   const { fieldKey, option } = req.body;
   if (!fieldKey || typeof option !== "string" || !option.trim()) {
     return res.status(400).json({ error: "fieldKey and option are required" });
   }
+  const label = option.trim();
   try {
-    const changed = addFieldOption(fieldKey, option.trim());
-    res.json({ success: true, changed });
+    // 1. Persist to settings.json
+    const changed = addFieldOption(fieldKey, label);
+
+    // 2. Create the label in Monday for every board field with mondayValueType "dropdown"
+    const settings = getSettings();
+    const mondayResults = [];
+    for (const board of settings.boards) {
+      const field = board.fields?.find((f) => f.key === fieldKey);
+      if (!field || field.mondayValueType !== "dropdown" || !field.mondayColumnId) continue;
+      try {
+        await addLabelToDropdown(board.boardId, field.mondayColumnId, label);
+        mondayResults.push({ boardId: board.boardId, status: "ok" });
+      } catch (e) {
+        console.error(`[add-campaign-option] Monday label create failed (board ${board.boardId}):`, e.message);
+        mondayResults.push({ boardId: board.boardId, status: "error", error: e.message });
+      }
+    }
+
+    res.json({ success: true, changed, mondayResults });
   } catch (err) {
     console.error("[add-campaign-option]", err);
     res.status(500).json({ error: err.message });
