@@ -30,17 +30,18 @@ export function Field({ label, required, hint, children }) {
 export function isVisible(field, task, hiddenKeys = []) {
   if (field.hidden) return false;  // hidden fields never render — but still submit to Monday
   if (hiddenKeys.includes(field.key)) return false;
-  // showWhen: only display this field when another field has the specified value
+  // showWhen: can be a single condition object OR an array of conditions (all must pass — AND logic)
   if (field.showWhen) {
-    const val = task[field.showWhen.field];
-    // excludes: hide when field equals the value
-    if (field.showWhen.excludes !== undefined) {
-      if (Array.isArray(val)) return !val.includes(field.showWhen.excludes);
-      return val !== field.showWhen.excludes;
-    }
-    // includes: show only when field equals the value
-    if (Array.isArray(val)) return val.includes(field.showWhen.includes);
-    return val === field.showWhen.includes;
+    const conditions = Array.isArray(field.showWhen) ? field.showWhen : [field.showWhen];
+    return conditions.every((cond) => {
+      const val = task[cond.field];
+      if (cond.excludes !== undefined) {
+        if (Array.isArray(val)) return !val.includes(cond.excludes);
+        return val !== cond.excludes;
+      }
+      if (Array.isArray(val)) return val.includes(cond.includes);
+      return val === cond.includes;
+    });
   }
   if (!field.show_if) return true;
   return true;

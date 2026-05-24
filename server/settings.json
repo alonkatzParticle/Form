@@ -153,6 +153,19 @@
           "step1": true
         },
         {
+          "key": "campaignType",
+          "label": "Part of a campaign?",
+          "type": "select",
+          "required": false,
+          "half": true,
+          "options": ["No", "Yes", "Holiday Campaign"],
+          "default": "No",
+          "mondayColumnId": null,
+          "skipBrief": true,
+          "step1": true,
+          "showWhen": { "field": "department", "includes": "Marketing/Media" }
+        },
+        {
           "key": "campaign",
           "label": "Holiday Campaign",
           "type": "select",
@@ -166,7 +179,10 @@
           },
           "default": "None",
           "step1": true,
-          "showWhen": { "field": "department", "includes": "Marketing/Media" }
+          "showWhen": [
+            { "field": "campaignType", "includes": "Holiday Campaign" },
+            { "field": "department", "includes": "Marketing/Media" }
+          ]
         },
         {
           "key": "campaignCustom",
@@ -191,7 +207,10 @@
           "mondayValueType": "dropdown",
           "options": ["Father's Day"],
           "step1": true,
-          "showWhen": { "field": "department", "includes": "Marketing/Media" }
+          "showWhen": [
+            { "field": "campaignType", "includes": "Yes" },
+            { "field": "department", "includes": "Marketing/Media" }
+          ]
         },
         {
           "key": "taskName",
@@ -515,6 +534,19 @@
           }
         },
         {
+          "key": "campaignType",
+          "label": "Part of a campaign?",
+          "type": "select",
+          "required": false,
+          "half": true,
+          "options": ["No", "Yes", "Holiday Campaign"],
+          "default": "No",
+          "mondayColumnId": null,
+          "skipBrief": true,
+          "step1": true,
+          "showWhen": { "field": "department", "includes": "Marketing" }
+        },
+        {
           "key": "campaign",
           "label": "Holiday Campaign",
           "type": "select",
@@ -528,7 +560,10 @@
           },
           "default": "None",
           "step1": true,
-          "showWhen": { "field": "department", "includes": "Marketing" }
+          "showWhen": [
+            { "field": "campaignType", "includes": "Holiday Campaign" },
+            { "field": "department", "includes": "Marketing" }
+          ]
         },
         {
           "key": "campaignCustom",
@@ -553,7 +588,10 @@
           "mondayValueType": "dropdown",
           "options": ["Father's Day"],
           "step1": true,
-          "showWhen": { "field": "department", "includes": "Marketing" }
+          "showWhen": [
+            { "field": "campaignType", "includes": "Yes" },
+            { "field": "department", "includes": "Marketing" }
+          ]
         },
         {
           "key": "taskName",
