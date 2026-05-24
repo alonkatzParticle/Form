@@ -67,10 +67,12 @@ export function buildAutoName(board, task) {
       if (seg.onlyWhenField && task[seg.onlyWhenField] !== seg.onlyWhenValue) return null;
       if (seg.onlyValues && !seg.onlyValues.includes(val)) return null;
       if (seg.skipValues && seg.skipValues.includes(val)) return null;
-      // requireFieldEmpty: skip this segment when another field has a non-empty, non-None value
+      // requireFieldEmpty: skip this segment when ANY of the listed fields has a non-empty, non-None value.
+      // Accepts a single string OR an array of field keys (OR semantics across the array).
       if (seg.requireFieldEmpty) {
-        const guard = task[seg.requireFieldEmpty];
-        if (guard && guard !== "None" && guard !== "") return null;
+        const keys = Array.isArray(seg.requireFieldEmpty) ? seg.requireFieldEmpty : [seg.requireFieldEmpty];
+        const blocked = keys.some((k) => { const g = task[k]; return g && g !== "None" && g !== ""; });
+        if (blocked) return null;
       }
       // aliasWhenValue: if the field value matches a key, use a different field's text (title-cased)
       if (seg.aliasWhenValue && seg.aliasWhenValue[val]) {

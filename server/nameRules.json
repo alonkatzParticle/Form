@@ -3,9 +3,10 @@
     "segments": [
       { "field": "product" },
       { "field": "campaign", "skipValues": ["None", ""], "aliasWhenValue": {"Other": "campaignCustom"} },
+      { "field": "campaignTag", "skipValues": [""] },
       { "field": "platform", "fallback": "department", "valueMap": { "Gentleman Today": "META | GT" }, "aliasWhenValue": {"Other": "platformCustom"} },
-      { "field": "howDidYouMake", "requireFieldEmpty": "campaign" },
-      { "field": "type", "onlyValues": ["AI Creator"], "requireFieldEmpty": "campaign" },
+      { "field": "howDidYouMake", "requireFieldEmpty": ["campaign", "campaignTag"] },
+      { "field": "type", "onlyValues": ["AI Creator"], "requireFieldEmpty": ["campaign", "campaignTag"] },
       { "field": "taskName" }
     ]
   },
@@ -13,10 +14,11 @@
     "segments": [
       { "field": "productBundle" },
       { "field": "campaign", "skipValues": ["None", ""], "aliasWhenValue": {"Other": "campaignCustom"} },
+      { "field": "campaignTag", "skipValues": [""] },
       { "field": "platform", "skipValues": ["Other"], "valueMap": { "Gentleman Today": "META | GT" }, "aliasWhenValue": {"Other": "platformCustom"} },
-      { "field": "department", "onlyValues": ["Website"], "requireFieldEmpty": "campaign" },
-      { "field": "websiteType", "onlyWhenField": "department", "onlyWhenValue": "Website", "skipValues": ["Other", "Test Products"], "requireFieldEmpty": "campaign" },
-      { "field": "howDidYouCreate", "requireFieldEmpty": "campaign" },
+      { "field": "department", "onlyValues": ["Website"], "requireFieldEmpty": ["campaign", "campaignTag"] },
+      { "field": "websiteType", "onlyWhenField": "department", "onlyWhenValue": "Website", "skipValues": ["Other", "Test Products"], "requireFieldEmpty": ["campaign", "campaignTag"] },
+      { "field": "howDidYouCreate", "requireFieldEmpty": ["campaign", "campaignTag"] },
       { "field": "taskName" }
     ]
   }
