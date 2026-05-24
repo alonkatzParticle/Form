@@ -337,6 +337,8 @@ function toMondayValue(field, value) {
       return { label: value };
     }
     case "multi_select": return { labels: value };
+    // Monday dropdown column — single string value sent as a one-element labels array
+    case "dropdown":     return { labels: Array.isArray(value) ? value : [value] };
     case "date":      return { date: value };
     case "number":    return String(value);
     case "long_text": return { text: value };
