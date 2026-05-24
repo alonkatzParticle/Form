@@ -189,6 +189,55 @@ router.post("/create-item", async (req, res) => {
     }
     res.json({ itemId, url, create_item: result?.create_item });
   } catch (err) {
+    // ── Auto-create missing dropdown labels and retry ───────────────────────────
+    // Monday throws "The dropdown label 'X' does not exist" when a label hasn't
+    // been created yet on the column. We create it and retry transparently.
+    const isDropdownLabelMissing =
+      err.message?.includes("does not exist") && err.message?.includes("dropdown label");
+
+    if (isDropdownLabelMissing) {
+      const { boardId, columnValues, itemName, updateBody } = req.body;
+      const apiKey = req.headers["x-monday-api-key"] || null;
+
+      // Find all { labels: [...] } column values and create any missing labels
+      const dropdownCols = Object.entries(columnValues || {})
+        .filter(([, v]) => v && typeof v === "object" && Array.isArray(v.labels));
+
+      for (const [colId, { labels }] of dropdownCols) {
+        for (const label of labels) {
+          if (typeof label === "string" && label.trim()) {
+            try {
+              await addLabelToDropdown(boardId, colId, label.trim());
+              console.log(`[create-item] Created missing dropdown label "${label}" on column ${colId}`);
+              // Also persist to settings.json for future sessions
+              const settings = getSettings();
+              const board = settings.boards?.find((b) => b.boardId === boardId);
+              const field = board?.fields?.find((f) => f.mondayColumnId === colId);
+              if (field) addFieldOption(field.key, label.trim());
+            } catch (labelErr) {
+              console.error(`[create-item] Failed to create label "${label}" on ${colId}:`, labelErr.message);
+            }
+          }
+        }
+      }
+
+      // Retry the item creation now that labels exist
+      try {
+        const retryResult = await createItem(boardId, itemName, columnValues || {}, apiKey);
+        const itemId = retryResult?.create_item?.id;
+        const url = retryResult?.create_item?.url ?? null;
+        if (itemId && updateBody) {
+          await createUpdate(itemId, updateBody, null).catch((e) =>
+            console.warn("[create-item] Update post failed after dropdown retry:", e.message)
+          );
+        }
+        return res.json({ itemId, url, create_item: retryResult?.create_item });
+      } catch (retryErr) {
+        console.error("[create-item] Dropdown label retry failed:", retryErr.message);
+        return res.status(500).json({ error: retryErr.message });
+      }
+    }
+
     const isDeactivatedLabel = err.message?.includes("label has been deactivated") ||
       err.message?.includes("deactivated") ||
       err.message?.includes("ColumnValueException");
