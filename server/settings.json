@@ -24,11 +24,18 @@
             "Marketing/Media"
           ],
           "mondayOptionIndices": {
-            "Socials": 0, "Website": 1, "Special Project (SP)": 2, "Retention": 3,
-            "Creative": 4, "TV": 8, "Amazon": 9, "Ulta": 10, "Marketing/Media": 105
+            "Socials": 0,
+            "Website": 1,
+            "Special Project (SP)": 2,
+            "Retention": 3,
+            "Creative": 4,
+            "TV": 8,
+            "Amazon": 9,
+            "Ulta": 10,
+            "Marketing/Media": 105
           },
           "step1": true,
-          "sectionHeader": "Step 1 — Context"
+          "sectionHeader": "Step 1 \u2014 Context"
         },
         {
           "key": "product",
@@ -95,7 +102,13 @@
             "Other"
           ],
           "mondayOptionIndices": {
-            "Meta": 0, "Gentleman Today": 1, "Applovin": 2, "Youtube | Google": 3, "GIF | Meta": 7, "VSL": 4, "Other": 5
+            "Meta": 0,
+            "Gentleman Today": 1,
+            "Applovin": 2,
+            "Youtube | Google": 3,
+            "GIF | Meta": 7,
+            "VSL": 4,
+            "Other": 5
           },
           "showWhen": {
             "field": "department",
@@ -114,7 +127,10 @@
           "mondayColumnId": null,
           "skipBrief": true,
           "step1": true,
-          "showWhen": { "field": "platform", "includes": "Other" }
+          "showWhen": {
+            "field": "platform",
+            "includes": "Other"
+          }
         },
         {
           "key": "type",
@@ -144,11 +160,24 @@
             "Script (<1 min)"
           ],
           "mondayOptionIndices": {
-            "Iterations/Cuts/Edits": 0, "GIF - New Static": 1, "Miscellaneous": 2, "Collection": 3,
-            "Motion Design": 4, "Translation": 5, "Special Project": 6, "TV": 101,
-            "AI Project": 8, "UGC/Creator": 9, "AI Creator": 13, "Amazon/Ulta": 14,
-            "Long Form (+1 min)": 15, "Script - Short Form (<20 seconds)": 16,
-            "GIF - Existing Static": 17, "Upload B-Rolls": 18, "CTA": 19, "Script (<1 min)": 156
+            "Iterations/Cuts/Edits": 0,
+            "GIF - New Static": 1,
+            "Miscellaneous": 2,
+            "Collection": 3,
+            "Motion Design": 4,
+            "Translation": 5,
+            "Special Project": 6,
+            "TV": 101,
+            "AI Project": 8,
+            "UGC/Creator": 9,
+            "AI Creator": 13,
+            "Amazon/Ulta": 14,
+            "Long Form (+1 min)": 15,
+            "Script - Short Form (<20 seconds)": 16,
+            "GIF - Existing Static": 17,
+            "Upload B-Rolls": 18,
+            "CTA": 19,
+            "Script (<1 min)": 156
           },
           "step1": true
         },
@@ -158,12 +187,19 @@
           "type": "select",
           "required": false,
           "half": true,
-          "options": ["No", "Yes", "Holiday Campaign"],
+          "options": [
+            "No",
+            "Yes",
+            "Holiday Campaign"
+          ],
           "default": "No",
           "mondayColumnId": null,
           "skipBrief": true,
           "step1": true,
-          "showWhen": { "field": "department", "includes": "Marketing/Media" }
+          "showWhen": {
+            "field": "department",
+            "includes": "Marketing/Media"
+          }
         },
         {
           "key": "campaign",
@@ -173,15 +209,32 @@
           "half": true,
           "mondayColumnId": "color_mm2v5q62",
           "mondayValueType": "status",
-          "options": ["None", "Easter", "New Years", "Memorial Day", "Father's Day", "Other"],
+          "options": [
+            "None",
+            "Easter",
+            "New Years",
+            "Memorial Day",
+            "Father's Day",
+            "Other"
+          ],
           "mondayOptionIndices": {
-            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2, "Father's Day": 3
+            "None": 5,
+            "Easter": 0,
+            "New Years": 1,
+            "Memorial Day": 2,
+            "Father's Day": 3
           },
           "default": "None",
           "step1": true,
           "showWhen": [
-            { "field": "campaignType", "includes": "Holiday Campaign" },
-            { "field": "department", "includes": "Marketing/Media" }
+            {
+              "field": "campaignType",
+              "includes": "Holiday Campaign"
+            },
+            {
+              "field": "department",
+              "includes": "Marketing/Media"
+            }
           ]
         },
         {
@@ -195,7 +248,16 @@
           "mondayColumnId": null,
           "skipBrief": true,
           "step1": true,
-          "showWhen": { "field": "campaign", "includes": "Other" }
+          "showWhen": [
+            {
+              "field": "campaign",
+              "includes": "Other"
+            },
+            {
+              "field": "campaignType",
+              "includes": "Holiday Campaign"
+            }
+          ]
         },
         {
           "key": "campaignTag",
@@ -205,11 +267,19 @@
           "half": true,
           "mondayColumnId": "dropdown_mm3n9vjc",
           "mondayValueType": "dropdown",
-          "options": ["Father's Day"],
+          "options": [
+            "Father's Day"
+          ],
           "step1": true,
           "showWhen": [
-            { "field": "campaignType", "includes": "Yes" },
-            { "field": "department", "includes": "Marketing/Media" }
+            {
+              "field": "campaignType",
+              "includes": "Yes"
+            },
+            {
+              "field": "department",
+              "includes": "Marketing/Media"
+            }
           ]
         },
         {
@@ -426,13 +496,24 @@
             "Ulta"
           ],
           "mondayOptionIndices": {
-            "Email": 0, "Marketing": 1, "Socials": 2, "Projects": 3,
-            "Default": 5, "Adge Data": 6, "TV": 7, "Branding": 8,
-            "Products & Packaging": 9, "Email Completed": 10, "Amazon": 11,
-            "Creative": 12, "GIF Design": 13, "Website": 14, "Ulta": 15
+            "Email": 0,
+            "Marketing": 1,
+            "Socials": 2,
+            "Projects": 3,
+            "Default": 5,
+            "Adge Data": 6,
+            "TV": 7,
+            "Branding": 8,
+            "Products & Packaging": 9,
+            "Email Completed": 10,
+            "Amazon": 11,
+            "Creative": 12,
+            "GIF Design": 13,
+            "Website": 14,
+            "Ulta": 15
           },
           "step1": true,
-          "sectionHeader": "Step 1 — Context"
+          "sectionHeader": "Step 1 \u2014 Context"
         },
         {
           "key": "productBundle",
@@ -497,8 +578,13 @@
             "Gentleman Today",
             "Other"
           ],
-          "mondayOptionIndices": { "Other": 5 },
-          "showWhen": { "field": "department", "includes": "Marketing" },
+          "mondayOptionIndices": {
+            "Other": 5
+          },
+          "showWhen": {
+            "field": "department",
+            "includes": "Marketing"
+          },
           "step1": true
         },
         {
@@ -512,7 +598,10 @@
           "mondayColumnId": null,
           "skipBrief": true,
           "step1": true,
-          "showWhen": { "field": "platform", "includes": "Other" }
+          "showWhen": {
+            "field": "platform",
+            "includes": "Other"
+          }
         },
         {
           "key": "websiteType",
@@ -539,12 +628,19 @@
           "type": "select",
           "required": false,
           "half": true,
-          "options": ["No", "Yes", "Holiday Campaign"],
+          "options": [
+            "No",
+            "Yes",
+            "Holiday Campaign"
+          ],
           "default": "No",
           "mondayColumnId": null,
           "skipBrief": true,
           "step1": true,
-          "showWhen": { "field": "department", "includes": "Marketing" }
+          "showWhen": {
+            "field": "department",
+            "includes": "Marketing"
+          }
         },
         {
           "key": "campaign",
@@ -554,15 +650,32 @@
           "half": true,
           "mondayColumnId": "color_mm2wcjdy",
           "mondayValueType": "status",
-          "options": ["None", "Easter", "New Years", "Memorial Day", "Father's Day", "Other"],
+          "options": [
+            "None",
+            "Easter",
+            "New Years",
+            "Memorial Day",
+            "Father's Day",
+            "Other"
+          ],
           "mondayOptionIndices": {
-            "None": 5, "Easter": 0, "New Years": 1, "Memorial Day": 2, "Father's Day": 3
+            "None": 5,
+            "Easter": 0,
+            "New Years": 1,
+            "Memorial Day": 2,
+            "Father's Day": 3
           },
           "default": "None",
           "step1": true,
           "showWhen": [
-            { "field": "campaignType", "includes": "Holiday Campaign" },
-            { "field": "department", "includes": "Marketing" }
+            {
+              "field": "campaignType",
+              "includes": "Holiday Campaign"
+            },
+            {
+              "field": "department",
+              "includes": "Marketing"
+            }
           ]
         },
         {
@@ -576,7 +689,16 @@
           "mondayColumnId": null,
           "skipBrief": true,
           "step1": true,
-          "showWhen": { "field": "campaign", "includes": "Other" }
+          "showWhen": [
+            {
+              "field": "campaign",
+              "includes": "Other"
+            },
+            {
+              "field": "campaignType",
+              "includes": "Holiday Campaign"
+            }
+          ]
         },
         {
           "key": "campaignTag",
@@ -586,11 +708,19 @@
           "half": true,
           "mondayColumnId": "dropdown_mm3n7bw1",
           "mondayValueType": "dropdown",
-          "options": ["Father's Day"],
+          "options": [
+            "Father's Day"
+          ],
           "step1": true,
           "showWhen": [
-            { "field": "campaignType", "includes": "Yes" },
-            { "field": "department", "includes": "Marketing" }
+            {
+              "field": "campaignType",
+              "includes": "Yes"
+            },
+            {
+              "field": "department",
+              "includes": "Marketing"
+            }
           ]
         },
         {
