@@ -358,15 +358,16 @@ function toMondayValue(field, value) {
 
 function defaultMondayType(fieldType) {
   const map = {
-    select:      "status",
-    multiselect: "multi_select",
-    date:        "date",
-    number:      "number",
-    textarea:    "long_text",
-    text:        "long_text",
-    url:         "link",
-    people:      "people",
-    hooks:       "short_text",
+    select:           "status",
+    creatable_select: "dropdown",
+    multiselect:      "multi_select",
+    date:             "date",
+    number:           "number",
+    textarea:         "long_text",
+    text:             "long_text",
+    url:              "link",
+    people:           "people",
+    hooks:            "short_text",
   };
   return map[fieldType] ?? null;
 }
@@ -493,6 +494,83 @@ function CustomSelect({ options, value, onChange, placeholder = "Select…" }) {
               </div>
             ))
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Creatable single-select dropdown ────────────────────────────────────────
+// Like CustomSelect but has a '+ Add new…' entry. When the user confirms a new
+// value it: (a) calls onChange with that value, (b) POSTs to the server to
+// persist the option in settings.json so it appears next session.
+
+function CreatableSelect({ field, value, onChange }) {
+  const [adding,  setAdding]  = useState(false);
+  const [draft,   setDraft]   = useState("");
+  const [open,    setOpen]    = useState(false);
+  const inputRef     = useRef(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => { if (adding && inputRef.current) inputRef.current.focus(); }, [adding]);
+
+  useEffect(() => {
+    function onOut(e) { if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", onOut);
+    return () => document.removeEventListener("mousedown", onOut);
+  }, []);
+
+  async function confirmNew() {
+    const val = draft.trim();
+    if (!val) return;
+    onChange(val);
+    setAdding(false); setOpen(false); setDraft("");
+    try { await axios.post("/api/monday/add-campaign-option", { fieldKey: field.key, option: val }); }
+    catch (e) { console.warn("[CreatableSelect] persist failed:", e.message); }
+  }
+
+  const options = field.options || [];
+
+  if (adding) {
+    return (
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <input
+          ref={inputRef} type="text" value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmNew(); } if (e.key === "Escape") { setAdding(false); setDraft(""); } }}
+          placeholder="Campaign name…"
+          style={{ flex: 1, padding: "7px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14 }}
+        />
+        <button type="button" onClick={confirmNew}
+          style={{ padding: "6px 14px", borderRadius: 8, background: "var(--purple)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}>
+          Add
+        </button>
+        <button type="button" onClick={() => { setAdding(false); setDraft(""); }}
+          style={{ padding: "6px 10px", borderRadius: 8, background: "var(--surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)", cursor: "pointer", fontSize: 13 }}>
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="people-container" style={{ position: "relative" }}>
+      <div className="people-input dropdown-search-input" onClick={() => setOpen((o) => !o)}
+        style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center" }}>
+        <span style={{ flex: 1 }}>{value || <span style={{ color: "var(--text-muted)" }}>Select or add…</span>}</span>
+        <span style={{ opacity: 0.5, fontSize: 11 }}>▾</span>
+      </div>
+      {open && (
+        <div className="people-dropdown" style={{ maxHeight: 220, overflowY: "auto" }}>
+          {options.map((opt) => (
+            <div key={opt} className={`people-option${value === opt ? " selected" : ""}`}
+              onClick={() => { onChange(opt); setOpen(false); }}>{opt}</div>
+          ))}
+          <div className="people-option"
+            style={{ color: "var(--purple)", fontWeight: 500, borderTop: options.length ? "1px solid var(--border)" : "none", paddingTop: options.length ? 6 : 0 }}
+            onClick={() => { setOpen(false); setAdding(true); }}>
+            + Add new…
+          </div>
         </div>
       )}
     </div>
@@ -723,6 +801,15 @@ export function renderInput(field, task, setField, users, frequencyOrder = {}) {
       return (
         <CustomSelect
           options={sortByFrequency(field.options || [], frequencyOrder[field.key])}
+          value={value}
+          onChange={(v) => setField(field.key, v)}
+        />
+      );
+
+    case "creatable_select":
+      return (
+        <CreatableSelect
+          field={field}
           value={value}
           onChange={(v) => setField(field.key, v)}
         />

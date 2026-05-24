@@ -11,7 +11,8 @@ import multer from "multer";
 import { handleUpload } from "@vercel/blob/client";
 import { del } from "@vercel/blob";
 import { createItem, createUpdate, getMe, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem } from "../services/mondayService.js";
-import { getSettings } from "../services/settingsService.js";
+import { getSettings, addFieldOption } from "../services/settingsService.js";
+
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -521,4 +522,22 @@ router.post("/rename-item", async (req, res) => {
   }
 });
 
+// ── Add a new option to a creatable-select field in settings.json ─────────────
+// Called by the client after the user types a new campaign value.
+// Body: { fieldKey, option }
+router.post("/add-campaign-option", (req, res) => {
+  const { fieldKey, option } = req.body;
+  if (!fieldKey || typeof option !== "string" || !option.trim()) {
+    return res.status(400).json({ error: "fieldKey and option are required" });
+  }
+  try {
+    const changed = addFieldOption(fieldKey, option.trim());
+    res.json({ success: true, changed });
+  } catch (err) {
+    console.error("[add-campaign-option]", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
+

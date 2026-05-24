@@ -184,7 +184,7 @@
         {
           "key": "campaignTag",
           "label": "Campaign",
-          "type": "select",
+          "type": "creatable_select",
           "required": false,
           "half": true,
           "mondayColumnId": "dropdown_mm3n9vjc",
@@ -546,7 +546,7 @@
         {
           "key": "campaignTag",
           "label": "Campaign",
-          "type": "select",
+          "type": "creatable_select",
           "required": false,
           "half": true,
           "mondayColumnId": "dropdown_mm3n7bw1",

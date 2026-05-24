@@ -79,3 +79,20 @@ export function updateBoardTemplate(boardId, updateTemplate) {
   writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
   return settings;
 }
+
+// Add a new option value to every board field that matches fieldKey.
+// Idempotent — skips boards/fields where the option already exists.
+export function addFieldOption(fieldKey, option) {
+  ensureVercelCopies();
+  const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
+  let changed = false;
+  for (const board of settings.boards) {
+    const field = board.fields?.find((f) => f.key === fieldKey);
+    if (field && Array.isArray(field.options) && !field.options.includes(option)) {
+      field.options.push(option);
+      changed = true;
+    }
+  }
+  if (changed) writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+  return changed;
+}
