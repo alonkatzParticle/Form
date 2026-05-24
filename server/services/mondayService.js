@@ -29,7 +29,7 @@ async function mondayQuery(query, variables = {}, apiKey = null) {
 export async function createItem(boardId, itemName, columnValues, apiKey = null) {
   const query = `
     mutation CreateItem($boardId: ID!, $itemName: String!, $columnValues: JSON!) {
-      create_item(board_id: $boardId, item_name: $itemName, column_values: $columnValues) {
+      create_item(board_id: $boardId, item_name: $itemName, column_values: $columnValues, create_labels_if_missing: true) {
         id
         name
         url
