@@ -509,11 +509,15 @@ function CustomSelect({ options, value, onChange, placeholder = "Select…" }) {
 // persist the option in settings.json so it appears next session.
 
 function CreatableSelect({ field, value, onChange }) {
-  const [adding,  setAdding]  = useState(false);
-  const [draft,   setDraft]   = useState("");
-  const [open,    setOpen]    = useState(false);
+  const [adding,       setAdding]      = useState(false);
+  const [draft,        setDraft]       = useState("");
+  const [open,         setOpen]        = useState(false);
+  const [localOptions, setLocalOptions] = useState(field.options || []);
   const inputRef     = useRef(null);
   const containerRef = useRef(null);
+
+  // Keep localOptions in sync if field.options changes (e.g. after a settings reload)
+  useEffect(() => { setLocalOptions(field.options || []); }, [field.options]);
 
   useEffect(() => { if (adding && inputRef.current) inputRef.current.focus(); }, [adding]);
 
@@ -526,13 +530,15 @@ function CreatableSelect({ field, value, onChange }) {
   async function confirmNew() {
     const val = draft.trim();
     if (!val) return;
+    // Immediately add to local options so it's selectable this session
+    setLocalOptions((prev) => prev.includes(val) ? prev : [...prev, val]);
     onChange(val);
     setAdding(false); setOpen(false); setDraft("");
     try { await axios.post("/api/monday/add-campaign-option", { fieldKey: field.key, option: val }); }
     catch (e) { console.warn("[CreatableSelect] persist failed:", e.message); }
   }
 
-  const options = field.options || [];
+  const options = localOptions;
 
   if (adding) {
     return (
