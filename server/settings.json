@@ -402,7 +402,8 @@
           "label": "Deadline",
           "type": "date",
           "hint": "Only fill this if you have a hard deadline",
-          "mondayColumnId": "date_Mjj2cG7T"
+          "mondayColumnId": "date_Mjj2cG7T",
+          "mondayValueType": "date"
         },
         {
           "key": "relevantFiles",
@@ -827,7 +828,8 @@
           "label": "Deadline",
           "type": "date",
           "hint": "Only fill if you have a hard deadline",
-          "mondayColumnId": "date_Mjj20aki"
+          "mondayColumnId": "date_Mjj20aki",
+          "mondayValueType": "date"
         },
         {
           "key": "howDidYouCreate",
