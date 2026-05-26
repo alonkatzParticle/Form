@@ -2,8 +2,9 @@
 // GET /api/settings            — returns full settings (boards, fields, board IDs)
 // GET /api/settings/sync-check — compares settings field columns against live Monday board
 import express from "express";
-import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate } from "../services/settingsService.js";
-import { getBoardColumns } from "../services/mondayService.js";
+import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption } from "../services/settingsService.js";
+import { getBoardColumns, getColumnSettings } from "../services/mondayService.js";
+
 import { AI_AGENTS, FIELD_DEFINITIONS } from "../aiAgents.js";
 
 // Map settings board labels → boardType keys used in AI_AGENTS
@@ -110,10 +111,57 @@ router.post("/auth", (req, res) => {
   }
 });
 
-// Return the full settings object. The client uses this to build the board tabs and forms.
-router.get("/", (_req, res) => {
+// Return all settings, with dropdown field options synced from Monday's live column labels.
+// Any new labels found in Monday are merged into the response AND persisted to settings.json.
+router.get("/", async (_req, res) => {
   try {
-    res.json(getSettings());
+    const settings = getSettings();
+
+    // Collect dropdown fields that have a Monday column to sync against
+    const syncTasks = [];
+    for (const board of settings.boards) {
+      for (const field of board.fields ?? []) {
+        if (field.mondayValueType === "dropdown" && field.mondayColumnId) {
+          syncTasks.push({ boardId: board.boardId, field });
+        }
+      }
+    }
+
+    // Fetch Monday column labels in parallel, ignore individual failures
+    if (syncTasks.length > 0) {
+      const results = await Promise.allSettled(
+        syncTasks.map(({ boardId, field }) =>
+          getColumnSettings(boardId, field.mondayColumnId)
+            .then((colSettings) => ({ field, colSettings }))
+        )
+      );
+
+      for (const result of results) {
+        if (result.status !== "fulfilled" || !result.value.colSettings) continue;
+        const { field, colSettings } = result.value;
+
+        // labels may be an array [{id, name}] or an object
+        const rawLabels = colSettings.labels ?? [];
+        const mondayLabels = (Array.isArray(rawLabels)
+          ? rawLabels.map((l) => l.name)
+          : Object.values(rawLabels)
+        ).filter(Boolean);
+
+        const currentOptions = field.options ?? [];
+        const newLabels = mondayLabels.filter((l) => !currentOptions.includes(l));
+        if (newLabels.length > 0) {
+          // Merge into the response object
+          field.options = [...currentOptions, ...newLabels];
+          // Persist each new label to settings.json so future loads don't need Monday
+          for (const label of newLabels) {
+            addFieldOption(field.key, label);
+          }
+          console.log(`[settings] Synced ${newLabels.length} new label(s) for "${field.key}" from Monday: ${newLabels.join(", ")}`);
+        }
+      }
+    }
+
+    res.json(settings);
   } catch (err) {
     console.error("Settings read error:", err.message);
     res.status(500).json({ error: "Failed to read settings" });
