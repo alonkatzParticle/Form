@@ -2,7 +2,8 @@
 // GET /api/settings            — returns full settings (boards, fields, board IDs)
 // GET /api/settings/sync-check — compares settings field columns against live Monday board
 import express from "express";
-import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption } from "../services/settingsService.js";
+import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption, setFieldOptions } from "../services/settingsService.js";
+
 import { getBoardColumns, getColumnSettings } from "../services/mondayService.js";
 
 import { AI_AGENTS, FIELD_DEFINITIONS } from "../aiAgents.js";
@@ -148,15 +149,18 @@ router.get("/", async (_req, res) => {
         ).filter(Boolean);
 
         const currentOptions = field.options ?? [];
-        const newLabels = mondayLabels.filter((l) => !currentOptions.includes(l));
-        if (newLabels.length > 0) {
-          // Merge into the response object
-          field.options = [...currentOptions, ...newLabels];
-          // Persist each new label to settings.json so future loads don't need Monday
-          for (const label of newLabels) {
-            addFieldOption(field.key, label);
-          }
-          console.log(`[settings] Synced ${newLabels.length} new label(s) for "${field.key}" from Monday: ${newLabels.join(", ")}`);
+        // Replace: use Monday as source of truth — remove stale, add new
+        const hasChanged =
+          mondayLabels.length !== currentOptions.length ||
+          mondayLabels.some((l) => !currentOptions.includes(l)) ||
+          currentOptions.some((l) => !mondayLabels.includes(l));
+
+        if (hasChanged) {
+          field.options = [...mondayLabels];
+          setFieldOptions(field.key, mondayLabels);
+          const removed = currentOptions.filter((l) => !mondayLabels.includes(l));
+          const added   = mondayLabels.filter((l) => !currentOptions.includes(l));
+          console.log(`[settings] Synced "${field.key}" — added: [${added.join(", ")}] removed: [${removed.join(", ")}]`);
         }
       }
     }

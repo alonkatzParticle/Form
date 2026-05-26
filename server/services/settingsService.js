@@ -96,3 +96,24 @@ export function addFieldOption(fieldKey, option) {
   if (changed) writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
   return changed;
 }
+
+// Replace the options array for every board field that matches fieldKey.
+// Used by the settings sync to mirror Monday's authoritative label list exactly.
+export function setFieldOptions(fieldKey, options) {
+  ensureVercelCopies();
+  const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
+  let changed = false;
+  for (const board of settings.boards) {
+    const field = board.fields?.find((f) => f.key === fieldKey);
+    if (field && Array.isArray(field.options)) {
+      const current = JSON.stringify(field.options);
+      const next = JSON.stringify(options);
+      if (current !== next) {
+        field.options = [...options];
+        changed = true;
+      }
+    }
+  }
+  if (changed) writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+  return changed;
+}
