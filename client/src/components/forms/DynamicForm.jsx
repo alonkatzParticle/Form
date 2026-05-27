@@ -277,7 +277,16 @@ export async function generateBriefHtml(board, task, users) {
   const isMarketingMedia = board.id === "video" && task.department === "Marketing/Media" && task.type !== "TV";
   const scriptField = isMarketingMedia ? board.fields.find((f) => f.durationEstimator) : null;
   const currentScript = scriptField ? task[scriptField.key] : null;
-  const finalEstimate = estimateDuration(currentScript);
+  // If the script uses the structured format (SCRIPT (VO): labels), extract only
+  // the spoken VO text so the syllable counter isn't inflated by VISUALS/SOUND lines.
+  const voOnlyScript = (() => {
+    if (!currentScript) return null;
+    const voLines = currentScript.split("\n")
+      .filter((l) => l.trim().startsWith("SCRIPT (VO):"))
+      .map((l) => l.trim().slice("SCRIPT (VO):".length).trim().replace(/^["']|["']$/g, ""));
+    return voLines.length > 0 ? voLines.join(" ") : currentScript;
+  })();
+  const finalEstimate = estimateDuration(voOnlyScript);
 
   // ── Resolve a field's display value ───────────────────────────────────────
   function resolveValue(f) {
