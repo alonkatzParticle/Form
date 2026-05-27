@@ -36,15 +36,19 @@ export default function Sidebar({ pendingCount, onHistoryClick, onProfileClick, 
           Single Task
         </button>
 
+        {/* Batch Create — hidden for now
         <button onClick={() => navigate("/batch")} className={`sidebar-btn-link sidebar-link ${isBatch ? "active" : ""}`}>
           <Zap size={16} className="sidebar-icon" />
           Batch Create
         </button>
+        */}
 
+        {/* Campaign — hidden for now
         <button onClick={() => navigate("/campaign")} className={`sidebar-btn-link sidebar-link ${isCampaign ? "active" : ""}`}>
           <Megaphone size={16} className="sidebar-icon" />
           Campaign
         </button>
+        */}
 
         <button onClick={() => navigate("/pending")} className={`sidebar-btn-link sidebar-link ${isPending ? "active" : ""}`}>
           <Upload size={16} className="sidebar-icon" />
