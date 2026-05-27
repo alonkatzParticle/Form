@@ -255,7 +255,11 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
       const newBriefHtml = hasFiles
         ? html + '\n\n\ud83d\udcce <strong>Reference files are attached</strong> \u2014 check the <strong>Files</strong> tab on this task.'
         : html;
+      // Force-clear the editing guard so the DOM always updates
+      briefUserEditingRef.current = false;
       setEditingBrief(newBriefHtml);
+      // Also update the DOM directly — the useEffect guard may skip it if focused
+      if (briefRef.current) briefRef.current.innerHTML = newBriefHtml;
       const taskPatch = finalEstimate ? { _elevenLabsEstimate: finalEstimate } : {};
       setTasks(prev => prev.map(t => t.id === selectedId ? { ...t, brief: newBriefHtml, editedBrief: newBriefHtml, task: { ...t.task, ...taskPatch } } : t));
       // Snapshot the freshly-generated task — clears staleness

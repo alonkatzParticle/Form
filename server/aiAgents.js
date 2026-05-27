@@ -31,17 +31,11 @@ export const FIELD_DEFINITIONS = {
   Keep each hook to 1–2 punchy spoken sentences. Hooks must be self-contained opening lines.
   Example: ["Going gray at 35 isn't aging — it's biology.", "Most men give up on their hair color. Smart ones don't.", "Your follicles aren't dead. They just need the right signal."]
   If the type is NOT a script type (e.g. GIF, Motion Design, Iterations), set hooks to [].
-- scriptMessage: Write the full production script ONLY if type is one of: UGC/Creator, AI Creator, UGC Testimonial, Collection, Script (<1 min), Script - Short Form (<20 seconds), Long Form (+1 min). For all other types leave this empty.
-  FORMAT: Use a structured, time-coded production script. Divide into time blocks using this exact structure (blank line between each block):
-
-  [START]–[END]s — [SECTION TITLE IN CAPS]
-
-  SCRIPT (VO): "[Exact spoken words in quotes]"
-  VISUALS: [Camera style, subject, action, on-screen text overlays — describe what the viewer sees]
-  SOUND: [Music/audio direction for this section]
-
-  Include SCRIPT (VO), VISUALS, and SOUND in every block. The hook belongs in the hooks array — the first VO block here starts after the hook. Do NOT write a hook section in the script.
-  LENGTH: Default 30–45 seconds total. Short Form (<20 seconds) 12–18 seconds. Long Form (+1 min) 60+ seconds.
+- scriptMessage: Write the full script ONLY if type is one of: UGC/Creator, AI Creator, UGC Testimonial, Collection, Script (<1 min), Script - Short Form (<20 seconds), Long Form (+1 min). For all other types leave this empty.
+  Write the spoken voiceover words only — no time codes, section labels, or production directions. The user will format the script themselves.
+  Start from the PROBLEM — do NOT include a hook line (that belongs in the hooks array above).
+  STRUCTURE: Problem (the pain point) → Solution (product intro + key benefits) → Social Proof (stats or results) → CTA. Write as a natural flowing script.
+  LENGTH: Default 30–45 seconds of spoken audio. Short Form (<20 seconds) 12–18 seconds. Long Form (+1 min) 60+ seconds.
   One script only — never write multiple versions.
 - versionsNeeded: Leave blank — filled by user.
 - sizesNeeded: Leave blank unless explicitly stated by the user.
