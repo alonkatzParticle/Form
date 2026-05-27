@@ -288,29 +288,6 @@ export async function generateBriefHtml(board, task, users) {
     }
   }
 
-  // ── Marketing/Media only: color-code the script via a tiny AI call ─────────
-  if (isMarketingMedia && currentScript?.trim()) {
-    try {
-      const { data } = await axios.post("/api/ai/color-script", { script: currentScript });
-      if (data.html) {
-        const dom = document.createElement("div");
-        dom.innerHTML = html;
-        const scriptEl = dom.querySelector(`[data-field="${scriptField.key}"]`);
-        if (scriptEl) {
-          scriptEl.removeAttribute("data-field");
-          scriptEl.innerHTML = data.html;
-          // Upgrade the preceding label-only <p> to an <h3> heading
-          const prev = scriptEl.previousElementSibling;
-          if (prev && prev.tagName === "P") {
-            const h3 = document.createElement("h3");
-            h3.textContent = "Script";
-            prev.replaceWith(h3);
-          }
-        }
-        html = dom.innerHTML;
-      }
-    } catch { /* keep plain text on failure */ }
-  }
 
   return { html, finalEstimate };
 }
