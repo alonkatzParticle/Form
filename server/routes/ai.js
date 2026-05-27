@@ -43,11 +43,28 @@ router.post("/assist", async (req, res) => {
       return res.status(400).json({ error: "mode, input, and boardType are required" });
     }
 
-    if (!["autofill", "generate", "format", "historyLoad"].includes(mode)) {
-      return res.status(400).json({ error: "mode must be autofill, generate, format, or historyLoad" });
+    if (!["autofill", "generate", "format", "historyLoad", "smart"].includes(mode)) {
+      return res.status(400).json({ error: "mode must be autofill, generate, format, historyLoad, or smart" });
     }
 
-    const result = await assistWithTask({ mode, input, boardType, taskContext: taskContext || {} });
+    // Smart mode: auto-detect the best sub-mode from input characteristics
+    let effectiveMode = mode;
+    if (mode === "smart") {
+      const words = input.trim().split(/\s+/).length;
+      const hasNewlines = input.includes("\n");
+      const hasStructure = /(SCRIPT|VISUALS|SOUND|VO:|HOOK|CTA|brief|hook|concept)\s*:/i.test(input);
+
+      if (words < 25 && !hasNewlines) {
+        effectiveMode = "generate";  // short one-liner → full creative generation
+      } else if (words > 80 || (hasNewlines && hasStructure)) {
+        effectiveMode = "format";    // long/structured paste → reformat fields
+      } else {
+        effectiveMode = "autofill";  // descriptive notes → conservative field fill
+      }
+      console.log(`[ai/assist] smart → ${effectiveMode} (words:${words} newlines:${hasNewlines} struct:${hasStructure})`);
+    }
+
+    const result = await assistWithTask({ mode: effectiveMode, input, boardType, taskContext: taskContext || {} });
     res.json(result);
   } catch (err) {
     console.error("AI assist error:", err.message);

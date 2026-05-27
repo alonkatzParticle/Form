@@ -218,11 +218,47 @@ export function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = n
   return scratch.innerHTML;
 }
 
+// ─── Script color-coder ───────────────────────────────────────────────────────
+// Parses a structured production script (SCRIPT (VO) / VISUALS / SOUND blocks)
+// and wraps each label in a bold colored span for the brief HTML.
+function colorizeScript(rawText) {
+  if (!rawText?.trim()) return "";
+  const LABELS = [
+    ["SCRIPT (VO)",    "#1d4ed8"],  // blue
+    ["ON-SCREEN TEXT", "#c2410c"],  // orange
+    ["ON-SCREEN",      "#c2410c"],  // orange
+    ["VISUALS",        "#6d28d9"],  // purple
+    ["SOUND",          "#0e7490"],  // teal
+  ];
+  const lines = rawText.split("\n");
+  const parts = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) { parts.push(""); continue; }
+    // Time-coded section header e.g. "0–4s — THE HOOK"
+    if (/^\d+[–—-]\d+s/.test(t)) {
+      parts.push(`<p style="margin:14px 0 4px;"><strong>${t}</strong></p>`);
+      continue;
+    }
+    let matched = false;
+    for (const [label, color] of LABELS) {
+      if (t.startsWith(label + ":")) {
+        const content = t.slice(label.length + 1).trim();
+        parts.push(`<p style="margin:2px 0;"><strong style="color:${color};">${label}:</strong> ${content}</p>`);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) parts.push(`<p style="margin:2px 0;">${t}</p>`);
+  }
+  return parts.filter((l, i, a) => !(l === "" && (a[i - 1] === "" || i === 0))).join("");
+}
+
 // ─── Hybrid Brief Generator ───────────────────────────────────────────────────
 // Builds the brief as blocks:
 //   • Short fields  → single compact pipe-separated metadata line
 //   • Textarea/hooks → each gets an <h3> heading + verbatim content
-//   • Script/Message (Marketing/Media) → tiny AI call for color-coded spans only
+//   • scriptMessage → color-coded SCRIPT (VO) / VISUALS / SOUND blocks
 
 export async function generateBriefHtml(board, task, users) {
   // ── Duration estimate ──────────────────────────────────────────────────────
@@ -254,8 +290,13 @@ export async function generateBriefHtml(board, task, users) {
     if (val === null || val === undefined || val === "" || (Array.isArray(val) && val.length === 0)) continue;
 
     if (f.type === "textarea") {
-      const content = String(val).replace(/\n/g, "<br>");
-      sections.push(`<h3>${f.label}</h3><p data-field="${f.key}">${content}</p>`);
+      if (f.key === "scriptMessage") {
+        // Use structured color-coded rendering for production scripts
+        sections.push(`<h3>${f.label}</h3>${colorizeScript(String(val))}`);
+      } else {
+        const content = String(val).replace(/\n/g, "<br>");
+        sections.push(`<h3>${f.label}</h3><p data-field="${f.key}">${content}</p>`);
+      }
     } else if (f.type === "hooks") {
       const filled = (Array.isArray(val) ? val : []).filter(Boolean);
       if (filled.length) {

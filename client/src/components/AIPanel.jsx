@@ -238,14 +238,14 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
     }
   }
 
-  // ── Standard modes submit ──────────────────────────────────────────────────
+  // ── Standard mode submit ───────────────────────────────────────────────────
   async function handleSubmit() {
     if (!input.trim()) return;
     setLoading(true);
     setError(null);
     try {
       const res = await axios.post("/api/ai/assist", {
-        mode,
+        mode: "smart",
         input,
         boardType,
         taskContext,
@@ -302,7 +302,7 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
       setLoadingStage("Analyzing with Gemini…");
 
       const res = await axios.post("/api/ai/analyze-reference", payload, {
-        timeout: 120_000, // 2 minutes client-side timeout
+        timeout: 120_000,
       });
 
       setLoadingStage("Filling form…");
@@ -324,12 +324,6 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
       setLoading(false);
       setLoadingStage("");
     }
-  }
-
-  function handleModeChange(newMode) {
-    setMode(newMode);
-    setError(null);
-    setPendingSuggestions(null); // clear pending suggestions when switching mode
   }
 
   function handleApplySuggestions(accepted) {
@@ -356,9 +350,7 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
         <span className="ai-panel-toggle-hint">
           {disabled
             ? "Complete Step 1 to unlock"
-            : isGenLocked
-              ? `Brief writer available · Full AI coming soon for ${department}`
-              : open ? "" : "Auto-fill or generate a brief with AI"}
+            : open ? "" : "Describe your task, or paste existing notes — AI will figure it out"}
         </span>
         {!disabled && <span className="ai-panel-chevron">{open ? "▲" : "▼"}</span>}
       </button>
@@ -366,117 +358,39 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
       {open && (
         <div className="card-body ai-panel">
 
-          {/* Department lock banner — shown above tabs when generation is restricted */}
+          {/* Department lock banner */}
           {isGenLocked && (
             <div className="ai-dept-lock-banner">
               <span className="ai-dept-lock-icon">🚧</span>
               <div>
                 <strong>AI generation not yet configured for {department}</strong>
-                <p>Auto-fill and Generate are only available for Marketing/Media right now. Use <em>Paste &amp; Format</em> below to structure existing notes, or fill the form manually and click <em>Review Brief →</em> when ready.</p>
+                <p>Full AI generation is only available for Marketing/Media right now. You can still paste existing notes below to auto-fill fields.</p>
               </div>
             </div>
           )}
 
-          <div className="ai-tabs">
-            {visibleModes.map((m) => (
-              <button
-                key={m.id}
-                className={`ai-tab ${mode === m.id ? "active" : ""}`}
-                onClick={() => handleModeChange(m.id)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-
-          <p className="hint">{activeMode.hint}</p>
-
-          {/* ── Standard modes ── */}
-          {mode !== "reference" && (
-            <>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!loading && input.trim()) handleSubmit();
-                  }
-                }}
-                placeholder="Type or paste here… (Enter to submit, Shift+Enter for new line)"
-                rows={5}
-              />
-              <button className="btn-ai" onClick={handleSubmit} disabled={loading || !input.trim()}>
-                {loading && <span className="btn-spinner" />}
-                {loading ? "Thinking…" : "Fill Form with AI"}
-              </button>
-            </>
-          )}
-
-          {/* ── From Reference tab ── */}
-          {mode === "reference" && (
-            <div className="ref-panel">
-              {/* Toggle: file vs url */}
-              <div className="ref-source-toggle">
-                <button
-                  type="button"
-                  className={`ref-source-btn${refInputMode === "file" ? " active" : ""}`}
-                  onClick={() => { setRefInputMode("file"); setRefUrl(""); setError(null); }}
-                >
-                  📁 Upload File
-                </button>
-                <button
-                  type="button"
-                  className={`ref-source-btn${refInputMode === "url" ? " active" : ""}`}
-                  onClick={() => { setRefInputMode("url"); setRefFile(null); setError(null); }}
-                >
-                  🔗 Paste URL
-                </button>
-              </div>
-
-              {refInputMode === "file" ? (
-                <ReferenceDropZone file={refFile} onFile={setRefFile} />
-              ) : (
-                <input
-                  type="url"
-                  className="ref-url-input"
-                  placeholder="YouTube, Vimeo, direct .mp4 or image URL…"
-                  value={refUrl}
-                  onChange={(e) => setRefUrl(e.target.value)}
-                />
-              )}
-
-              <label className="ref-instructions-label">
-                Instructions <span className="required"> *</span>
-              </label>
-              <textarea
-                className="ref-instructions"
-                value={refInstructions}
-                onChange={(e) => setRefInstructions(e.target.value)}
-                placeholder={`How should AI use this reference?\ne.g. "Match the hook structure", "Use a similar visual style", "Recreate this for our Face Cream"`}
-                rows={4}
-              />
-
-              {refAnalysis && (
-                <div className="ref-analysis-badge">
-                  ✅ Reference analyzed — form filled! Wednesday is also aware of it.
-                </div>
-              )}
-
-              <button
-                className="btn-ai"
-                onClick={handleReferenceSubmit}
-                disabled={loading}
-              >
-                {loading && <span className="btn-spinner" />}
-                {loading ? (loadingStage || "Analyzing…") : "Analyze & Fill Form"}
-              </button>
-            </div>
-          )}
+          {/* Single input */}
+          <p className="hint">Describe your task or paste existing notes — AI will figure out what to do.</p>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (!loading && input.trim()) handleSubmit();
+              }
+            }}
+            placeholder="e.g. "Face cream video about reducing dark spots for women 45+" or paste a full brief…"
+            rows={5}
+          />
+          <button className="btn-ai" onClick={handleSubmit} disabled={loading || !input.trim()}>
+            {loading && <span className="btn-spinner" />}
+            {loading ? "Thinking…" : "Generate with AI"}
+          </button>
 
           {error && <div className="msg-error">{error}</div>}
 
-          {/* ── Suggestion review — shown after generation ── */}
+          {/* Suggestion review */}
           {pendingSuggestions && (
             <SuggestionReview
               suggestions={pendingSuggestions}
@@ -486,7 +400,8 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
               onDiscard={handleDiscardSuggestions}
             />
           )}
-          {/* ── Brainstorm with Wednesday ── */}
+
+          {/* Brainstorm with Wednesday */}
           <div style={{ borderTop: "1px solid var(--border)", marginTop: "16px", paddingTop: "14px" }}>
             <button
               className="btn-ai"
