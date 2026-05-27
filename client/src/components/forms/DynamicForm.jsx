@@ -220,7 +220,8 @@ export function buildUpdateBody(fields, task, users, updateTemplate, fileUrl = n
 
 // ─── Script color-coder ───────────────────────────────────────────────────────
 // Parses a structured production script (SCRIPT (VO) / VISUALS / SOUND blocks)
-// and wraps each label in a bold colored span for the brief HTML.
+// and wraps each label in a bold colored element for the brief HTML.
+// Uses <font color=""> instead of style="color:..." because Monday strips inline styles.
 function colorizeScript(rawText) {
   if (!rawText?.trim()) return "";
   const LABELS = [
@@ -232,26 +233,37 @@ function colorizeScript(rawText) {
   ];
   const lines = rawText.split("\n");
   const parts = [];
+  let prevWasEmpty = false;
+
   for (const line of lines) {
     const t = line.trim();
-    if (!t) { parts.push(""); continue; }
-    // Time-coded section header e.g. "0–4s — THE HOOK"
-    if (/^\d+[–—-]\d+s/.test(t)) {
-      parts.push(`<p style="margin:14px 0 4px;"><strong>${t}</strong></p>`);
+    if (!t) {
+      // Blank line between sections → visible spacer (works in Monday too)
+      if (!prevWasEmpty && parts.length > 0) parts.push("<p><br></p>");
+      prevWasEmpty = true;
       continue;
     }
+    prevWasEmpty = false;
+
+    // Time-coded section header e.g. "0–4s — THE HOOK"
+    if (/^\d+[–—-]\d+s/.test(t)) {
+      parts.push(`<p><strong>${t}</strong></p>`);
+      continue;
+    }
+
     let matched = false;
     for (const [label, color] of LABELS) {
       if (t.startsWith(label + ":")) {
         const content = t.slice(label.length + 1).trim();
-        parts.push(`<p style="margin:2px 0;"><strong style="color:${color};">${label}:</strong> ${content}</p>`);
+        // <font color=""> is supported by Monday; inline style is stripped
+        parts.push(`<p><font color="${color}"><strong>${label}:</strong></font> ${content}</p>`);
         matched = true;
         break;
       }
     }
-    if (!matched) parts.push(`<p style="margin:2px 0;">${t}</p>`);
+    if (!matched) parts.push(`<p>${t}</p>`);
   }
-  return parts.filter((l, i, a) => !(l === "" && (a[i - 1] === "" || i === 0))).join("");
+  return parts.join("");
 }
 
 // ─── Hybrid Brief Generator ───────────────────────────────────────────────────
