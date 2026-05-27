@@ -380,7 +380,7 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
                 if (!loading && input.trim()) handleSubmit();
               }
             }}
-            placeholder="e.g. "Face cream video about reducing dark spots for women 45+" or paste a full brief…"
+            placeholder={`e.g. "Face cream video about reducing dark spots for women 45+" or paste a full brief…`}
             rows={5}
           />
           <button className="btn-ai" onClick={handleSubmit} disabled={loading || !input.trim()}>
