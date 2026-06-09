@@ -372,6 +372,7 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
 
       let submittedFileCount = 0;
       let filesActuallyFailed = false;
+      let fileWarningMsg = null; // hoisted — referenced after the file-upload block
       if (itemId && taskFiles) {
         const entryFiles = taskFiles[entry.id] ?? {};
         const fileFields = entryBoard.fields.filter((f) => f.type === "file" && f.mondayColumnId);
@@ -387,7 +388,6 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
           submittedFileCount = allFiles.length;
           setSubmitProgress({ step: "files", fileIndex: 0, fileTotal: allFiles.length, fileName: "" });
           const failedFiles = [];
-          let fileWarningMsg = null;
           for (let i = 0; i < allFiles.length; i++) {
             const { file, field } = allFiles[i];
             setSubmitProgress({ step: "files", fileIndex: i + 1, fileTotal: allFiles.length, fileName: file.name });
