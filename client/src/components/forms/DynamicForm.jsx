@@ -797,7 +797,7 @@ function sortUsersByFrequency(users, freqArray) {
 
 // ─── Single field renderer ────────────────────────────────────────────────────
 
-export function renderInput(field, task, setField, users, frequencyOrder = {}) {
+export function renderInput(field, task, setField, users, frequencyOrder = {}, onRefreshProducts = null, isRefreshingProducts = false) {
   let value = task[field.key];
   if (value === undefined && ["multiselect", "people", "file", "hooks"].includes(field.type)) {
     value = [];
@@ -845,14 +845,35 @@ export function renderInput(field, task, setField, users, frequencyOrder = {}) {
         />
       );
 
-    case "select":
-      return (
+    case "select": {
+      const isProductField = field.key === "product" || field.key === "productBundle";
+      const selectEl = (
         <CustomSelect
           options={sortByFrequency(field.options || [], frequencyOrder[field.key])}
           value={value}
           onChange={(v) => setField(field.key, v)}
         />
       );
+      if (isProductField && onRefreshProducts) {
+        return (
+          <div style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>{selectEl}</div>
+            <button
+              type="button"
+              title="Sync product list from Monday"
+              onClick={onRefreshProducts}
+              disabled={isRefreshingProducts}
+              className="product-refresh-btn"
+            >
+              {isRefreshingProducts
+                ? <span className="product-refresh-spinner" />
+                : "↻"}
+            </button>
+          </div>
+        );
+      }
+      return selectEl;
+    }
 
     case "creatable_select":
       return (
@@ -1203,7 +1224,7 @@ function FileInput({ value, onChange }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview, hiddenFieldKeys = [], step1Values = null }) {
+export default function DynamicForm({ board, users = [], aiResult = null, onAIResultApplied, wednesdayResult = null, onWednesdayResultApplied, onTaskChange, onDraftDiscarded, frequencyOrder = {}, onReview, hiddenFieldKeys = [], step1Values = null, onRefreshProducts = null, isRefreshingProducts = false }) {
   const DRAFT_KEY = `task_draft_${board.id}`;
 
   // On mount: immediately restore from localStorage draft if one exists.
@@ -1414,6 +1435,8 @@ export default function DynamicForm({ board, users = [], aiResult = null, onAIRe
         hiddenFieldKeys={hiddenFieldKeys}
         aiDuration={aiDuration}
         footer={footer}
+        onRefreshProducts={onRefreshProducts}
+        isRefreshingProducts={isRefreshingProducts}
       />
     </form>
   );

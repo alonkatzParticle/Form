@@ -495,6 +495,50 @@ body {
 
 @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
 
+/* ─── Product refresh button ────────────────────────────────────────────────── */
+.product-refresh-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  margin-top: 0;
+}
+
+.product-refresh-btn:hover:not(:disabled) {
+  background: var(--surface-hover, rgba(255,255,255,0.08));
+  color: var(--accent, #7c6eea);
+  border-color: var(--accent, #7c6eea);
+}
+
+.product-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.product-refresh-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent, #7c6eea);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
 /* ─── Form section divider ───────────────────────────────────────────────────── */
 .form-section {
   padding-top: 20px;

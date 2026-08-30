@@ -144,6 +144,23 @@ export default function App() {
     });
   }, [boardsLoaded, setBoards, setFrequencyOrder]);
 
+  const [isRefreshingProducts, setIsRefreshingProducts] = useState(false);
+
+  const handleRefreshProducts = useCallback(async () => {
+    setIsRefreshingProducts(true);
+    try {
+      const res = await axios.post("/api/settings/sync-products");
+      setBoards(res.data.boards ?? []);
+      setFrequencyOrder(res.data.frequencyOrder ?? {});
+    } catch (err) {
+      console.error("Failed to sync products:", err);
+      alert("Failed to sync products: " + (err.response?.data?.error || err.message));
+    } finally {
+      setIsRefreshingProducts(false);
+    }
+  }, [setBoards, setFrequencyOrder]);
+
+
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState(null);
@@ -226,6 +243,8 @@ export default function App() {
           <Home
             boards={boards}
             frequencyOrder={frequencyOrder}
+            onRefreshProducts={handleRefreshProducts}
+            isRefreshingProducts={isRefreshingProducts}
             onGenerateSuccess={(task) => {
               const board = boards.find((b) => b.id === task.boardType) ?? boards[0];
               const { cleanTask: cleanTaskData, hasFiles } = extractFiles(task.id, task.task, board);
@@ -264,6 +283,8 @@ export default function App() {
             onFilesUploaded={clearTaskFiles}
             onFileChange={handleFileChange}
             taskFileNames={taskFileNames}
+            onRefreshProducts={handleRefreshProducts}
+            isRefreshingProducts={isRefreshingProducts}
           />
 
         </div>
@@ -279,6 +300,8 @@ export default function App() {
             onFilesUploaded={clearTaskFiles}
             onFileChange={handleFileChange}
             taskFileNames={taskFileNames}
+            onRefreshProducts={handleRefreshProducts}
+            isRefreshingProducts={isRefreshingProducts}
           />
 
         </div>

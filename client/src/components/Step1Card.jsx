@@ -42,7 +42,7 @@ export function isStep1Complete(boardFields = [], formTask = {}) {
   });
 }
 
-export default function Step1Card({ board, users, formTask, onFieldChange, frequencyOrder = {} }) {
+export default function Step1Card({ board, users, formTask, onFieldChange, frequencyOrder = {}, onRefreshProducts = null, isRefreshingProducts = false }) {
   const allStep1Fields = (board.fields ?? []).filter((f) => f.step1);
   if (allStep1Fields.length === 0) return null;
 
@@ -97,7 +97,9 @@ export default function Step1Card({ board, users, formTask, onFieldChange, frequ
                   formTask,
                   (key, val) => onFieldChange(key, val),
                   users,
-                  frequencyOrder
+                  frequencyOrder,
+                  onRefreshProducts,
+                  isRefreshingProducts
                 )}
               </Field>
             </div>

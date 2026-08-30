@@ -2,7 +2,7 @@
 // GET /api/settings            — returns full settings (boards, fields, board IDs)
 // GET /api/settings/sync-check — compares settings field columns against live Monday board
 import express from "express";
-import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption, setFieldOptions } from "../services/settingsService.js";
+import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption, setFieldOptions, syncProductsFromMonday } from "../services/settingsService.js";
 
 import { getBoardColumns, getColumnSettings } from "../services/mondayService.js";
 
@@ -226,6 +226,19 @@ router.put("/", (req, res) => {
   } catch (err) {
     console.error("Settings write error:", err.message);
     res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
+// POST /api/settings/sync-products
+// Syncs products from Monday.com status columns and returns full updated settings.
+router.post("/sync-products", async (req, res) => {
+  try {
+    await syncProductsFromMonday();
+    const settings = getSettings();
+    res.json(settings);
+  } catch (err) {
+    console.error("Manual product sync error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

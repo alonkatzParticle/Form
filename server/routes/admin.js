@@ -3,7 +3,7 @@
 
 import express from "express";
 import { refreshAllBoards } from "../services/frequencyService.js";
-import { getSettings } from "../services/settingsService.js";
+import { getSettings, syncProductsFromMonday } from "../services/settingsService.js";
 
 const router = express.Router();
 
@@ -24,6 +24,19 @@ router.post("/refresh-frequency", async (_req, res) => {
     res.json({ ok: true, updated: summary });
   } catch (err) {
     console.error("[cron] refresh-frequency failed:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Called by Vercel cron daily at 4:00 AM UTC (7:00 AM Jerusalem Time).
+// Syncs products from Monday.com status columns and updates settings.json.
+router.post("/sync-products", async (_req, res) => {
+  try {
+    const addedCount = await syncProductsFromMonday();
+    console.log("[cron] sync-products complete. Added products:", addedCount);
+    res.json({ ok: true, added: addedCount });
+  } catch (err) {
+    console.error("[cron] sync-products failed:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

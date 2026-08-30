@@ -29,6 +29,8 @@ export default function TaskFormSections({
   skipMondayTypes = [],
   aiDuration = null,
   footer = null,
+  onRefreshProducts = null,
+  isRefreshingProducts = false,
 }) {
   function setField(key, val) { onChange(key, val); }
 
@@ -79,7 +81,7 @@ export default function TaskFormSections({
         <div key={idx} className="field-row">
           {group.fields.map((f) => (
             <Field key={f.key} label={f.label} required={f.required} hint={f.hint}>
-              {renderInput(f, task, setField, users, frequencyOrder)}
+              {renderInput(f, task, setField, users, frequencyOrder, onRefreshProducts, isRefreshingProducts)}
             </Field>
           ))}
         </div>
@@ -88,7 +90,7 @@ export default function TaskFormSections({
     return (
       <div key={idx}>
         <Field label={group.field.label} required={group.field.required} hint={group.field.hint}>
-          {renderInput(group.field, task, setField, users, frequencyOrder)}
+          {renderInput(group.field, task, setField, users, frequencyOrder, onRefreshProducts, isRefreshingProducts)}
         </Field>
         {group.field.durationEstimator && (
           <InlineDurationEstimator

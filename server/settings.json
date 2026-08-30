@@ -35,7 +35,7 @@
             "Marketing/Media": 105
           },
           "step1": true,
-          "sectionHeader": "Step 1 \u2014 Context"
+          "sectionHeader": "Step 1 — Context"
         },
         {
           "key": "product",
@@ -48,7 +48,7 @@
             "Power Shower Set",
             "Ab Firming Cream",
             "Shampoo",
-            "Gravit\u00e9",
+            "Gravité",
             "Face Mask",
             "Face Wash",
             "Body Wash",
@@ -81,7 +81,8 @@
             "Gravite Bundle",
             "Bold Moves Bundle",
             "Instant Eye Firming Cream",
-            "Hair Revival Kit"
+            "Hair Revival Kit",
+            "-"
           ],
           "step1": true
         },
@@ -268,7 +269,45 @@
           "mondayColumnId": "dropdown_mm3n9vjc",
           "mondayValueType": "dropdown",
           "options": [
-            "Father's Day"
+            "Father's Day",
+            "Catalogue Ads",
+            "Authority Figure",
+            "IEFC 90s Focus",
+            "Creator Commercial Review",
+            "David & Goliath",
+            "Documentary Case Study",
+            "Meet XX",
+            "Love Letter",
+            "Yapper",
+            "AI Product Videos",
+            "VSL",
+            "Survey Results",
+            "4th Of July",
+            "Hand Cream Statics",
+            "Shaving Gel Statics",
+            "Science For You",
+            "IM Energy",
+            "Applovin PARTICLEDEAL",
+            "Dermatologist",
+            "PDP Educational Video",
+            "Eye Bag Killer Set",
+            "5 Bucks 5 Problems",
+            "Bundles Promo Page",
+            "Summer Flash Sale",
+            "AI vs. UGC",
+            "Sunscreen July '26",
+            "Youtube Partnership Ad",
+            "CVS Launch",
+            "AGS Bread",
+            "Deo Women Lie",
+            "Rocco Mediate",
+            "Younger Men",
+            "Closer Shave",
+            "No Sugar",
+            "Gym Coach",
+            "TV to Meta",
+            "Labor Day",
+            "NeoRoot Launch"
           ],
           "step1": true,
           "showWhen": [
@@ -288,10 +327,10 @@
           "type": "text",
           "required": true,
           "hint": "Please don't include \"/\" in the name",
-          "placeholder": "e.g. Face Cream Q2 UGC \u2014 9x16 Versions",
+          "placeholder": "e.g. Face Cream Q2 UGC — 9x16 Versions",
           "mondayColumnId": null,
           "mondayValueType": "item_name",
-          "sectionHeader": "Step 2 \u2014 AI Generated"
+          "sectionHeader": "Step 2 — AI Generated"
         },
         {
           "key": "videoConcept",
@@ -299,7 +338,7 @@
           "type": "textarea",
           "required": true,
           "hint": "Briefly describe overall idea or story for the video",
-          "placeholder": "e.g. Show the product in a morning routine, emphasizing freshness\u2026",
+          "placeholder": "e.g. Show the product in a morning routine, emphasizing freshness…",
           "rows": 4,
           "mondayColumnId": "long_text_mkn8c1ax"
         },
@@ -307,8 +346,8 @@
           "key": "visuals",
           "label": "Visuals",
           "type": "textarea",
-          "hint": "Optional \u2014 visual language and ideas for each section of the video",
-          "placeholder": "AI will suggest visuals aligned to the script sections\u2026",
+          "hint": "Optional — visual language and ideas for each section of the video",
+          "placeholder": "AI will suggest visuals aligned to the script sections…",
           "rows": 4,
           "hidden": true,
           "skipBrief": true
@@ -326,7 +365,7 @@
           "label": "Script / Message",
           "type": "textarea",
           "hint": "Include link to script if applicable",
-          "placeholder": "Paste full script or key message here\u2026",
+          "placeholder": "Paste full script or key message here…",
           "rows": 5,
           "mondayColumnId": "long_text_Mjj2uK4g",
           "durationEstimator": true
@@ -345,7 +384,7 @@
           "required": true,
           "searchable": true,
           "mondayColumnId": "person",
-          "sectionHeader": "Step 3 \u2014 Your Details"
+          "sectionHeader": "Step 3 — Your Details"
         },
         {
           "key": "editorDesigner",
@@ -380,7 +419,7 @@
             "Low",
             "Medium",
             "High",
-            "Critical \u26a0\ufe0f\ufe0f"
+            "Critical ⚠️️"
           ]
         },
         {
@@ -417,7 +456,7 @@
           "label": "DropBox Link",
           "type": "url",
           "hint": "Paste the folder link where the editor will upload finished files",
-          "placeholder": "https://www.dropbox.com/\u2026",
+          "placeholder": "https://www.dropbox.com/…",
           "mondayColumnId": "link4__1",
           "mondayValueType": "link",
           "linkText": "DropBox",
@@ -514,7 +553,7 @@
             "Ulta": 15
           },
           "step1": true,
-          "sectionHeader": "Step 1 \u2014 Context"
+          "sectionHeader": "Step 1 — Context"
         },
         {
           "key": "productBundle",
@@ -527,7 +566,7 @@
             "Power Shower Set",
             "Ab Firming Cream",
             "Shampoo",
-            "Gravit\u00e9",
+            "Gravité",
             "Face Mask",
             "Face Wash",
             "Body Wash",
@@ -560,7 +599,9 @@
             "Lady Killer Kit",
             "Golfer's Bundle",
             "Lip Balm",
-            "Hand Cream"
+            "Hand Cream",
+            "-",
+            "Eye Bag-Killer Set"
           ],
           "step1": true
         },
@@ -710,7 +751,45 @@
           "mondayColumnId": "dropdown_mm3n7bw1",
           "mondayValueType": "dropdown",
           "options": [
-            "Father's Day"
+            "Father's Day",
+            "Catalogue Ads",
+            "Authority Figure",
+            "IEFC 90s Focus",
+            "Creator Commercial Review",
+            "David & Goliath",
+            "Documentary Case Study",
+            "Meet XX",
+            "Love Letter",
+            "Yapper",
+            "AI Product Videos",
+            "VSL",
+            "Survey Results",
+            "4th Of July",
+            "Hand Cream Statics",
+            "Shaving Gel Statics",
+            "Science For You",
+            "IM Energy",
+            "Applovin PARTICLEDEAL",
+            "Dermatologist",
+            "PDP Educational Video",
+            "Eye Bag Killer Set",
+            "5 Bucks 5 Problems",
+            "Bundles Promo Page",
+            "Summer Flash Sale",
+            "AI vs. UGC",
+            "Sunscreen July '26",
+            "Youtube Partnership Ad",
+            "CVS Launch",
+            "AGS Bread",
+            "Deo Women Lie",
+            "Rocco Mediate",
+            "Younger Men",
+            "Closer Shave",
+            "No Sugar",
+            "Gym Coach",
+            "TV to Meta",
+            "Labor Day",
+            "NeoRoot Launch"
           ],
           "step1": true,
           "showWhen": [
@@ -730,10 +809,10 @@
           "type": "text",
           "required": true,
           "hint": "Please don't include \"/\" in the name",
-          "placeholder": "e.g. Face Cream PDP Banner \u2014 Q2",
+          "placeholder": "e.g. Face Cream PDP Banner — Q2",
           "mondayColumnId": null,
           "mondayValueType": "item_name",
-          "sectionHeader": "Step 2 \u2014 Brief Details"
+          "sectionHeader": "Step 2 — Brief Details"
         },
         {
           "key": "conceptIdea",
@@ -741,7 +820,7 @@
           "type": "textarea",
           "required": true,
           "hint": "Describe visual subject and scene",
-          "placeholder": "e.g. Flat-lay hero shot of the face cream surrounded by botanicals\u2026",
+          "placeholder": "e.g. Flat-lay hero shot of the face cream surrounded by botanicals…",
           "rows": 4,
           "mondayColumnId": "long_textpvqldjpg"
         },
@@ -761,7 +840,7 @@
           "required": true,
           "searchable": true,
           "mondayColumnId": "people_Mjj2RrZM",
-          "sectionHeader": "Step 3 \u2014 Your Details"
+          "sectionHeader": "Step 3 — Your Details"
         },
         {
           "key": "editorDesigner",
@@ -784,7 +863,7 @@
             "Low",
             "Medium",
             "High",
-            "Critical \u26a0\ufe0f\ufe0f"
+            "Critical ⚠️️"
           ]
         },
         {
@@ -856,7 +935,7 @@
           "label": "Dropbox",
           "type": "url",
           "hint": "Paste the folder link where the designer will upload finished files",
-          "placeholder": "https://www.dropbox.com/\u2026",
+          "placeholder": "https://www.dropbox.com/…",
           "mondayColumnId": "link0__1",
           "mondayValueType": "link",
           "linkText": "Dropbox",

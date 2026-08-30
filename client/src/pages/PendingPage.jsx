@@ -96,7 +96,7 @@ function SuccessCard({ itemUrl, onCreateAnother }) {
   );
 }
 
-export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange, taskFileNames }) {
+export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange, taskFileNames, onRefreshProducts, isRefreshingProducts }) {
 
   const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState(null);
@@ -607,6 +607,8 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                             }));
                           }
                         }}
+                        onRefreshProducts={onRefreshProducts}
+                        isRefreshingProducts={isRefreshingProducts}
                       />
                     </div>
                   )}

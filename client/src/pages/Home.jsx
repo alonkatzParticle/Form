@@ -17,7 +17,7 @@ const AI_SUPPORTED_DEPTS = {
   design: ["Marketing"],
 };
 
-export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBatch, onGenerateSuccess }) {
+export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBatch, onGenerateSuccess, onRefreshProducts, isRefreshingProducts }) {
   const [activeBoardId, setActiveBoardId] = usePersistedState("home_activeBoardId", boards?.[0]?.id ?? null);
   const [aiResult, setAiResult] = usePersistedState("home_aiResult", null);
   const [formResetKey, setFormResetKey] = useState(0);
@@ -194,6 +194,8 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
               formTask={mergedStep1}
               onFieldChange={handleStep1Change}
               frequencyOrder={frequencyOrder[activeBoard.id] ?? {}}
+              onRefreshProducts={onRefreshProducts}
+              isRefreshingProducts={isRefreshingProducts}
             />
 
             {showAIPanel && (
@@ -231,6 +233,8 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
               onDraftDiscarded={() => setChatResetKey((k) => k + 1)}
               frequencyOrder={frequencyOrder[activeBoard.id] ?? {}}
               onReview={handleReview}
+              onRefreshProducts={onRefreshProducts}
+              isRefreshingProducts={isRefreshingProducts}
             />
           </div>
 

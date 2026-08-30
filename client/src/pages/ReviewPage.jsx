@@ -127,7 +127,7 @@ function SuccessCard({ itemUrl, isBatch, onCreateAnother, onGoHome }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange, taskFileNames }) {
+export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, onTaskSubmitted, taskFiles, onFilesUploaded, onFileChange, taskFileNames, onRefreshProducts, isRefreshingProducts }) {
 
   const navigate = useNavigate();
   const pathname = usePathname();
@@ -717,6 +717,8 @@ export default function ReviewPage({ tasks, setTasks, boards, frequencyOrder, on
                             }));
                           }
                         }}
+                        onRefreshProducts={onRefreshProducts}
+                        isRefreshingProducts={isRefreshingProducts}
                       />
                     </div>
                   )}

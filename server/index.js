@@ -3,7 +3,7 @@
 // On Vercel, api/index.js is used instead (no listen, no intervals).
 
 import app from "./app.js";
-import { getSettings } from "./services/settingsService.js";
+import { getSettings, syncProductsFromMonday } from "./services/settingsService.js";
 import { getBoardColumns } from "./services/mondayService.js";
 import { getState as getAutoRenameState, runAutoRename } from "./services/autoRenameService.js";
 import { refreshAllBoards } from "./services/frequencyService.js";
@@ -32,6 +32,38 @@ app.listen(PORT, () => {
       console.warn("[frequency] Scheduled refresh failed:", err.message)
     );
   }, WEEK_MS);
+
+  // Daily product sync: check every 5 minutes if it's 7 AM Jerusalem Time (UTC+3) and run once per day.
+  let lastProductSyncDate = "";
+  setInterval(() => {
+    try {
+      const jerusalemTime = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Jerusalem",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: false,
+      }).formatToParts(new Date());
+
+      const parts = Object.fromEntries(jerusalemTime.map(p => [p.type, p.value]));
+      const dateStr = `${parts.year}-${parts.month}-${parts.day}`;
+      const hour = parseInt(parts.hour, 10);
+
+      if (hour >= 7 && dateStr !== lastProductSyncDate) {
+        console.log(`[cron] Running scheduled daily product sync at ${parts.hour}:${parts.minute} Jerusalem time...`);
+        syncProductsFromMonday().then((added) => {
+          lastProductSyncDate = dateStr;
+          console.log(`[cron] Scheduled daily product sync completed. Added products: ${added}`);
+        }).catch((err) => {
+          console.warn("[cron] Scheduled daily product sync failed:", err.message);
+        });
+      }
+    } catch (err) {
+      console.warn("[cron] Time check for daily product sync failed:", err.message);
+    }
+  }, 5 * 60 * 1000);
 });
 
 // On startup, compare each board's configured columns against live Monday columns.
