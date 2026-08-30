@@ -119,23 +119,19 @@ export function setFieldOptions(fieldKey, options) {
   return changed;
 }
 
-// Add multiple option values to a specific board's field configuration.
-// Idempotent — skips options that already exist.
-export function addBoardFieldOptions(boardId, fieldKey, newOptions) {
+// Replace the options array for a specific board field that matches fieldKey.
+// Used to mirror Monday's authoritative visible options list exactly.
+export function setBoardFieldOptions(boardId, fieldKey, options) {
   ensureVercelCopies();
   const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
   const board = settings.boards?.find((b) => b.id === boardId);
   if (!board) return false;
   const field = board.fields?.find((f) => f.key === fieldKey);
   if (field && Array.isArray(field.options)) {
-    let changed = false;
-    for (const option of newOptions) {
-      if (!field.options.includes(option)) {
-        field.options.push(option);
-        changed = true;
-      }
-    }
-    if (changed) {
+    const current = JSON.stringify(field.options);
+    const next = JSON.stringify(options);
+    if (current !== next) {
+      field.options = [...options];
       writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
       return true;
     }
@@ -144,9 +140,10 @@ export function addBoardFieldOptions(boardId, fieldKey, newOptions) {
 }
 
 // Sync products from Monday.com status columns to settings.json options.
+// Updates options to only show options that are active and visible on Monday.com.
 export async function syncProductsFromMonday() {
   const settings = getSettings();
-  let totalAdded = 0;
+  let totalUpdated = 0;
 
   for (const board of settings.boards) {
     // Find the product field in the board config
@@ -163,36 +160,51 @@ export async function syncProductsFromMonday() {
         continue;
       }
 
-      // Monday status column labels are stored in settings_str as { labels: { "0": "Label1", "1": "Label2" } }
       const rawLabels = colSettings.labels ?? {};
-      const mondayLabels = (Array.isArray(rawLabels)
-        ? rawLabels.map((l) => l.name)
-        : Object.values(rawLabels)
-      )
-        .map((l) => typeof l === "string" ? l.trim() : l)
-        .filter((l) => l && l !== ""); // Filter out empty or default placeholders if any
+      const deactivated = new Set(colSettings.deactivated_labels ?? []);
+      const positions = colSettings.labels_positions_v2 ?? {};
+
+      // Filter active entries (exclude deactivated, empty, or placeholder "-" labels)
+      const validEntries = Object.entries(rawLabels).filter(([id, label]) => {
+        if (deactivated.has(id) || deactivated.has(Number(id))) return false;
+        if (!label || typeof label !== "string") return false;
+        const trimmed = label.trim();
+        if (!trimmed || trimmed === "-") return false;
+        return true;
+      });
+
+      // Sort by Monday position if available
+      validEntries.sort((a, b) => {
+        const posA = positions[a[0]] ?? 999;
+        const posB = positions[b[0]] ?? 999;
+        return posA - posB;
+      });
+
+      const mondayLabels = Array.from(new Set(validEntries.map(([, label]) => label.trim())));
 
       if (mondayLabels.length === 0) {
-        console.warn(`[sync-products] No labels found in Monday for board ${board.id}, column ${productField.mondayColumnId}`);
+        console.warn(`[sync-products] No valid labels found in Monday for board ${board.id}, column ${productField.mondayColumnId}`);
         continue;
       }
 
-      // Add options to settings.json
       const currentOptions = productField.options ?? [];
-      const newOptions = mondayLabels.filter((label) => !currentOptions.includes(label));
+      const hasChanged =
+        mondayLabels.length !== currentOptions.length ||
+        mondayLabels.some((l, idx) => l !== currentOptions[idx]);
 
-      if (newOptions.length > 0) {
-        console.log(`[sync-products] Found ${newOptions.length} new products for board ${board.id}:`, newOptions);
-        addBoardFieldOptions(board.id, productField.key, newOptions);
-        totalAdded += newOptions.length;
+      if (hasChanged) {
+        setBoardFieldOptions(board.id, productField.key, mondayLabels);
+        console.log(`[sync-products] Board ${board.id} product list updated (${mondayLabels.length} active products).`);
+        totalUpdated++;
       } else {
-        console.log(`[sync-products] Board ${board.id} product list is already up to date.`);
+        console.log(`[sync-products] Board ${board.id} product list is already up to date with Monday.`);
       }
     } catch (err) {
       console.error(`[sync-products] Error syncing board ${board.id}:`, err.message);
     }
   }
 
-  return totalAdded;
+  return totalUpdated;
 }
+
 
