@@ -8,6 +8,7 @@ import HistoryDrawer from "../components/HistoryDrawer.jsx";
 import Step1Card, { getStep1Keys, isStep1Complete } from "../components/Step1Card.jsx";
 import { usePersistedState } from "../hooks/usePersistedState.js";
 import BrainstormModal from "../components/BrainstormModal.jsx";
+import { WEDNESDAY_ENABLED } from "../featureFlags.js";
 
 // Departments that have full AI panel support per board.
 // If the selected department is NOT in this list, the AI panel is hidden entirely.
@@ -111,8 +112,10 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
 
       // Open Wednesday with a greeting about the reference
       const shortName = item.name.length > 50 ? item.name.slice(0, 47) + "…" : item.name;
-      setWednesdaySeedMessage(`I’ve loaded **${shortName}** as your starting point and pre-filled the form. What would you like to do differently?`);
-      setWednesdayOpen(true);
+      if (WEDNESDAY_ENABLED) {
+        setWednesdaySeedMessage(`I’ve loaded **${shortName}** as your starting point and pre-filled the form. What would you like to do differently?`);
+        setWednesdayOpen(true);
+      }
       setHistoryOpen(false);
     } catch (err) {
       console.error("[Reference] Failed to load reference task:", err.message);
@@ -160,7 +163,7 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
 
   return (
     <>
-    <div className={`home${wednesdayOpen ? " home--wednesday-open" : ""}`}>
+    <div className={`home${WEDNESDAY_ENABLED && wednesdayOpen ? " home--wednesday-open" : ""}`}>
       <header className="app-header">
         <h1>Task Creator</h1>
         <p>Create tasks directly on Monday.com</p>
@@ -185,7 +188,7 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
       {error && <p className="banner-error">Could not load board data: {error}</p>}
 
       {activeBoard && (
-        <div className={`layout${wednesdayOpen ? " layout--wednesday" : ""}`}>
+        <div className={`layout${WEDNESDAY_ENABLED && wednesdayOpen ? " layout--wednesday" : ""}`}>
           <div className="layout-main">
             {/* Step 1: context fields — must be filled before AI panel unlocks */}
             <Step1Card
@@ -210,11 +213,12 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
                 department={dept}
                 initialPrompt={initialPrompt}
                 onPromptConsumed={() => setInitialPrompt("")}
-                onNeedsClarification={(msg) => {
+                // Without Wednesday, clarification requests show as an inline message in the AI panel
+                onNeedsClarification={WEDNESDAY_ENABLED ? (msg) => {
                   setWednesdaySeedMessage(msg);
                   setWednesdayOpen(true);
-                }}
-                onBrainstorm={() => setBrainstormOpen(true)}
+                } : undefined}
+                onBrainstorm={WEDNESDAY_ENABLED ? () => setBrainstormOpen(true) : undefined}
               />
             )}
 
@@ -238,7 +242,7 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
             />
           </div>
 
-          <WednesdayPanel
+          {WEDNESDAY_ENABLED && <WednesdayPanel
             isOpen={wednesdayOpen}
             onClose={() => setWednesdayOpen((o) => !o)}
             boardType={activeBoardId}
@@ -251,7 +255,7 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
             onSeedConsumed={() => setWednesdaySeedMessage(null)}
             taskReference={taskReference}
             onClearTaskReference={() => setTaskReference(null)}
-          />
+          />}
 
           <HistoryDrawer
             isOpen={historyOpen}

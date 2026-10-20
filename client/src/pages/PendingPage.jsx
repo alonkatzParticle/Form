@@ -7,6 +7,7 @@ import InlineDurationEstimator from "../components/InlineDurationEstimator.jsx";
 import SubmissionProgress from "../components/SubmissionProgress.jsx";
 
 import WednesdayPanel from "../components/WednesdayPanel.jsx";
+import { WEDNESDAY_ENABLED } from "../featureFlags.js";
 import { useMonday } from "../hooks/useMonday.js";
 import { usePersistedState } from "../hooks/usePersistedState.js";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -472,14 +473,14 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                  <button
+                  {WEDNESDAY_ENABLED && <button
                     className="batch-back-btn"
                     onClick={() => setWednesdayOpen(true)}
                     style={{ color: "var(--purple)", fontWeight: 600 }}
                     title="Chat with Wednesday to tweak this task"
                   >
                     💬 Ask Wednesday
-                  </button>
+                  </button>}
                   <button
                     className="batch-back-btn"
                     onClick={() => handleDelete(selected.id)}
@@ -656,7 +657,7 @@ export default function PendingPage({ tasks, setTasks, boards, frequencyOrder, o
       </div>
       )}
 
-      {selected && activeBoard && (
+      {WEDNESDAY_ENABLED && selected && activeBoard && (
         <WednesdayPanel
           isOpen={wednesdayOpen}
           onClose={() => setWednesdayOpen(false)}

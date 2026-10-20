@@ -192,7 +192,7 @@ export default function HistoryDrawer({ isOpen, onClose, boardType, boardFields,
                       onUseAsReference(item).finally(() => setReferenceId(null));
                     }}
                     disabled={referenceId === item.id || loadingId === item.id}
-                    title="Load as reference for Wednesday"
+                    title="Load this task as a starting point"
                   >
                     {referenceId === item.id ? "…" : "✦ Remix"}
                   </button>

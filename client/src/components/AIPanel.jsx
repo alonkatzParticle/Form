@@ -401,8 +401,8 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
             />
           )}
 
-          {/* Brainstorm with Wednesday */}
-          <div style={{ borderTop: "1px solid var(--border)", marginTop: "16px", paddingTop: "14px" }}>
+          {/* Brainstorm with Wednesday — hidden when the parent doesn't pass onBrainstorm */}
+          {onBrainstorm && <div style={{ borderTop: "1px solid var(--border)", marginTop: "16px", paddingTop: "14px" }}>
             <button
               className="btn-ai"
               onClick={() => onBrainstorm?.()}
@@ -425,7 +425,7 @@ export default function AIPanel({ boardType, boardFields = [], currentTask = {},
             <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center" }}>
               {disabled ? "Complete Step 1 to unlock" : "Full creative session — concept, hooks, script"}
             </p>
-          </div>
+          </div>}
 
         </div>
       )}
