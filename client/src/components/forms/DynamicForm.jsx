@@ -705,10 +705,12 @@ function PeopleSearchSelect({ field, value = [], users, onChange }) {
 
   const safeValue = Array.isArray(value) ? value : [];
 
+  // allowedPeople entries match the start of a user's name, or their full email
   const displayUsers = field.allowedPeople
     ? users.filter((u) =>
         field.allowedPeople.some((name) =>
-          u.name.toLowerCase().startsWith(name.toLowerCase())
+          u.name.toLowerCase().startsWith(name.toLowerCase()) ||
+          u.email?.toLowerCase() === name.toLowerCase()
         )
       )
     : users;
@@ -912,7 +914,8 @@ export function renderInput(field, task, setField, users, frequencyOrder = {}, o
         const displayUsers = field.allowedPeople
           ? sortedUsers.filter((u) =>
               field.allowedPeople.some((name) =>
-                u.name.toLowerCase().startsWith(name.toLowerCase())
+                u.name.toLowerCase().startsWith(name.toLowerCase()) ||
+                u.email?.toLowerCase() === name.toLowerCase()
               )
             )
           : sortedUsers;
