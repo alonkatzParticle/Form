@@ -6,6 +6,29 @@
       "boardId": "5433027071",
       "fields": [
         {
+          "key": "brand",
+          "label": "Brand",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "defaultValue": "Particle",
+          "mondayColumnId": "color_mm8q1bam",
+          "options": [
+            "Particle",
+            "Ashford",
+            "Levitas",
+            "Clearstep"
+          ],
+          "mondayOptionIndices": {
+            "Particle": 7,
+            "Ashford": 0,
+            "Levitas": 4,
+            "Clearstep": 1
+          },
+          "step1": true,
+          "sectionHeader": "Step 1 — Context"
+        },
+        {
           "key": "department",
           "label": "Department",
           "type": "select",
@@ -34,8 +57,7 @@
             "Ulta": 10,
             "Marketing/Media": 105
           },
-          "step1": true,
-          "sectionHeader": "Step 1 — Context"
+          "step1": true
         },
         {
           "key": "product",
@@ -43,7 +65,8 @@
           "type": "select",
           "required": true,
           "half": true,
-          "mondayColumnId": "label9",
+          "mondayColumnId": "dropdown_mm8qh5b",
+          "mondayValueType": "dropdown",
           "options": [
             "Face Cream",
             "Gravité",

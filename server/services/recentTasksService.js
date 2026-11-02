@@ -54,7 +54,7 @@ async function fetchBoardExamples(boardId, boardType) {
         `Task: ${item.name}`,
         get("label4")               && `Type: ${get("label4")}`,
         get("single_selectu06tevn") && `Platform: ${get("single_selectu06tevn")}`,
-        get("label9")               && `Product: ${get("label9")}`,
+        get("dropdown_mm8qh5b")     && `Product: ${get("dropdown_mm8qh5b")}`,
         get("long_text_mkn8c1ax")   && `Concept: ${trunc(get("long_text_mkn8c1ax"), 200)}`,
         get("long_text_Mjj2uK4g")   && `Script: ${trunc(get("long_text_Mjj2uK4g"), 300)}`,
       ].filter(Boolean).join("\n");

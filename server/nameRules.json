@@ -1,6 +1,7 @@
 {
   "video": {
     "segments": [
+      { "field": "brand", "skipValues": ["Particle"] },
       { "field": "product" },
       { "field": "campaign", "skipValues": ["None", ""], "aliasWhenValue": {"Other": "campaignCustom"} },
       { "field": "campaignTag", "skipValues": [""] },
