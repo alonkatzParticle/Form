@@ -430,7 +430,9 @@ export function buildColumnValues(fields, task) {
     if (!field.mondayColumnId) continue;
     // Skip hidden fields — their stale values must not reach Monday
     if (!isVisible(field, buildTask)) continue;
-    const mondayVal = toMondayValue(field, buildTask[field.key]);
+    // Fields with a defaultValue (e.g. Brand → Particle) never go to Monday empty
+    const raw = buildTask[field.key];
+    const mondayVal = toMondayValue(field, (raw === undefined || raw === "") && field.defaultValue ? field.defaultValue : raw);
     if (mondayVal !== null && mondayVal !== undefined) {
       vals[field.mondayColumnId] = mondayVal;
     }

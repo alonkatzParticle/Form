@@ -79,6 +79,17 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
   const step1Keys = getStep1Keys(activeBoard?.fields ?? []);
   const mergedStep1 = { ...formTask, ...step1Values }; // step1Values wins on conflict
 
+  // Fill empty step 1 fields that have a defaultValue (Brand → Particle). The form's own
+  // defaults are set once when it mounts — from cached board fields that may predate the
+  // field — so this also covers board switches and forms started before a deploy.
+  useEffect(() => {
+    const missing = {};
+    for (const f of activeBoard?.fields ?? []) {
+      if (f.step1 && f.defaultValue && !mergedStep1[f.key]) missing[f.key] = f.defaultValue;
+    }
+    if (Object.keys(missing).length) setStep1Values((prev) => ({ ...prev, ...missing }));
+  }, [activeBoard, formTask, step1Values, setStep1Values]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleStep1Change = useCallback((key, val) => {
     setStep1Values((prev) => {
       const next = { ...prev, [key]: val };
