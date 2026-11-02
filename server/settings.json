@@ -528,6 +528,29 @@
       "boardId": "8036329818",
       "fields": [
         {
+          "key": "brand",
+          "label": "Brand",
+          "type": "select",
+          "required": true,
+          "half": true,
+          "defaultValue": "Particle",
+          "mondayColumnId": "color_mm8q3pn9",
+          "options": [
+            "Particle",
+            "Ashford",
+            "Levitas",
+            "Clearstep"
+          ],
+          "mondayOptionIndices": {
+            "Particle": 7,
+            "Ashford": 0,
+            "Levitas": 4,
+            "Clearstep": 1
+          },
+          "step1": true,
+          "sectionHeader": "Step 1 — Context"
+        },
+        {
           "key": "department",
           "label": "Department",
           "type": "select",
@@ -568,8 +591,7 @@
             "Website": 14,
             "Ulta": 15
           },
-          "step1": true,
-          "sectionHeader": "Step 1 — Context"
+          "step1": true
         },
         {
           "key": "productBundle",
