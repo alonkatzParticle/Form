@@ -12,6 +12,7 @@
   },
   "design": {
     "segments": [
+      { "field": "brand", "skipValues": ["Particle"] },
       { "field": "productBundle" },
       { "field": "campaign", "skipValues": ["None", ""], "aliasWhenValue": {"Other": "campaignCustom"} },
       { "field": "campaignTag", "skipValues": [""] },
