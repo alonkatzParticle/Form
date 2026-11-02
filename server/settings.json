@@ -599,7 +599,8 @@
           "type": "select",
           "required": true,
           "half": true,
-          "mondayColumnId": "label9",
+          "mondayColumnId": "dropdown_mm8q7ysv",
+          "mondayValueType": "dropdown",
           "options": [
             "Face Cream",
             "Gravité",

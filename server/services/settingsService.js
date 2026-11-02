@@ -160,12 +160,16 @@ export async function syncProductsFromMonday() {
         continue;
       }
 
+      // Status columns store labels as {id: name}; dropdown columns as [{id, name}] (already in display order)
       const rawLabels = colSettings.labels ?? {};
+      const labelEntries = Array.isArray(rawLabels)
+        ? rawLabels.map((l) => [String(l.id), l.name])
+        : Object.entries(rawLabels);
       const deactivated = new Set(colSettings.deactivated_labels ?? []);
       const positions = colSettings.labels_positions_v2 ?? {};
 
       // Filter active entries (exclude deactivated, empty, or placeholder "-" labels)
-      const validEntries = Object.entries(rawLabels).filter(([id, label]) => {
+      const validEntries = labelEntries.filter(([id, label]) => {
         if (deactivated.has(id) || deactivated.has(Number(id))) return false;
         if (!label || typeof label !== "string") return false;
         const trimmed = label.trim();
