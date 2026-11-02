@@ -634,11 +634,19 @@ router.post("/add-product", async (req, res) => {
       return res.json({ product: existing, brand: settings.productBrands?.[existing] ?? null, existed: true });
     }
 
-    await addLabelToDropdown(board.boardId, field.mondayColumnId, label);
+    // If Monday rejects the label now, carry on: create_item uses create_labels_if_missing,
+    // so the label is created when the task is submitted. The brand assignment is kept either way.
+    let mondayError = null;
+    try {
+      await addLabelToDropdown(board.boardId, field.mondayColumnId, label);
+    } catch (e) {
+      mondayError = e.message;
+      console.error(`[add-product] Monday label create failed for "${label}" — it will be created on submit:`, e.message);
+    }
     addFieldOption(fieldKey, label);
     setProductBrands({ [label]: brand.trim() });
     console.log(`[add-product] Added "${label}" (${brand}) to ${board.id}.${fieldKey}`);
-    res.json({ product: label, brand: brand.trim(), existed: false });
+    res.json({ product: label, brand: brand.trim(), existed: false, mondayError });
   } catch (err) {
     console.error("[add-product]", err);
     res.status(500).json({ error: err.message });

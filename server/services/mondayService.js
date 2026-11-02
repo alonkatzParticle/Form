@@ -4,13 +4,14 @@
 const MONDAY_API_URL = "https://api.monday.com/v2";
 
 // apiKey: per-user key from request header, falls back to shared env key
-async function mondayQuery(query, variables = {}, apiKey = null) {
+// apiVersion: only override for calls that need a newer Monday API (e.g. update_dropdown_column)
+async function mondayQuery(query, variables = {}, apiKey = null, apiVersion = "2024-01") {
   const key = apiKey || process.env.MONDAY_API_KEY;
   const res = await fetch(MONDAY_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "API-Version": "2024-01",
+      "API-Version": apiVersion,
       Authorization: key,
     },
     body: JSON.stringify({ query, variables }),
@@ -304,25 +305,28 @@ export async function addLabelToDropdown(boardId, columnId, labelName) {
   // Skip if already exists
   if (labelsArr.some((l) => l.name === labelName)) return;
 
-  // Build {id: name} map and find next ID
-  const labelsMap = {};
-  let maxId = 0;
-  for (const l of labelsArr) {
-    labelsMap[String(l.id)] = l.name;
-    if (l.id > maxId) maxId = l.id;
-  }
-  labelsMap[String(maxId + 1)] = labelName;
+  // update_dropdown_column (API 2025-10) takes the full label list — existing labels keep their
+  // ids, the new one has none — plus the column's current revision to guard against concurrent edits.
+  const API_VERSION = "2025-10";
+  const revData = await mondayQuery(
+    `query ColRevision($boardId: ID!, $columnId: String!) { boards(ids: [$boardId]) { columns(ids: [$columnId]) { revision } } }`,
+    { boardId: String(boardId), columnId }, null, API_VERSION
+  );
+  const revision = revData.boards?.[0]?.columns?.[0]?.revision;
+  if (!revision) throw new Error(`Could not read revision for column ${columnId} on board ${boardId}`);
+
+  const deactivated = new Set((settings.deactivated_labels ?? []).map(Number));
+  const labels = [
+    ...labelsArr.map((l) => ({ id: Number(l.id), label: l.name, ...(deactivated.has(Number(l.id)) && { is_deactivated: true }) })),
+    { label: labelName },
+  ];
 
   const mutation = `
-    mutation AddDropdownLabel($boardId: ID!, $columnId: String!, $value: String!) {
-      change_column_metadata(board_id: $boardId, column_id: $columnId, column_property: labels, value: $value) {
+    mutation AddDropdownLabel($boardId: ID!, $columnId: String!, $revision: String!, $settings: UpdateDropdownColumnSettingsInput) {
+      update_dropdown_column(board_id: $boardId, id: $columnId, revision: $revision, settings: $settings) {
         id
       }
     }
   `;
-  await mondayQuery(mutation, {
-    boardId,
-    columnId,
-    value: JSON.stringify(labelsMap),
-  });
+  await mondayQuery(mutation, { boardId: String(boardId), columnId, revision, settings: { labels } }, null, API_VERSION);
 }
