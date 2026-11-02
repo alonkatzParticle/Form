@@ -2,7 +2,7 @@
 // GET /api/settings            — returns full settings (boards, fields, board IDs)
 // GET /api/settings/sync-check — compares settings field columns against live Monday board
 import express from "express";
-import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption, setFieldOptions, syncProductsFromMonday } from "../services/settingsService.js";
+import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption, setBoardFieldOptions, getActiveColumnLabels, syncProductsFromMonday } from "../services/settingsService.js";
 
 import { getBoardColumns, getColumnSettings } from "../services/mondayService.js";
 
@@ -123,7 +123,7 @@ router.get("/", async (_req, res) => {
     for (const board of settings.boards) {
       for (const field of board.fields ?? []) {
         if (field.mondayValueType === "dropdown" && field.mondayColumnId) {
-          syncTasks.push({ boardId: board.boardId, field });
+          syncTasks.push({ board, field });
         }
       }
     }
@@ -131,22 +131,18 @@ router.get("/", async (_req, res) => {
     // Fetch Monday column labels in parallel, ignore individual failures
     if (syncTasks.length > 0) {
       const results = await Promise.allSettled(
-        syncTasks.map(({ boardId, field }) =>
-          getColumnSettings(boardId, field.mondayColumnId)
-            .then((colSettings) => ({ field, colSettings }))
+        syncTasks.map(({ board, field }) =>
+          getColumnSettings(board.boardId, field.mondayColumnId)
+            .then((colSettings) => ({ board, field, colSettings }))
         )
       );
 
       for (const result of results) {
         if (result.status !== "fulfilled" || !result.value.colSettings) continue;
-        const { field, colSettings } = result.value;
+        const { board, field, colSettings } = result.value;
 
-        // labels may be an array [{id, name}] or an object
-        const rawLabels = colSettings.labels ?? [];
-        const mondayLabels = (Array.isArray(rawLabels)
-          ? rawLabels.map((l) => l.name)
-          : Object.values(rawLabels)
-        ).filter(Boolean);
+        const mondayLabels = getActiveColumnLabels(colSettings);
+        if (mondayLabels.length === 0) continue;
 
         const currentOptions = field.options ?? [];
         // Replace: use Monday as source of truth — remove stale, add new
@@ -157,10 +153,11 @@ router.get("/", async (_req, res) => {
 
         if (hasChanged) {
           field.options = [...mondayLabels];
-          setFieldOptions(field.key, mondayLabels);
+          // Scoped to this board — both boards have fields with the same key (e.g. campaignTag) on different Monday columns
+          setBoardFieldOptions(board.id, field.key, mondayLabels);
           const removed = currentOptions.filter((l) => !mondayLabels.includes(l));
           const added   = mondayLabels.filter((l) => !currentOptions.includes(l));
-          console.log(`[settings] Synced "${field.key}" — added: [${added.join(", ")}] removed: [${removed.join(", ")}]`);
+          console.log(`[settings] Synced "${board.id}.${field.key}" — added: [${added.join(", ")}] removed: [${removed.join(", ")}]`);
         }
       }
     }

@@ -139,6 +139,31 @@ export function setBoardFieldOptions(boardId, fieldKey, options) {
   return false;
 }
 
+// Turn a Monday column's settings into its list of active, visible label names, in Monday's order.
+// Status columns store labels as {id: name} with positions in labels_positions_v2;
+// dropdown columns store them as [{id, name}], already in display order.
+// Deactivated, empty and placeholder "-" labels are left out.
+export function getActiveColumnLabels(colSettings) {
+  const rawLabels = colSettings?.labels ?? {};
+  const labelEntries = Array.isArray(rawLabels)
+    ? rawLabels.map((l) => [String(l.id), l.name])
+    : Object.entries(rawLabels);
+  const deactivated = new Set(colSettings?.deactivated_labels ?? []);
+  const positions = colSettings?.labels_positions_v2 ?? {};
+
+  const validEntries = labelEntries.filter(([id, label]) => {
+    if (deactivated.has(id) || deactivated.has(Number(id))) return false;
+    if (!label || typeof label !== "string") return false;
+    const trimmed = label.trim();
+    if (!trimmed || trimmed === "-") return false;
+    return true;
+  });
+
+  validEntries.sort((a, b) => (positions[a[0]] ?? 999) - (positions[b[0]] ?? 999));
+
+  return Array.from(new Set(validEntries.map(([, label]) => label.trim())));
+}
+
 // Sync products from Monday.com status columns to settings.json options.
 // Updates options to only show options that are active and visible on Monday.com.
 export async function syncProductsFromMonday() {
@@ -160,31 +185,7 @@ export async function syncProductsFromMonday() {
         continue;
       }
 
-      // Status columns store labels as {id: name}; dropdown columns as [{id, name}] (already in display order)
-      const rawLabels = colSettings.labels ?? {};
-      const labelEntries = Array.isArray(rawLabels)
-        ? rawLabels.map((l) => [String(l.id), l.name])
-        : Object.entries(rawLabels);
-      const deactivated = new Set(colSettings.deactivated_labels ?? []);
-      const positions = colSettings.labels_positions_v2 ?? {};
-
-      // Filter active entries (exclude deactivated, empty, or placeholder "-" labels)
-      const validEntries = labelEntries.filter(([id, label]) => {
-        if (deactivated.has(id) || deactivated.has(Number(id))) return false;
-        if (!label || typeof label !== "string") return false;
-        const trimmed = label.trim();
-        if (!trimmed || trimmed === "-") return false;
-        return true;
-      });
-
-      // Sort by Monday position if available
-      validEntries.sort((a, b) => {
-        const posA = positions[a[0]] ?? 999;
-        const posB = positions[b[0]] ?? 999;
-        return posA - posB;
-      });
-
-      const mondayLabels = Array.from(new Set(validEntries.map(([, label]) => label.trim())));
+      const mondayLabels = getActiveColumnLabels(colSettings);
 
       if (mondayLabels.length === 0) {
         console.warn(`[sync-products] No valid labels found in Monday for board ${board.id}, column ${productField.mondayColumnId}`);
