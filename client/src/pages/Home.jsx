@@ -9,6 +9,7 @@ import Step1Card, { getStep1Keys, isStep1Complete } from "../components/Step1Car
 import { usePersistedState } from "../hooks/usePersistedState.js";
 import BrainstormModal from "../components/BrainstormModal.jsx";
 import { WEDNESDAY_ENABLED } from "../featureFlags.js";
+import { brandOf } from "../utils/productBrands.js";
 
 // Departments that have full AI panel support per board.
 // If the selected department is NOT in this list, the AI panel is hidden entirely.
@@ -79,8 +80,18 @@ export default function Home({ boards, frequencyOrder, onOpenSettings, onOpenBat
   const mergedStep1 = { ...formTask, ...step1Values }; // step1Values wins on conflict
 
   const handleStep1Change = useCallback((key, val) => {
-    setStep1Values((prev) => ({ ...prev, [key]: val }));
-  }, [setStep1Values]);
+    setStep1Values((prev) => {
+      const next = { ...prev, [key]: val };
+      // Changing the brand clears a selected product that belongs to a different brand
+      const current = { ...formTask, ...next };
+      for (const f of activeBoard?.fields ?? []) {
+        if (f.brandField === key && current[f.key] && brandOf(f, current[f.key]) !== (val || f.defaultBrand)) {
+          next[f.key] = "";
+        }
+      }
+      return next;
+    });
+  }, [setStep1Values, formTask, activeBoard]);
 
   // Load an existing Monday task as reference:
   // 1. Fetch its brief HTML

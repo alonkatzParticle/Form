@@ -16,6 +16,7 @@ See `DEPLOYMENT_NOTES.md` for the history of problems we hit during the first se
 | Containers | `brief-writer-app-1` (the app), `brief-writer-db-1` (Postgres), `brief-writer-adminer-1` (DB browser) |
 | App port | Host `3002` → container `3001` (nginx forwards the domain to 3002) |
 | Nginx config | `/etc/nginx/sites-available/brief-writer` |
+| Live settings | `/var/www/brief-writer/persist/settings.json` (survives deploys, not in git) |
 | Health check | `curl https://brief-writer.particle-creative.cloud/api/health` → `{"status":"ok"}` |
 
 > ⚠️ **This server is shared.** It also runs `dam`, `qa`, `slack-summary`, `ppd-board`,
@@ -29,40 +30,45 @@ GitHub alone does **not** update the live site.
 
 ---
 
-## ⚠️ Read First: `settings.json` Changes on the Live Server
+## ⚠️ Read First: Where the Live Settings Live
 
-`server/settings.json` holds all the form fields, dropdown options and allowed people. It gets
-built into the Docker image, **and the running app also edits it by itself**:
+`settings.json` holds all the form fields, dropdown options, allowed people and product → brand
+assignments. The running app edits it by itself (dropdown syncs from Monday, new products and
+campaigns typed into the form, the Settings page).
 
-- When someone types a new option into a "creatable" dropdown (e.g. a new campaign name), it's saved to the file.
-- The daily product sync rewrites the product lists from Monday.
+**The live copy is `/var/www/brief-writer/persist/settings.json` on the server**, outside the
+Docker image, so deploys never overwrite it. (Set up in `docker-compose.yml` via `SETTINGS_DIR`.)
 
-Those edits exist **only inside the running container**, not in git. Every deploy replaces the
-container with a fresh copy built from git, so **any changes made on the live site get wiped**
-unless you copy them into git first.
+`server/settings.json` in git is only the **starting copy**: it's used once, the first time the
+app starts with an empty `persist/` folder. After that, **changing `server/settings.json` in git
+does nothing on the live site.**
 
-So: **before every deploy, pull the live `settings.json` and compare it with the one in git.**
-(Step 1 below.)
+To change the live settings (add a person, a field, a dropdown option…):
+1. Use the Settings page if it can do it (Edit Form, Products by Brand), **or**
+2. Edit the live file on the server, after making a backup:
+   ```bash
+   cd /var/www/brief-writer/persist
+   cp settings.json settings.backup-$(date +%Y%m%d-%H%M).json
+   nano settings.json          # changes apply immediately, no restart needed
+   ```
+3. Then copy it back into git so the repo's copy stays a good backup (step 1 below).
+
+`nameRules.json` (task naming) is different: it's still read from git, so naming changes go
+through a normal commit + deploy.
 
 ---
 
 ## Routine Deployment (Every Time)
 
-### 1. Check for live settings changes
+### 1. Back up the live settings into git (recommended)
 
-From your Mac, in the project folder:
+Deploys don't touch the live settings anymore, but keeping git's copy current means a fresh
+server (or a lost `persist/` folder) starts from recent settings. From your Mac, in the project folder:
 
 ```bash
-ssh root@76.13.2.74 "docker exec brief-writer-app-1 cat /app/server/settings.json" > /tmp/live_settings.json
-git show origin/main:server/settings.json | diff - /tmp/live_settings.json
+scp root@76.13.2.74:/var/www/brief-writer/persist/settings.json server/settings.json
+git diff --stat server/settings.json     # review, then commit with your other changes
 ```
-
-- **No output** → nothing changed on the live site. Go to step 2.
-- **Differences shown** → those are live edits (new options, product sync). Copy them into your
-  local `server/settings.json` **as well as** your own change, so nothing is lost.
-
-If you're changing `settings.json` yourself (adding a person, a dropdown option, etc.), the
-safest order is: pull the live file → make your change on top of it → commit.
 
 ### 2. Commit and push
 
@@ -94,7 +100,7 @@ docker compose up -d --build app
 ```bash
 curl -s https://brief-writer.particle-creative.cloud/api/health      # → {"status":"ok"}
 docker ps --filter name=brief-writer                                   # app should say (healthy)
-docker exec brief-writer-app-1 grep -n "Something you changed" /app/server/settings.json
+grep -n "Something you changed" /var/www/brief-writer/persist/settings.json
 ```
 
 If the app isn't healthy, look at the logs: `docker compose logs --tail 100 app`
@@ -107,16 +113,16 @@ If the app isn't healthy, look at the logs: `docker compose logs --tail 100 app`
 python3 redeploy.py
 ```
 
-It does **not** do step 1 (the live settings check), and it rebuilds all containers instead of
-just `app`. Always do step 1 by hand first.
+It does **not** do step 1 (backing up the live settings), and it rebuilds all containers
+instead of just `app`.
 
 ---
 
 ## Asking Claude Code to Deploy
 
 Claude Code can do the whole process. Ask it to *"deploy to the VPS"*. It will:
-pull the live `settings.json`, merge any live changes, commit, push, pull and rebuild on the
-server, then check the health endpoint. It asks for your OK before the production deploy.
+back up the live `settings.json` into git, commit, push, pull and rebuild on the server, then
+check the health endpoint. It asks for your OK before the production deploy.
 
 ---
 
@@ -140,8 +146,13 @@ server, then check the health endpoint. It asks for your OK before the productio
 - Did you push to GitHub *before* pulling on the server? Compare `git log -1 --oneline` on both.
 - `docker compose restart` doesn't pick up code changes. You need `up -d --build`.
 
-**A dropdown option or person disappeared after deploying**
-The live `settings.json` wasn't copied into git first (step 1). Re-add it in git and deploy again.
+**I changed `server/settings.json` in git but the live form didn't change**
+Expected. The live copy is `persist/settings.json` on the server (see "Where the Live Settings
+Live"). Make the change there or on the Settings page.
+
+**Live settings got broken**
+Restore a backup from `/var/www/brief-writer/persist/`. If there's none, delete
+`persist/settings.json` and restart the app (`docker compose restart app`); it re-seeds from git's copy.
 
 **Build fails with `npm ci` / lock file errors**
 `client/package-lock.json` is out of sync. Run `npm install` in `client/` locally, then commit the lock file.

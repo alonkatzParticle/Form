@@ -9,6 +9,9 @@ client/dist/
 # Secrets — always excluded
 .env
 
+# Live settings on the server — mounted at runtime, never baked into the image
+persist/
+
 # Git & IDE
 .git/
 .github/

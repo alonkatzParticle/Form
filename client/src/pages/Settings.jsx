@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { DEFAULT_UPDATE_TEMPLATES } from "../updateTemplateDefaults.js";
+import ProductBrandsEditor from "../components/ProductBrandsEditor.jsx";
 
 // ── Monday column type → form field type map ─────────────────────────────────
 const MONDAY_TYPE_MAP = {
@@ -24,6 +25,7 @@ const SKIP_COLUMN_TYPES = new Set(["name","subtasks","last_updated","time_tracki
 const NAV_PAGES = [
   { id: "edit-form",      label: "Edit Form",       icon: "⊞" },
   { id: "update-format",  label: "Brief Template",   icon: "✉" },
+  { id: "product-brands", label: "Products by Brand", icon: "◈" },
   { id: "task-rename",    label: "Task Rename",      icon: "✎" },
   { id: "auto-rename",    label: "Auto Rename",      icon: "↻" },
   { id: "naming-rules",   label: "Naming Rules",     icon: "≡" },
@@ -175,6 +177,8 @@ export default function Settings({ onClose }) {
           <AutoRenameEditor />
         ) : activePage === "ai-prompts" ? (
           <PromptsViewer />
+        ) : activePage === "product-brands" ? (
+          <ProductBrandsEditor />
         ) : activePage === "update-format" ? (
           <UpdateTemplateEditor
             boards={boards}

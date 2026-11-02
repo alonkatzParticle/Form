@@ -8,6 +8,7 @@ import InlineDurationEstimator from "../InlineDurationEstimator.jsx";
 import TaskFormSections from "./TaskFormSections.jsx";
 import { DEFAULT_UPDATE_TEMPLATES } from "../../updateTemplateDefaults.js";
 import { estimateDuration, formatDurationRange } from "../../utils/durationEstimate.js";
+import { brandOf, optionsForBrand } from "../../utils/productBrands.js";
 
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
@@ -458,9 +459,15 @@ function initTask(fields) {
 
 // ─── Custom single-select dropdown ───────────────────────────────────────────
 
-function CustomSelect({ options, value, onChange, placeholder = "Select…" }) {
+// onCreate (optional): adds a "+ Add new…" entry. Called with the typed name; may throw an
+// Error whose message is shown under the input.
+function CustomSelect({ options, value, onChange, placeholder = "Select…", onCreate = null, createLabel = "Add new…" }) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState(null);
   const containerRef = useRef(null);
 
   const filtered = options.filter((o) =>
@@ -488,6 +495,56 @@ function CustomSelect({ options, value, onChange, placeholder = "Select…" }) {
     e.stopPropagation();
     onChange("");
     setSearch("");
+  }
+
+  function startAdding() {
+    setDraft(search.trim());
+    setCreateError(null);
+    setAdding(true);
+    setIsOpen(false);
+    setSearch("");
+  }
+
+  async function confirmNew() {
+    const name = draft.trim();
+    if (!name || creating) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await onCreate(name);
+      setAdding(false);
+      setDraft("");
+    } catch (e) {
+      setCreateError(e.response?.data?.error || e.message);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  if (adding) {
+    return (
+      <div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <input
+            type="text" value={draft} autoFocus
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmNew(); } if (e.key === "Escape") { setAdding(false); setDraft(""); } }}
+            placeholder="New name…"
+            disabled={creating}
+            style={{ flex: 1, padding: "7px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--text)", fontSize: 14 }}
+          />
+          <button type="button" onClick={confirmNew} disabled={creating || !draft.trim()}
+            style={{ padding: "6px 14px", borderRadius: 8, background: "var(--purple)", color: "#fff", border: "none", cursor: "pointer", fontSize: 13 }}>
+            {creating ? "Adding…" : "Add"}
+          </button>
+          <button type="button" onClick={() => { setAdding(false); setDraft(""); setCreateError(null); }} disabled={creating}
+            style={{ padding: "6px 10px", borderRadius: 8, background: "var(--surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)", cursor: "pointer", fontSize: 13 }}>
+            ✕
+          </button>
+        </div>
+        {createError && <p className="field-error" style={{ margin: "4px 0 0", fontSize: 12, color: "var(--red)" }}>{createError}</p>}
+      </div>
+    );
   }
 
   return (
@@ -535,6 +592,15 @@ function CustomSelect({ options, value, onChange, placeholder = "Select…" }) {
                 {o}
               </div>
             ))
+          )}
+          {onCreate && (
+            <div
+              className="people-option"
+              style={{ color: "var(--purple)", fontWeight: 500, borderTop: "1px solid var(--border)" }}
+              onMouseDown={(e) => { e.preventDefault(); startAdding(); }}
+            >
+              + {search.trim() ? `Add “${search.trim()}”` : createLabel}
+            </div>
           )}
         </div>
       )}
@@ -849,11 +915,26 @@ export function renderInput(field, task, setField, users, frequencyOrder = {}, o
 
     case "select": {
       const isProductField = field.key === "product" || field.key === "productBundle";
+      // Brand-aware fields (products) only list the selected brand's options, and new ones
+      // can be typed in — they're added to Monday and assigned to that brand.
+      const brand = field.brandField ? (task[field.brandField] || field.defaultBrand) : null;
+      const addToBrand = field.brandField && field.mondayValueType === "dropdown"
+        ? async (name) => {
+            const { data } = await axios.post("/api/monday/add-product", { fieldKey: field.key, product: name, brand });
+            if (data.existed && brandOf(field, data.product) !== brand) {
+              throw new Error(`“${data.product}” already exists under ${brandOf(field, data.product)}.`);
+            }
+            setField(field.key, data.product);
+            onRefreshProducts?.(); // reload settings so the new product and its brand show everywhere
+          }
+        : null;
       const selectEl = (
         <CustomSelect
-          options={sortByFrequency(field.options || [], frequencyOrder[field.key])}
+          options={sortByFrequency(optionsForBrand(field, field.options || [], brand), frequencyOrder[field.key])}
           value={value}
           onChange={(v) => setField(field.key, v)}
+          onCreate={addToBrand}
+          createLabel={brand ? `Add new ${brand} product…` : "Add new…"}
         />
       );
       if (isProductField && onRefreshProducts) {

@@ -2,9 +2,12 @@
 // The file is read fresh on every call so changes take effect without a server restart.
 // nameRules.json is merged in at read time so the client receives autoName per board.
 //
-// On Vercel, the bundled filesystem is read-only (only /tmp is writable).
-// On first access, we copy the bundled config files to /tmp so they can be read and written.
-import { existsSync, readFileSync, writeFileSync, copyFileSync } from "fs";
+// Where the live settings.json lives:
+//   • SETTINGS_DIR set (VPS) — a folder outside the Docker image, so edits survive deploys.
+//     The copy in git only seeds it the first time; after that the folder's copy is the live one.
+//   • On Vercel — /tmp, because the bundled filesystem is read-only.
+//   • Otherwise (local dev) — the bundled server/settings.json itself.
+import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getFrequencyOrder } from "./frequencyService.js";
@@ -16,31 +19,37 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC_SETTINGS   = resolve(__dirname, "../settings.json");
 const SRC_NAME_RULES = resolve(__dirname, "../nameRules.json");
 
-// Active paths — writable via /tmp on Vercel, same as source locally
-const SETTINGS_PATH   = process.env.VERCEL ? "/tmp/settings.json"   : SRC_SETTINGS;
-const NAME_RULES_PATH = process.env.VERCEL ? "/tmp/nameRules.json"   : SRC_NAME_RULES;
+// Active paths. nameRules.json is only ever edited in git, so it stays bundled outside Vercel.
+const SETTINGS_DIR    = process.env.SETTINGS_DIR || (process.env.VERCEL ? "/tmp" : null);
+const SETTINGS_PATH   = SETTINGS_DIR ? resolve(SETTINGS_DIR, "settings.json") : SRC_SETTINGS;
+const NAME_RULES_PATH = process.env.VERCEL ? "/tmp/nameRules.json" : SRC_NAME_RULES;
 
-// On Vercel, copy bundled defaults to /tmp on first access so they can be written later.
-// Wrapped in try/catch — if the bundled source path resolves differently inside the lambda,
-// we fall back silently (reads will use the original path, writes are best-effort).
-function ensureVercelCopies() {
-  if (!process.env.VERCEL) return;
+// Seed the writable copies from the bundled files the first time they're needed.
+// Wrapped in try/catch — on Vercel the bundled source path can resolve differently inside the
+// lambda, so we fall back silently (reads use the original path, writes are best-effort).
+function ensureWritableCopies() {
   try {
-    if (!existsSync(SETTINGS_PATH))   copyFileSync(SRC_SETTINGS,   SETTINGS_PATH);
-    if (!existsSync(NAME_RULES_PATH)) copyFileSync(SRC_NAME_RULES, NAME_RULES_PATH);
+    if (SETTINGS_PATH !== SRC_SETTINGS && !existsSync(SETTINGS_PATH)) {
+      mkdirSync(SETTINGS_DIR, { recursive: true });
+      copyFileSync(SRC_SETTINGS, SETTINGS_PATH);
+      console.log(`[settings] Seeded ${SETTINGS_PATH} from the bundled settings.json`);
+    }
+    if (NAME_RULES_PATH !== SRC_NAME_RULES && !existsSync(NAME_RULES_PATH)) {
+      copyFileSync(SRC_NAME_RULES, NAME_RULES_PATH);
+    }
   } catch (e) {
-    // Ignore — reads will fall back to the bundled source path
+    console.warn("[settings] Could not seed writable settings copy:", e.message);
   }
 }
 
-// Resolve the best readable path — prefer /tmp copy if it exists, else fall back to bundled source.
-function readPath(tmpPath, srcPath) {
-  if (process.env.VERCEL && existsSync(tmpPath)) return tmpPath;
+// Resolve the best readable path — prefer the writable copy if it exists, else the bundled source.
+function readPath(activePath, srcPath) {
+  if (activePath !== srcPath && existsSync(activePath)) return activePath;
   return srcPath;
 }
 
 export function getSettings() {
-  ensureVercelCopies();
+  ensureWritableCopies();
   const settings  = JSON.parse(readFileSync(readPath(SETTINGS_PATH,   SRC_SETTINGS),   "utf-8"));
   const nameRules = JSON.parse(readFileSync(readPath(NAME_RULES_PATH, SRC_NAME_RULES), "utf-8"));
   settings.boards = settings.boards.map((board) =>
@@ -51,7 +60,7 @@ export function getSettings() {
 }
 
 export function updateSettings(patch) {
-  ensureVercelCopies();
+  ensureWritableCopies();
   const current = getSettings();
   const updated = { ...current, ...patch };
   writeFileSync(SETTINGS_PATH, JSON.stringify(updated, null, 2));
@@ -61,7 +70,7 @@ export function updateSettings(patch) {
 // Replace the fields array for a specific board by its id.
 // Writes only to settings.json — nameRules.json is untouched.
 export function updateBoardFields(boardId, fields) {
-  ensureVercelCopies();
+  ensureWritableCopies();
   const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
   settings.boards = settings.boards.map((b) =>
     b.id === boardId ? { ...b, fields } : b
@@ -72,7 +81,7 @@ export function updateBoardFields(boardId, fields) {
 
 // Save the HTML update template for a specific board.
 export function updateBoardTemplate(boardId, updateTemplate) {
-  ensureVercelCopies();
+  ensureWritableCopies();
   const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
   settings.boards = settings.boards.map((b) =>
     b.id === boardId ? { ...b, updateTemplate } : b
@@ -84,7 +93,7 @@ export function updateBoardTemplate(boardId, updateTemplate) {
 // Add a new option value to every board field that matches fieldKey.
 // Idempotent — skips boards/fields where the option already exists.
 export function addFieldOption(fieldKey, option) {
-  ensureVercelCopies();
+  ensureWritableCopies();
   const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
   let changed = false;
   for (const board of settings.boards) {
@@ -98,31 +107,20 @@ export function addFieldOption(fieldKey, option) {
   return changed;
 }
 
-// Replace the options array for every board field that matches fieldKey.
-// Used by the settings sync to mirror Monday's authoritative label list exactly.
-export function setFieldOptions(fieldKey, options) {
-  ensureVercelCopies();
+// Merge product → brand assignments into settings.productBrands (shared by both boards).
+// Products with no entry belong to the brand field's default (Particle).
+export function setProductBrands(assignments) {
+  ensureWritableCopies();
   const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
-  let changed = false;
-  for (const board of settings.boards) {
-    const field = board.fields?.find((f) => f.key === fieldKey);
-    if (field && Array.isArray(field.options)) {
-      const current = JSON.stringify(field.options);
-      const next = JSON.stringify(options);
-      if (current !== next) {
-        field.options = [...options];
-        changed = true;
-      }
-    }
-  }
-  if (changed) writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
-  return changed;
+  settings.productBrands = { ...(settings.productBrands ?? {}), ...assignments };
+  writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+  return settings.productBrands;
 }
 
 // Replace the options array for a specific board field that matches fieldKey.
 // Used to mirror Monday's authoritative visible options list exactly.
 export function setBoardFieldOptions(boardId, fieldKey, options) {
-  ensureVercelCopies();
+  ensureWritableCopies();
   const settings = JSON.parse(readFileSync(SETTINGS_PATH, "utf-8"));
   const board = settings.boards?.find((b) => b.id === boardId);
   if (!board) return false;

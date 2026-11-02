@@ -8,6 +8,11 @@ services:
     environment:
       # Override DATABASE_URL to point to the local postgres container
       DATABASE_URL: postgresql://appuser:apppass@db:5432/taskdb
+      # Live settings.json lives here (mounted below) so edits survive rebuilds
+      SETTINGS_DIR: /app/persist
+    volumes:
+      # Host folder /var/www/brief-writer/persist — seeded from server/settings.json on first start
+      - ./persist:/app/persist
     depends_on:
       db:
         condition: service_healthy

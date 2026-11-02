@@ -7,6 +7,7 @@ server/node_modules/
 server/frequencyCache.json
 server/autoRenameState.json
 server/data/
+persist/
 SERVER.md
 deploy_vps.py
 deploy_root.py

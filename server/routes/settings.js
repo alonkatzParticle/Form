@@ -2,7 +2,7 @@
 // GET /api/settings            — returns full settings (boards, fields, board IDs)
 // GET /api/settings/sync-check — compares settings field columns against live Monday board
 import express from "express";
-import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption, setBoardFieldOptions, getActiveColumnLabels, syncProductsFromMonday } from "../services/settingsService.js";
+import { getSettings, updateSettings, updateBoardFields, updateBoardTemplate, addFieldOption, setBoardFieldOptions, getActiveColumnLabels, setProductBrands, syncProductsFromMonday } from "../services/settingsService.js";
 
 import { getBoardColumns, getColumnSettings } from "../services/mondayService.js";
 
@@ -223,6 +223,21 @@ router.put("/", (req, res) => {
   } catch (err) {
     console.error("Settings write error:", err.message);
     res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
+// PUT /api/settings/product-brands
+// Body: { productBrands: { "Face Cream": "Particle", ... } } — merged into the saved assignments.
+router.put("/product-brands", (req, res) => {
+  try {
+    const { productBrands } = req.body;
+    if (!productBrands || typeof productBrands !== "object" || Array.isArray(productBrands)) {
+      return res.status(400).json({ error: "productBrands object is required" });
+    }
+    res.json({ productBrands: setProductBrands(productBrands) });
+  } catch (err) {
+    console.error("Product brands write error:", err.message);
+    res.status(500).json({ error: "Failed to save product brands" });
   }
 });
 

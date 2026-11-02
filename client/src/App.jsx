@@ -15,6 +15,7 @@ import HistoryDrawer from "./components/HistoryDrawer.jsx";
 import UserProfile from "./components/UserProfile.jsx";
 import { usePersistedState } from "./hooks/usePersistedState.js";
 import { usePathname } from "./hooks/usePathname.js";
+import { attachProductBrands } from "./utils/productBrands.js";
 import "./App.css";
 
 export default function App() {
@@ -135,7 +136,7 @@ export default function App() {
   useEffect(() => {
     // Still fetch in background to keep settings fresh without flickering the UI
     axios.get("/api/settings").then((res) => {
-      setBoards(res.data.boards ?? []);
+      setBoards(attachProductBrands(res.data));
       setFrequencyOrder(res.data.frequencyOrder ?? {});
       if (!boardsLoaded) setBoardsLoaded(true);
     }).catch((err) => {
@@ -150,7 +151,7 @@ export default function App() {
     setIsRefreshingProducts(true);
     try {
       const res = await axios.post("/api/settings/sync-products");
-      setBoards(res.data.boards ?? []);
+      setBoards(attachProductBrands(res.data));
       setFrequencyOrder(res.data.frequencyOrder ?? {});
     } catch (err) {
       console.error("Failed to sync products:", err);

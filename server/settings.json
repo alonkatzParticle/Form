@@ -67,6 +67,7 @@
           "half": true,
           "mondayColumnId": "dropdown_mm8qh5b",
           "mondayValueType": "dropdown",
+          "brandField": "brand",
           "options": [
             "Face Cream",
             "Gravité",
@@ -624,6 +625,7 @@
           "half": true,
           "mondayColumnId": "dropdown_mm8q7ysv",
           "mondayValueType": "dropdown",
+          "brandField": "brand",
           "options": [
             "Face Cream",
             "Gravité",

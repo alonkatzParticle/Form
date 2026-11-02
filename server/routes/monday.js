@@ -12,7 +12,7 @@ import { handleUpload } from "@vercel/blob/client";
 import { del } from "@vercel/blob";
 import { createItem, createUpdate, getMe, getExampleItems, getHistoryItems, getItemFirstUpdate, getUsers, getBoardColumns, uploadFileToColumn, getItem, renameItem, addLabelToDropdown } from "../services/mondayService.js";
 
-import { getSettings, addFieldOption } from "../services/settingsService.js";
+import { getSettings, addFieldOption, setProductBrands } from "../services/settingsService.js";
 
 
 const upload = multer({
@@ -605,6 +605,42 @@ router.post("/add-campaign-option", async (req, res) => {
     res.json({ success: true, changed, mondayResults });
   } catch (err) {
     console.error("[add-campaign-option]", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Add a new product typed into a brand-aware product dropdown ──────────────
+// 1. Creates the label in that board's Monday product dropdown column.
+// 2. Adds it to the field's options in settings.json.
+// 3. Assigns it to the brand that was selected in the form.
+// Body: { fieldKey, product, brand }
+router.post("/add-product", async (req, res) => {
+  const { fieldKey, product, brand } = req.body;
+  if (!fieldKey || typeof product !== "string" || !product.trim() || typeof brand !== "string" || !brand.trim()) {
+    return res.status(400).json({ error: "fieldKey, product and brand are required" });
+  }
+  const label = product.trim();
+  try {
+    const settings = getSettings();
+    const board = settings.boards.find((b) => b.fields?.some((f) => f.key === fieldKey && f.brandField));
+    const field = board?.fields.find((f) => f.key === fieldKey);
+    if (!field || field.mondayValueType !== "dropdown" || !field.mondayColumnId) {
+      return res.status(400).json({ error: `${fieldKey} is not a brand-aware dropdown field` });
+    }
+
+    // Never reassign an existing product — each product belongs to exactly one brand
+    const existing = (field.options ?? []).find((o) => o.toLowerCase() === label.toLowerCase());
+    if (existing) {
+      return res.json({ product: existing, brand: settings.productBrands?.[existing] ?? null, existed: true });
+    }
+
+    await addLabelToDropdown(board.boardId, field.mondayColumnId, label);
+    addFieldOption(fieldKey, label);
+    setProductBrands({ [label]: brand.trim() });
+    console.log(`[add-product] Added "${label}" (${brand}) to ${board.id}.${fieldKey}`);
+    res.json({ product: label, brand: brand.trim(), existed: false });
+  } catch (err) {
+    console.error("[add-product]", err);
     res.status(500).json({ error: err.message });
   }
 });
